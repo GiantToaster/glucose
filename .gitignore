@@ -1,0 +1,12 @@
+# Personal data: readings, meals, the LibreLinkUp login key and the Telegram bot token. Never in git.
+data/
+# Made-up demo data. DEMO=1 node server.js creates it again.
+data-demo/
+# Login to the Raspberry Pi. Never in git.
+raspberry.txt
+# Backups, temporary files and editor settings
+*.bak*
+*.tmp
+.impeccable/live/
+.vscode/
+*.code-workspace

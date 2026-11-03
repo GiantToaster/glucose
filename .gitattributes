@@ -1,0 +1,6 @@
+# Text files are stored with LF. Shell scripts keep LF on Windows too, so they run on the Raspberry Pi.
+* text=auto eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+*.png binary
