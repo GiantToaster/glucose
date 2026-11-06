@@ -1,0 +1,281 @@
+<title>Så byggdes blodsockerdashboarden</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,700;1,400&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: en läskolumn (~68 tecken) där bilder och diagram bryter ut till full bredd (1040 px); tidslinjen har datumet i en egen kolumn.
+   Färgerna är dashboardens egna: grönt målområde, ockra över 10, rött under 3.9, lila för det man gör. */
+:root{
+  --bg:#f5f6f7;--surface:#ffffff;--sub:#eceff1;--fg:#101418;--mut:#56616a;--line:#dde1e5;
+  --ok:#08745f;--low:#c42b2b;--high:#8f6000;--high-fill:#d99a00;--acc:#5b4cf0;--note:#1f6bc2;
+  --tile:#101418;--tile-fg:#f1f3f5;
+  --display:"Bricolage Grotesque","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible Next","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Atkinson Hyperlegible Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --col:44rem;--wide:65rem;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0d0f;--surface:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--line:#252b30;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#8b7fff;--note:#5aa9ff;--tile:#1b1f23;--tile-fg:#f1f3f5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b0d0f;--surface:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--line:#252b30;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#8b7fff;--note:#5aa9ff;--tile:#1b1f23;--tile-fg:#f1f3f5;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:1.0625rem/1.6 var(--body);-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 4rem}
+::selection{background:color-mix(in srgb,var(--ok) 30%,transparent)}
+a{color:var(--acc);text-underline-offset:3px;text-decoration-thickness:1px}a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:3px}
+.col{max-width:var(--col);margin-inline:auto}.wide{max-width:var(--wide);margin-inline:auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.015em}
+h1{font-size:clamp(2.4rem,6.5vw,4.4rem);line-height:1.02;font-weight:800;letter-spacing:-.03em}
+h2{font-size:clamp(1.6rem,3.6vw,2.25rem);line-height:1.1;font-weight:800;margin-top:4.5rem}
+h3{font-size:1.2rem;line-height:1.25;font-weight:600}
+p{margin:.9rem 0;text-wrap:pretty}
+.lede{font-size:1.25rem;line-height:1.5;color:var(--fg)}
+.mut{color:var(--mut)}.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.small{font-size:.875rem}
+
+/* Topp: märket och sammanhanget, sedan rubriken med kurvan */
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding-block:1.25rem 0;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:.6rem;font-weight:700}
+.brand svg{width:28px;height:28px;flex:none}
+.hero{padding-block:3rem 1rem}
+.hero h1 em{font-style:normal;color:var(--ok)}
+.curve{display:block;width:100%;height:auto;margin:1.5rem 0 .5rem}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:.75rem 1.25rem;margin:1.75rem 0 0;padding:1rem 0 0;border-top:1px solid var(--line);font-size:.9375rem}
+.facts div{display:flex;flex-direction:column}.facts b{font-family:var(--mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums}.facts span{color:var(--mut);font-size:.8125rem}
+
+/* Bilder */
+figure{margin:2rem 0}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.shot img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--line)}
+figcaption{font-size:.875rem;color:var(--mut);margin-top:.6rem}figcaption b{color:var(--fg)}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:1rem;align-items:start}
+.phone img{max-width:300px}
+@media (max-width:720px){.shots,.pair{grid-template-columns:minmax(0,1fr)}.phone img{max-width:260px}}
+
+/* Så hänger det ihop */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1.5rem 0;counter-reset:none}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.85rem 1rem;min-width:0}
+.node h3{font-size:1rem}.node p{margin:.35rem 0 0;font-size:.875rem;color:var(--mut);line-height:1.45}
+.node.pi{border-color:color-mix(in srgb,var(--ok) 55%,var(--line));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ok) 25%,transparent)}
+.via{font-family:var(--mono);font-size:.75rem;color:var(--ok);display:block;margin-bottom:.25rem}
+@media (max-width:820px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.flow{grid-template-columns:minmax(0,1fr)}}
+
+/* Tidslinje: datumet i vänsterkolumnen, en tunn linje och en punkt per dag */
+.tl{list-style:none;margin:1.5rem 0 0;padding:0}
+.tl li{display:grid;grid-template-columns:5.5rem minmax(0,1fr);gap:0 1.25rem;padding-bottom:1.75rem;position:relative}
+.tl li::before{content:"";position:absolute;left:calc(5.5rem + .6rem);top:.55rem;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl time{font-family:var(--mono);font-size:.875rem;color:var(--mut);padding-top:.1rem;font-variant-numeric:tabular-nums}
+.tl .ev{position:relative;padding-left:1.25rem;min-width:0}
+.tl .ev::before{content:"";position:absolute;left:-.82rem;top:.42rem;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--ok)}
+.tl .ev p{margin:.35rem 0}
+q{font-style:italic;quotes:"”" "”"}
+.said{display:block;font-size:.9375rem;color:var(--mut);margin-top:.4rem}
+@media (max-width:520px){.tl li{grid-template-columns:minmax(0,1fr)}.tl li::before{left:.35rem;top:1.9rem}.tl .ev::before{left:-.05rem;top:-1.45rem}.tl time{padding-left:1.25rem}}
+
+/* Diagram */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1rem .75rem}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{font-family:var(--mono);font-size:12px;fill:var(--mut)}
+.chart text.v{fill:var(--fg);font-weight:600}
+.bars{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.5rem .9rem;align-items:center;font-size:.875rem}
+.bars .d{font-family:var(--mono);color:var(--mut);white-space:nowrap}
+.track{height:14px;border-radius:4px;background:var(--sub);overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.bars .t{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.key{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;font-size:.8125rem;color:var(--mut);margin-top:.85rem}.key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.4rem;vertical-align:-1px}
+
+/* Misstagen: en lista där varje punkt har vad som hände och vad som gjordes */
+.oops{list-style:none;margin:1.5rem 0 0;padding:0;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.oops li{background:var(--surface);padding:1rem 1.15rem;min-width:0}
+.oops h3{display:flex;gap:.6rem;align-items:baseline}
+.oops h3 span{font-family:var(--mono);font-size:.75rem;font-weight:600;color:var(--low);flex:none;padding:.1rem .45rem;border-radius:999px;background:color-mix(in srgb,var(--low) 12%,transparent)}
+.oops h3 span.me{color:var(--high);background:color-mix(in srgb,var(--high-fill) 16%,transparent)}
+.oops p{margin:.4rem 0 0;font-size:.9688rem}
+.fix{color:var(--ok);font-weight:600}
+
+/* Telegram-svaret som det ser ut i appen */
+.chat{background:var(--sub);border-radius:16px;padding:1rem;max-width:30rem}
+.bub{background:var(--surface);border-radius:14px 14px 14px 4px;padding:.75rem .9rem;font-size:.9375rem;line-height:1.45;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.bub pre{font-family:var(--mono);font-size:.8125rem;line-height:1.35;margin:.5rem 0;white-space:pre;overflow-x:auto}
+.me-msg{margin:0 0 .6rem auto;width:max-content;max-width:100%;background:color-mix(in srgb,var(--acc) 85%,#000);color:#fff;border-radius:14px 14px 4px 14px;padding:.45rem .8rem;font-family:var(--mono);font-size:.875rem}
+
+.rule{margin:2rem 0;padding:1.25rem 1.35rem;border-radius:12px;background:var(--tile);color:var(--tile-fg)}
+.rule h3{color:var(--tile-fg)}.rule p{margin:.5rem 0 0;color:color-mix(in srgb,var(--tile-fg) 80%,transparent)}
+
+.log{font-family:var(--mono);font-size:.875rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;overflow-x:auto}
+.log div{white-space:nowrap;padding:.15rem 0}.log b{color:var(--acc);font-weight:600}.log span{color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:.875rem}th,td{padding:.45rem .6rem;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{font-weight:600;color:var(--mut)}td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font-size:.875rem;color:var(--mut)}
+@media (prefers-reduced-motion:no-preference){.curve path.draw{stroke-dasharray:var(--len);stroke-dashoffset:0;animation:draw 2.2s cubic-bezier(.16,1,.3,1) both}@keyframes draw{from{stroke-dashoffset:var(--len)}}}
+</style>
+
+<header class="wide top">
+  <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#101418"/><rect x="40" y="200" width="432" height="120" rx="22" fill="#2bb39a" opacity=".32"/><path d="M60 232c76 0 82 152 158 152s88-286 176-286 86 134 116 134" fill="none" stroke="#fff" stroke-width="36" stroke-linecap="round"/></svg>Glucose dashboard</div>
+  <a class="small" href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">Bidrag till SweClockers × ASUS ProArt</a>
+</header>
+
+<main>
+<section class="col hero">
+  <h1>Gick inte. <em>Nu går det.</em></h1>
+  <svg class="curve" id="hcurve" viewBox="0 0 700 120" role="img" aria-label="En blodsockerkurva som rör sig i det gröna målområdet mellan 3,9 och 10 mmol/L"></svg>
+  <p class="lede">Jag har typ 1-diabetes och bär en FreeStyle Libre-sensor. Appen visar vad blodsockret är just nu, men inte det jag oftast undrar: hur gick det förra gången jag åt pizza och tog 7 enheter? Så jag byggde en egen dashboard tillsammans med Claude Code.</p>
+  <p>Den hämtar mina värden varje minut, dygnet runt, på en Raspberry Pi 4. Måltider loggar jag genom att skriva till en egen Telegram-bot var jag än är, till exempel <q>pizza 7,5 enheter</q>. En lokal AI på mitt grafikkort svarar på frågor om mina värden, så frågorna lämnar aldrig hemmet.</p>
+  <div class="facts" aria-label="Projektet i siffror">
+    <div><b>6</b><span>dagar med Claude Code</span></div>
+    <div><b>2</b><span>filer: server och sida</span></div>
+    <div><b>0</b><span>npm-paket</span></div>
+    <div><b>870 → 2 828</b><span>rader kod</span></div>
+    <div><b>27 → 36</b><span>av 40 i designgranskning</span></div>
+  </div>
+</section>
+
+<section class="wide">
+  <figure>
+    <div class="shots">
+      <div class="shot"><img src="img/before.png" width="1280" height="800" alt="Dashboarden den 3 november: ett stort värde, en vit kurva i ett grönt band och en tom aktivitetslista."><figcaption><b>3 november.</b> Den första versionen: värdet, en vit linje och en logg. Fungerade, men berättade inte mycket.</figcaption></div>
+      <div class="shot"><img src="img/after.png" width="1280" height="800" alt="Dashboarden den 6 november: värdet med läget i ord, en kurva som byter färg över 10 och under 3,9, och markeringar för promenad, behandlad känning och måltid."><figcaption><b>6 november.</b> Kurvan byter färg utanför målområdet, och promenaden, känningen och maten syns där de hände.</figcaption></div>
+    </div>
+  </figure>
+  <p class="col small mut">Alla skärmbilder visar demoläget: en påhittad person med 90 dagars värden. Mina egna hälsodata syns aldrig här.</p>
+</section>
+
+<section class="col">
+  <h2>Så hänger det ihop</h2>
+  <p>Allt är skrivet i Node.js utan ett enda paket att installera. Servern är en fil och sidan en annan. Det gör den lätt att flytta, och den har redan flyttat en gång: från min dator till en Raspberry Pi som står på dygnet runt.</p>
+</section>
+<section class="wide">
+  <div class="flow" role="list">
+    <div class="node" role="listitem"><span class="via">varje minut</span><h3>Libre-sensorn</h3><p>Värdet går via Abbotts LibreLinkUp, samma tjänst som anhöriga använder för att följa någon.</p></div>
+    <div class="node pi" role="listitem"><span class="via">dygnet runt</span><h3>Raspberry Pi 4</h3><p>Hämtar värdena, sparar allt och läser Telegram-boten. Dashboarden öppnas från datorn eller mobilen hemma.</p></div>
+    <div class="node" role="listitem"><span class="via">var jag än är</span><h3>Telegram</h3><p>Jag skriver vad jag åt. Pi:n hämtar meddelandena själv, så ingen port behöver öppnas i routern.</p></div>
+    <div class="node" role="listitem"><span class="via">när datorn är på</span><h3>Grafikkortet</h3><p>Ollama med gemma4:12b tolkar fritext och svarar på frågor. Är datorn av tar en enkel regelbaserad tolkare över.</p></div>
+  </div>
+</section>
+
+<section class="col">
+  <h2>Sex dagar, i ordning</h2>
+  <ol class="tl">
+    <li><time datetime="2026-10-25">25 okt</time><div class="ev"><h3>Första versionen</h3><p>Inloggning mot LibreLinkUp, en kurva och en logg för måltider med insulindos. Resten av kvällen gick till detaljer.</p><span class="said"><q>Gör så man kan skippa inlogg varje gång.</q> <q>Man ska kunna välja 6,5 enheter också.</q></span></div></li>
+    <li><time datetime="2026-10-26">26 okt</time><div class="ev"><h3>Insulintyper och en omdesign</h3><p>Listor över vanliga insulin, en dygnsprofil och en hel omdesign. Stegen från mobilen hoppade jag över.</p><span class="said"><q>Går det att ge en varning nästa gång att blodsockret ofta blir högt med denna dos?</q> Den frågan kom tillbaka senare, se misstagen.</span></div></li>
+    <li><time datetime="2026-11-03">3 nov</time><div class="ev"><h3>Djup QA, lokal AI och Telegram</h3><p>En genomgång av hela koden: inloggning som gick ut, tidszoner, två enheter som skrev över varandras ändringar, skydd mot att andra webbsidor läser värdena. Sedan veckosammanfattning, lokal AI via Ollama och fritextloggning. En mobilapp prövades och lades ner till förmån för en Telegram-bot.</p><span class="said"><q>Om jag vill logga, skulle man kunna skriva till AI? Pizza 7,5 enheter och då loggar den åt en?</q></span></div></li>
+    <li><time datetime="2026-11-04">4 nov</time><div class="ev"><h3>Finputs och den första designgranskningen</h3><p>Ollama startar och stängs med dashboarden. <q>Fläskfärs ris</q> blir <q>Fläskfärs och ris</q>, och <q>promenad 5 minuter</q> blir 17:05–17:10 Kort promenad. Den första granskningen gav 27 av 40. Sidan hämtar nu bara det som är nytt varje minut: från 307 kB till 0,5 kB per minut.</p></div></li>
+    <li><time datetime="2026-11-05">5 nov</time><div class="ev"><h3>Tio granskningar och flytten till Pi:n</h3><p>En egen dialog för känningar med mina vanliga mängder som snabbknappar, tydligare lågt läge, tangentbordsgenvägar och ljust eller mörkt tema att välja. Varje runda åtgärdades i steg och mättes om. På kvällen flyttade servern till Raspberry Pi:n.</p></div></li>
+    <li><time datetime="2026-11-06">6 nov</time><div class="ev"><h3>Månaden i siffror, rapporter och git</h3><p>En sammanfattning per månad med en bild att dela, <code>/week</code> och <code>/month</code> i Telegram, tokenräkning för tävlingen och versionshistorik.</p></div></li>
+  </ol>
+</section>
+
+<section class="wide">
+  <div class="pair">
+    <figure class="phone"><div class="shot"><img src="img/after-phone.png" width="390" height="844" alt="Dashboarden i en mobil: värdet, knapparna för måltid, anteckning och känning, fritextrutan och kurvan."></div><figcaption><b>I mobilen.</b> Samma sida, med knappar stora nog för tummen.</figcaption></figure>
+    <figure><div class="shot"><img src="img/month-card.png" width="1080" height="1350" alt="Bilden Month in review för oktober 2026 i demoläget: 86 % i målområdet, en typisk dag som kurva, en stapel per dag och fyra höjdpunkter."></div><figcaption><b>Month in review.</b> Bilden dashboarden gör av en månad, här med demodata. Den ritas i webbläsaren och skickas ingenstans.</figcaption></figure>
+  </div>
+</section>
+
+<section class="col">
+  <h2>Misstagen</h2>
+  <p>Tävlingen vill se hela resan, så här är det som gick fel. En del var mina beslut, en del var Claudes kod, och några hittade vi först när något annat gick sönder.</p>
+  <ul class="oops">
+    <li><h3><span>säkerhet</span>Dosvarningen som blev en spärr</h3><p>Den 26 oktober bad jag om en varning om <q>att man kanske bör justera dosen</q>. Det är just det en app inte ska göra. Gränsen blev i stället att dashboarden aldrig ger dosråd, bara visar vad som hände. Men i test gav den lokala AI:n ändå ett dosförslag på en direkt fråga. <span class="fix">Nu besvaras frågor om doser av servern med ett fast svar innan de når modellen.</span></p></li>
+    <li><h3><span>AI</span>AI:n glömde början av frågan</h3><p>Ollama läser bara 4 096 tokens om man inte säger något annat. Underlaget var cirka 4 600, så dagens datum och sammanfattningen kapades bort utan varning, och svaren handlade om fel dagar. <span class="fix">Fönstret är nu 16 384 tokens i alla anrop.</span></p></li>
+    <li><h3><span>data</span>”100 % i målområdet” på nästan inga värden</h3><p>Med nästan inga värden, till exempel efter ett uppehåll, såg veckan perfekt ut. <span class="fix">Under 20 % täckning står det nu att det finns för få värden.</span></p></li>
+    <li><h3><span>tolkning</span>”2 skivor bröd” blev 2 enheter insulin</h3><p>Ett tal utan enhet lästes som en dos. <span class="fix">En gissad dos sparas aldrig nu. Dashboarden öppnar dialogen och boten frågar <q>Did you take 2 units?</q></span></p></li>
+    <li><h3><span>tolkning</span>”okänd rätt” lästes som ”ok”</h3><p>Hittades i dag av ett gammalt test. Mönstret som känner igen hälsningar använde <code>\b</code>, och den räknar å, ä och ö som ordgräns. <span class="fix">Rättat med en Unicode-medveten gräns.</span></p></li>
+    <li><h3><span class="me">beslut</span>Mobilappen som aldrig blev av</h3><p>En app som loggar utan nät kräver https i hemnätet, och utanför hemmet nådde den inte servern alls. <span class="fix">Telegram löste båda: servern hämtar meddelandena själv, och de väntar hos Telegram om den är av.</span></p></li>
+    <li><h3><span class="me">beslut</span>Två servrar, en bot</h3><p>När Pi:n tog över fick datorns server inte köra samtidigt, annars tar de meddelanden från varandra. <span class="fix">Nu körs bara en server, och den varnar om någon annan läser samma bot.</span></p></li>
+    <li><h3><span class="me">Claude</span>Rättningar som gav nya fel</h3><p>Två gånger orsakade Claudes egna ändringar en ny bugg. Ett klassnamn som redan fanns förstörde aktivitetslistan. En färgvariabel som hamnat i en kommentar fick toppen att gå sönder mellan 701 och 880 px bredd, och nästa granskning hittade det. <span class="fix">Sedan dess körs de gamla kontrollerna om efter varje omgång.</span></p></li>
+  </ul>
+</section>
+
+<section class="col">
+  <h2>Elva granskningar</h2>
+  <p>Designen granskades med verktyget Impeccable: två agenter går igenom sidan mot tio tumregler för användbarhet och ger 0–4 poäng per regel. Efter varje granskning åtgärdades fynden ett steg i taget, och sedan mättes det om. Den tekniska granskningen (tillgänglighet, prestanda, mobil) gick från 16 till 19 av 20.</p>
+</section>
+<section class="wide">
+  <figure class="chart"><svg id="crit" viewBox="0 0 720 230" role="img" aria-label="Poäng i designgranskningen, 11 mätningar: 27, 29, 30, 31, 31, 32, 36, 34, 35, 35 och 33 av 40."></svg>
+  <figcaption>Poäng av 40 per granskning, 4–5 november. Efter den sjunde låg den mellan 33 och 36: varje ny granskare hittade nya saker, så Claude föreslog att sluta jaga 40.</figcaption></figure>
+</section>
+
+<section class="col">
+  <h2>Tokens</h2>
+  <p>De tre bästa bidragen ska redovisa sin tokenanvändning. Siffrorna kommer ur Claude Codes egna sessionsloggar, och varje svar räknas en gång. Den absolut största posten är cache: hela samtalet hittills läses om vid varje svar, vilket är billigt men blir många tokens på en lång dag.</p>
+</section>
+<section class="wide">
+  <figure class="chart">
+    <div class="bars" id="tok" role="table" aria-label="Tokens per dag"></div>
+    <div class="key"><span><i style="background:var(--ok)"></i>Cache läst</span><span><i style="background:var(--acc)"></i>Ny text in (input + cache skriv)</span><span><i style="background:var(--high-fill)"></i>Text ut</span></div>
+  </figure>
+  <div class="tw"><table>
+    <thead><tr><th>Totalt, 25 okt – 6 nov</th><th>Svar</th><th>Ny text in</th><th>Text ut</th><th>Cache läst</th><th>Summa</th></tr></thead>
+    <tbody><tr><td>Claude (claude-opus-5-5)</td><td>1 875</td><td>8 328 269</td><td>2 177 899</td><td>500 183 467</td><td>510 689 635</td></tr></tbody>
+  </table></div>
+  <p class="col small mut">Räknat 6 november kl. 22.30, så kvällens sista timmar saknas. Skriptet som räknar ligger i <code>contest/tokens-claude.js</code>. Den lokala AI:n kör på mitt eget grafikkort och kostar inga moln-tokens. Dashboarden började logga hur mycket den använder först den 6 november, och hittills finns en tolkning: 705 tokens in och 70 ut på 1,5 sekunder.</p>
+</section>
+
+<section class="col">
+  <h2>Ett meddelande från boten</h2>
+  <p>Varje söndag kväll kan boten skicka veckan i siffror, om man slår på det. Det här svaret kommer från demoläget.</p>
+  <div class="chat" aria-label="Exempel på ett svar från Telegram-boten">
+    <div class="me-msg">/week</div>
+    <div class="bub">📊 <b>Your week</b> · Sat 31 Oct – Fri 6 Nov<br><br>In range <b>85 %</b> (week before 90 %)<br><b>5 lows</b> (week before 4) · average <b>7.6</b> mmol/L<br><br><b>Time in range per day</b>
+<pre>Sat ████████░░  80 %
+Sun █████████░  90 %
+Mon ██████████  95 %
+Tue █████████░  89 %
+Wed ████████░░  81 %
+Thu ████████░░  79 %
+Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza ×3, Pasta bolognese ×3<br>Exercise logged 3 times</div>
+  </div>
+
+  <div class="rule"><h3>Den ger aldrig dosråd</h3><p>Dashboarden och dess AI beskriver vad som hände, aldrig vad jag borde göra. Frågor om doser får ett fast svar från servern, och varje fråga till AI:n slutar med samma påminnelse. Den ersätter inte heller Libre-appens larm.</p></div>
+
+  <h2>Historiken</h2>
+  <p>Projektet hade ingen versionshantering förrän i dag. Git-historiken byggdes av de ögonblicksbilder som fanns: originalet som sparades innan QA-rundan, kopian som körde på Pi:n och dagens version.</p>
+  <div class="log" role="list" aria-label="Git-historik">
+    <div role="listitem"><b>deb882d</b> <span>6 nov</span> Month in review, weekly and monthly reports in Telegram</div>
+    <div role="listitem"><b>bee9b5e</b> <span>6 nov</span> QA, Telegram bot, local AI and design rounds (3-6 November)</div>
+    <div role="listitem"><b>fc3cdb6</b> <span>3 nov</span> Dashboard before the QA round</div>
+  </div>
+
+  <footer><p>Byggt med Claude Code (Claude Opus 5.5). Bidrag till <a href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">SweClockers × ASUS ProArt</a>, november 2026. Skärmbilderna visar demoläget med en påhittad person.</p></footer>
+</section>
+</main>
+
+<script>
+// Rubrikens kurva: målområdet 3,9–10 som ett grönt band och en dag som rör sig genom det, med en topp efter middagen
+(function () {
+  const svg = document.getElementById('hcurve'), W = 700, H = 120, Y = v => H - 8 - (v - 2) / 12 * (H - 16);
+  const pts = []; for (let i = 0; i <= 96; i++) { const h = i / 4, v = 6.4 + 1.4 * Math.exp(-((h - 7.6) ** 2) / 1.2) + 2.8 * Math.exp(-((h - 13.2) ** 2) / 1.8) + 5.2 * Math.exp(-((h - 19.4) ** 2) / 2.2) - 2.6 * Math.exp(-((h - 16.4) ** 2) / .6) + .35 * Math.sin(h * 1.7); pts.push([i / 96 * W, Y(v)]); }
+  const d = 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L');
+  svg.innerHTML = `<rect x="0" y="${Y(10)}" width="${W}" height="${Y(3.9) - Y(10)}" rx="10" style="fill:var(--ok)" opacity=".16"/>`
+    + `<defs><linearGradient id="hg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${H}"><stop offset="0" style="stop-color:var(--high)"/><stop offset="${(Y(10) / H).toFixed(3)}" style="stop-color:var(--high)"/><stop offset="${(Y(10) / H).toFixed(3)}" style="stop-color:var(--fg)"/><stop offset="${(Y(3.9) / H).toFixed(3)}" style="stop-color:var(--fg)"/><stop offset="${(Y(3.9) / H).toFixed(3)}" style="stop-color:var(--low)"/><stop offset="1" style="stop-color:var(--low)"/></linearGradient></defs>`
+    + `<path class="draw" d="${d}" fill="none" stroke="url(#hg)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const p = svg.querySelector('path'); p.style.setProperty('--len', Math.ceil(p.getTotalLength()));
+})();
+
+// Granskningarna: 11 mätningar, skala 24–40 med linjer var 4:e poäng. Punkterna har sina värden ovanför.
+(function () {
+  const S = [27, 29, 30, 31, 31, 32, 36, 34, 35, 35, 33], svg = document.getElementById('crit');
+  const W = 720, H = 230, l = 34, r = 16, t = 26, b = 44, lo = 24, hi = 40;
+  const X = i => l + i / (S.length - 1) * (W - l - r), Y = v => t + (hi - v) / (hi - lo) * (H - t - b);
+  let s = '';
+  for (let v = lo; v <= hi; v += 4) s += `<line x1="${l}" x2="${W - r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)"${v === hi ? ' stroke-dasharray="4 4"' : ''}/><text x="${l - 8}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+  s += `<path d="M${S.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join('L')}" fill="none" style="stroke:var(--ok)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  S.forEach((v, i) => { s += `<circle cx="${X(i)}" cy="${Y(v)}" r="4.5" style="fill:var(--surface);stroke:var(--ok)" stroke-width="2.5"/><text class="v" x="${X(i)}" y="${Y(v) - 11}" text-anchor="middle">${v}</text><text x="${X(i)}" y="${H - b + 20}" text-anchor="middle">${i + 1}</text>`; });
+  s += `<text x="${X(0)}" y="${H - 6}" text-anchor="start">4 nov</text><text x="${(X(1) + X(10)) / 2}" y="${H - 6}" text-anchor="middle">5 nov</text>`;
+  svg.innerHTML = s;
+})();
+
+// Tokens per dag: en stapel per dag, uppdelad i cache läst, ny text in och text ut, i skala mot den största dagen
+(function () {
+  const D = [['25 okt', 7764258, 153445, 81700], ['26 okt', 10498975, 216372, 133520], ['3 nov', 42742661, 576535, 275808],
+    ['4 nov', 141060734, 1123194, 320855], ['5 nov', 282174219, 5360602, 1260686], ['6 nov', 15942620, 898121, 105330]];
+  const max = Math.max(...D.map(([, a, b, c]) => a + b + c)), M = n => (n / 1e6).toLocaleString('sv-SE', { maximumFractionDigits: n < 1e7 ? 1 : 0 }) + ' M';
+  document.getElementById('tok').innerHTML = D.map(([d, cr, inp, out]) => {
+    const tot = cr + inp + out, w = n => (n / max * 100).toFixed(2) + '%';
+    return `<span class="d" role="rowheader">${d}</span><div class="track" role="cell" aria-label="Cache läst ${M(cr)}, ny text in ${M(inp)}, text ut ${M(out)}"><i style="width:${w(cr)};background:var(--ok)"></i><i style="width:${w(inp)};background:var(--acc)"></i><i style="width:${w(out)};background:var(--high-fill)"></i></div><span class="t" role="cell">${M(tot)}</span>`;
+  }).join('');
+})();
+</script>
