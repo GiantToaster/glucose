@@ -194,6 +194,9 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Insikter och frågor till den lokala AI:n */
 /* Insikterna som en lista med avdelare (en kolumn): inga halvtomma rutor, och raderna läses uppifrån och ned */
 .wkg{display:grid;grid-template-columns:1fr}
+.mlab{min-width:9.5em;text-align:center;font-weight:600}.mdays{margin-top:2px}svg rect.mdn{fill:var(--bd)}svg .mgl{stroke:var(--mut);stroke-dasharray:3 3;opacity:.7}
+.moa{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}.moa span{flex:1 1 260px}
+.stack{display:flex;flex-direction:column;gap:4px}
 .lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
 .grp{margin:20px 0 8px;font-size:.75rem;font-weight:600;color:var(--mut);letter-spacing:.02em}@media(max-width:640px){.wkg{grid-template-columns:1fr}}
 .insi{display:grid;grid-template-columns:8px minmax(0,1fr);gap:3px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}
@@ -305,6 +308,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
   <div class="ph"><h2>This week</h2><span class="mut fine">Last 7 days, compared with the 7 before</span></div>
   <div id="wk"></div>
+  <div class="ph subh"><h3 class="m0">Month in review</h3><div class="nav" id="monav" hidden><button id="mprev" aria-label="Previous month">‹</button><span class="mlab" id="mlab" aria-live="polite"></span><button id="mnext" aria-label="Next month">›</button></div></div>
+  <div id="mo"></div>
   <div class="ph subh"><h3 class="m0">Ask about your data</h3><span class="mut fine" id="aist"></span></div>
   <div class="chat" id="chat"></div><div class="sr" id="chatsr" aria-live="polite"></div>
   <div class="chips" id="sugg">
@@ -409,6 +414,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <span class="mut sm" id="tgtxt"></span>
       <form class="tw" id="tgset" hidden><input id="tgtok" type="password" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token"><button id="tgsave">Connect</button></form>
       <div class="ph m0" id="tgon" hidden><span class="mut fine" id="tgwho"></span><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
+      <div class="stack" id="tgrepw" hidden><label class="chk"><input id="tgrep" type="checkbox" aria-describedby="tgrepq"> Send me a weekly and monthly summary</label>
+        <span class="mut fine" id="tgrepq">Sundays at 19:00 and on the 1st of each month at 09:00: time in range, lows and average, never individual readings. It goes through Telegram. You can also ask for one any time with /week or /month.</span></div>
       <span class="fine warnq" id="tgoffq" aria-live="polite"></span>
     </div>
     <div class="sec" id="acct" hidden><h3>Account</h3>
@@ -1464,6 +1471,126 @@ $('wk').onclick = e => {
   $('prng').querySelector('[data-pd="7"]').click(); showTab('pat'); $('t-pat').focus({ preventScroll: true });
   $('psum').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'center' });
 };
+// Månaden i siffror ("Month in review"): samma slags rader som veckan, en stapel per dag och en bild att spara och dela.
+// Bara uträknade fakta från servern (/api/month), ingen AI och inga råd.
+let mo = null, moKey = null;
+const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
+const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(() => {});
+// Höjdpunkterna, i den här ordningen: samma i listan och på bilden
+function moFacts(x) {
+  const f = [], N = x.days.filter(d => d[1] != null).length;
+  if (x.best) f.push({ k: 'best', lab: 'Best day', val: dDate(x.best.t), sub: `${x.best.tir} % in range` });
+  if (x.inR && x.inR.min >= 60) f.push({ k: 'inr', lab: 'Longest time in range', val: dur(x.inR.min * 6e4), sub: `In a row, from ${dDate(x.inR.t)} ${hhmm(x.inR.t)}` });
+  if (x.noLow && x.noLow.n >= 2) f.push(x.noLow.n === N
+    ? { k: 'nolow', lab: 'No lows', val: 'on any day', sub: `All ${N} days with readings` }
+    : { k: 'nolow', lab: 'No lows for', val: `${x.noLow.n} days`, sub: `In a row, ${dDate(x.noLow.from)} – ${dDate(x.noLow.to)}` });
+  if (x.top.length) f.push({ k: 'top', lab: 'Most logged', val: `${x.top[0].name} ×${x.top[0].n}`, sub: '' });
+  return f;
+}
+function renderMonth() {
+  const el = $('mo'); if (!mo) return;
+  const L = mo.months || [], i = L.indexOf(mo.m), x = mo, c = x.cur;
+  $('monav').hidden = !L.length; $('mprev').disabled = i <= 0; $('mnext').disabled = i < 0 || i >= L.length - 1;
+  $('mlab').textContent = x.m ? monthName(x.m) + (x.partial ? ' so far' : '') : '';
+  if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">${!L.length ? 'Your month in review shows up here once there is a day of readings.' : `Too few readings in ${monthName(x.m)} to sum up${c ? ` (${c.cov.toFixed(0)} % of the month has readings)` : ''}.`}</div>`; return; }
+  const name = monthName(x.m).split(' ')[0], p = x.prev, pn = p && monthName(p.m).split(' ')[0], lows = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
+  const lead = `<p class="lead"><b style="color:${c.tir >= 70 ? 'var(--ok)' : 'var(--high)'}">${c.tir.toFixed(0)} %</b> in range and <b${c.lows ? ' style="color:var(--low)"' : ''}>${lows(c.lows)}</b> in ${name}${x.partial ? ' so far' : ''}.`
+    + (p ? ` <span class="mut">${pn}: ${p.tir.toFixed(0)} %${x.partial ? '' : ' and ' + lows(p.lows)}.</span>` : '') + '</p>';
+  // En stapel per dag i månaden (även dagar som inte kommit än), grön från 70 %, ockra under. Streckad linje = målet 70 %.
+  const z = chartScale(), w = Math.max(280, Math.round(el.clientWidth) || 700), h = Math.round(88 * z), l = 30 * z, r = 4, B = 18 * z, top = 6;
+  const yy = +x.m.slice(0, 4), m0 = +x.m.slice(5, 7) - 1, N = new Date(yy, m0 + 1, 0).getDate(), bw = (w - l - r) / N, Y = v => h - B - v / 100 * (h - B - top);
+  let sv = `<line class="mgl" x1="${l}" x2="${w - r}" y1="${Y(70)}" y2="${Y(70)}"/><text x="${l - 5 * z}" y="${Y(70) + 4 * z}" text-anchor="end">70 %</text>`;
+  for (let d = 0; d < N; d++) {
+    const v = x.days[d] ? x.days[d][1] : undefined, bx = l + d * bw + Math.max(1, bw * .14), ww = Math.max(2, bw * .72);
+    sv += v == null ? `<rect class="mdn" x="${bx.toFixed(1)}" y="${(Y(0) - 2).toFixed(1)}" width="${ww.toFixed(1)}" height="2" rx="1"/>`
+      : `<rect x="${bx.toFixed(1)}" y="${Y(v).toFixed(1)}" width="${ww.toFixed(1)}" height="${Math.max(2, Y(0) - Y(v)).toFixed(1)}" rx="${Math.min(3, ww / 3).toFixed(1)}" style="fill:var(${v >= 70 ? '--ok' : '--high-fill'})"><title>${dDate(new Date(yy, m0, d + 1).getTime())}: ${v} % in range</title></rect>`;
+    // Dag 1, 8, 15, 22, 29 och den sista (utom när den sista ligger tätt intill 29)
+    if (d % 7 === 0 && d < N - 2 || d === N - 1) sv += `<text x="${(l + (d + .5) * bw).toFixed(1)}" y="${h - 4 * z}" text-anchor="middle">${d + 1}</text>`;
+  }
+  const had = x.days.filter(d => d[1] != null), good = had.filter(d => d[1] >= 70).length;
+  const say = `Time in range per day in ${name}. ${good} of ${had.length} days with readings were at 70 % or more.${x.best ? ` Best: ${dDate(x.best.t)}, ${x.best.tir} %.` : ''}`;
+  const G = { Highlights: [], Meals: [], 'In numbers': [] }, it = (g, color, main, sub) => G[g].push(`<div class="insi"><i style="background:${color}"></i><div>${main}</div>${sub ? `<span>${sub}</span>` : ''}</div>`);
+  for (const f of moFacts(x)) if (f.k !== 'top') it('Highlights', f.k === 'nolow' ? 'var(--note)' : 'var(--ok)', `${f.lab}: <b>${esc(f.val)}</b>`, esc(f.sub));
+  if (x.top.length) it('Meals', 'var(--acc)', `Most logged: <b>${esc(x.top[0].name)}</b>, ${x.top[0].n === 1 ? 'once' : x.top[0].n + ' times'}`,
+    (x.top.length > 1 ? 'Then ' + x.top.slice(1).map(m => `${esc(m.name)} ${m.n}`).join(', ') + '. ' : '') + `${x.meals} meals logged in all`);
+  if (x.steady) it('Meals', 'var(--ok)', `Lowest peaks after eating: <b>${esc(x.steady.name)}</b>`, `Peak ${f1(mm(x.steady.peak))} mmol/L on average, ${x.steady.n} times that started in range`);
+  const ex = x.notes.Exercise; if (ex) it('Meals', 'var(--note)', `Exercise logged <b>${ex === 1 ? 'once' : ex + ' times'}</b>`, x.exMin ? `${dur(x.exMin * 6e4)} with a length written down` : '');
+  it('In numbers', col(mm(c.avg)), `Average <b>${f1(mm(c.avg))}</b> mmol/L · Est. HbA1c <b>${gmi(c.avg)}</b> mmol/mol`, 'GMI, estimated from the average, not a lab value');
+  it('In numbers', c.cov < 70 ? 'var(--high)' : 'var(--mut)', `<b>${x.n.toLocaleString('en-GB')}</b> readings`, `Sensor active ${c.cov.toFixed(0)} % of the ${x.partial ? 'month so far' : 'month'}${c.cov < 70 ? '. Treat these numbers with caution' : ''}`);
+  el.innerHTML = lead + `<h3 class="grp">Each day</h3><svg class="mdays" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg>`
+    + Object.entries(G).filter(([, a]) => a.length).map(([g, a]) => `<h3 class="grp">${g}</h3><div class="wkg">${a.join('')}</div>`).join('')
+    + `<div class="moa"><button id="mimg">Save as image</button><span class="mut fine">A picture of ${x.partial ? 'the month so far' : 'the month'} to share (1080 × 1350). It shows your numbers, so choose where you post it.</span></div>`;
+}
+$('mprev').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i > 0) loadMonth(L[i - 1]); };
+$('mnext').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i >= 0 && i < L.length - 1) loadMonth(L[i + 1]); };
+$('mo').onclick = e => { if (e.target.closest('#mimg')) saveMonthImage(); };
+// Bilden: samma värld som ikonen (mörk platta, grönt målområde, vit kurva). Kurvan är månadens typiska dag och staplarna
+// under den är dagarna. Ritas på en canvas i webbläsaren och sparas som PNG; inget skickas någonstans.
+function monthCanvas(x) {
+  const c = x.cur, W = 1080, H = 1350, X0 = 84, X1 = W - 84, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'), K = { bg: '#101418', fg: '#f1f3f5', mut: '#9aa4ac', ok: '#2bb39a', low: '#f05a5a', high: '#f0b429', bd: '#2b3238' };
+  const F = (wt, px) => `${wt} ${px}px "Segoe UI Variable Display","Segoe UI",-apple-system,system-ui,sans-serif`;
+  // Text som inte får plats krymps (till 60 %), och kortas med … som sista utväg. Returnerar bredden.
+  const text = (s, X, Y, wt, px, color, max = X1 - X0, align = 'left') => {
+    let z = px; g.font = F(wt, z); while (g.measureText(s).width > max && z > px * .6) g.font = F(wt, --z);
+    while (g.measureText(s).width > max && s.length > 2) s = s.slice(0, -2) + '…';
+    g.fillStyle = color; g.textAlign = align; g.fillText(s, X, Y); return g.measureText(s).width;
+  };
+  const line = (ctx, ps) => ps.forEach(([a, b], k) => k ? ctx.lineTo(a, b) : ctx.moveTo(a, b));
+  g.fillStyle = K.bg; g.fillRect(0, 0, W, H);
+  // Märket: ikonens band och kurva i liten skala
+  g.save(); g.translate(X0, 78); g.scale(56 / 512, 56 / 512);
+  g.fillStyle = K.ok; g.globalAlpha = .4; g.beginPath(); g.roundRect(40, 200, 432, 120, 22); g.fill(); g.globalAlpha = 1;
+  g.strokeStyle = K.fg; g.lineWidth = 40; g.lineCap = 'round'; g.stroke(new Path2D('M60 232c76 0 82 152 158 152s88-286 176-286 86 134 116 134')); g.restore();
+  text('Month in review', X0 + 76, 118, 600, 30, K.mut, 520);
+  if (x.demo) text('Demo data', X1, 118, 600, 26, K.mut, 300, 'right');
+  text(monthName(x.m) + (x.partial ? ' so far' : ''), X0, 236, 700, 80, K.fg);
+  const tw = text(`${c.tir.toFixed(0)} %`, X0 - 6, 452, 700, 230, c.tir >= 70 ? K.ok : K.high);
+  text('in range', X0 + tw + 20, 452, 600, 44, K.mut, X1 - X0 - tw - 20);
+  const lw = k => k === 0 ? 'No lows' : k === 1 ? '1 low' : k + ' lows';
+  text([lw(c.lows), `average ${f1(mm(c.avg))} mmol/L`, x.prev ? `${monthName(x.prev.m).split(' ')[0]}: ${x.prev.tir.toFixed(0)} %` : ''].filter(Boolean).join('   ·   '), X0, 520, 500, 34, K.mut);
+  // Typisk dag: grönt målområde, mittersta hälften av värdena som ett svagt band, medianen som kurva i zonfärgerna
+  const pr = x.prof.map((q, i) => q && [i, q.map(mm)]).filter(Boolean), cy0 = 616, cy1 = 856;
+  text('A typical day', X0, 588, 600, 26, K.mut);
+  if (pr.length > 1) {
+    const ym = Math.max(14, Math.ceil(Math.max(...pr.map(([, q]) => q[2])) + 1)), CX = i => X0 + (i + .5) / 48 * (X1 - X0), CY = v => cy1 - (Math.min(Math.max(v, 2), ym) - 2) / (ym - 2) * (cy1 - cy0);
+    const pts = k => pr.map(([i, q]) => [CX(i), CY(q[k])]);
+    g.fillStyle = K.ok; g.globalAlpha = .22; g.beginPath(); g.roundRect(X0, CY(HIGH), X1 - X0, CY(LOW) - CY(HIGH), 14); g.fill();
+    g.fillStyle = K.fg; g.globalAlpha = .12; g.beginPath(); line(g, [...pts(2), ...pts(0).reverse()]); g.closePath(); g.fill(); g.globalAlpha = 1;
+    const med = new Path2D(); line(med, pts(1));
+    g.lineWidth = 8; g.lineJoin = 'round'; g.lineCap = 'round';
+    for (const [a, b, col] of [[0, CY(HIGH), K.high], [CY(HIGH), CY(LOW), K.fg], [CY(LOW), H, K.low]]) { g.save(); g.beginPath(); g.rect(0, a, W, b - a); g.clip(); g.strokeStyle = col; g.stroke(med); g.restore(); }
+    text('10', X1 + 14, CY(HIGH) + 8, 600, 22, K.ok, 60); text('3.9', X1 + 14, CY(LOW) + 8, 600, 22, K.ok, 60);
+    for (const hh of [0, 6, 12, 18, 24]) text(p2(hh % 24) + ':00', X0 + hh / 24 * (X1 - X0), cy1 + 40, 500, 22, K.mut, 200, hh === 0 ? 'left' : hh === 24 ? 'right' : 'center');
+  }
+  // Varje dag i månaden: tid i mål, grön från 70 %, ockra under, en tunn streck för dagar utan tillräckligt med värden
+  const yy = +x.m.slice(0, 4), m0 = +x.m.slice(5, 7) - 1, N = new Date(yy, m0 + 1, 0).getDate(), bw = (X1 - X0) / N, by0 = 976, by1 = 1050;
+  text('Each day', X0, 952, 600, 26, K.mut);
+  for (let d = 0; d < N; d++) {
+    const v = x.days[d] ? x.days[d][1] : null, bx = X0 + d * bw + bw * .16, ww = bw * .68;
+    g.fillStyle = v == null ? K.bd : v >= 70 ? K.ok : K.high; g.beginPath();
+    if (v == null) g.roundRect(bx, by1 - 4, ww, 4, 2); else g.roundRect(bx, by1 - Math.max(4, v / 100 * (by1 - by0)), ww, Math.max(4, v / 100 * (by1 - by0)), 4);
+    g.fill();
+  }
+  g.save(); g.setLineDash([6, 8]); g.strokeStyle = K.mut; g.globalAlpha = .6; g.lineWidth = 2; g.beginPath(); g.moveTo(X0, by1 - .7 * (by1 - by0)); g.lineTo(X1, by1 - .7 * (by1 - by0)); g.stroke(); g.restore();
+  text('70 %', X1 + 14, by1 - .7 * (by1 - by0) + 8, 600, 22, K.mut, 64);
+  // Fyra höjdpunkter i två kolumner; saknas några fylls de på med medelvärdet och GMI
+  const facts = [...moFacts(x), { lab: 'Average', val: f1(mm(c.avg)) + ' mmol/L' }, { lab: 'Est. HbA1c (GMI)', val: gmi(c.avg) + ' mmol/mol' }].slice(0, 4), cw = (X1 - X0) / 2;
+  facts.forEach((f, i) => { const fx = X0 + (i % 2) * cw, fy = 1134 + (i >> 1) * 90; text(f.lab, fx, fy, 500, 26, K.mut, cw - 24); text(f.val, fx, fy + 42, 700, 38, K.fg, cw - 24); });
+  text(`${x.n.toLocaleString('en-GB')} readings   ·   sensor active ${c.cov.toFixed(0)} %`, X0, 1310, 500, 22, K.mut);
+  return cv;
+}
+function saveMonthImage() {
+  const x = mo; if (!x || !x.cur) return;
+  monthCanvas(x).toBlob(b => {
+    if (!b) { toast('Could not make the picture in this browser.'); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `glucose-${x.m}.png`; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4e3); toast('Saved the picture to your downloads.');
+  }, 'image/png');
+}
+
 // Frågor till den lokala AI:n. Svaret strömmas in medan det skrivs.
 let chat = [], asking = null;
 const md = s => { // **fet**, punktlistor och stycken; allt annat visas som text
@@ -1582,9 +1709,10 @@ async function loadTg() {
   const bot = `<a href="https://t.me/${esc(s.bot)}" target="_blank" rel="noopener">@${esc(s.bot)}</a>`;
   $('tgtxt').innerHTML = (!s.on ? 'Log meals from your phone by writing to your own Telegram bot, from anywhere. In Telegram, open <b>@BotFather</b>, send <code>/newbot</code> and follow the steps. Then paste the token it gives you here.'
     : !s.chat ? `Now open ${bot} in Telegram and send this message:<br><code>/start ${esc(s.code)}</code>`
-    : `Write to ${bot} what you ate, e.g. <i>pizza 7.5 units</i>, or a dose without food, <i>1.5 units no food</i>. Only what you write goes through Telegram, never your glucose values.`)
+    : `Write to ${bot} what you ate, e.g. <i>pizza 7.5 units</i>, or a dose without food, <i>1.5 units no food</i>. Only what you write goes through Telegram, never your glucose readings${s.report ? ', apart from the summaries you turned on below' : ''}.`)
     + (s.error ? `<br><span class="err">${esc(s.error)}</span>` : '');
   $('tgwho').textContent = s.chat ? 'Linked to ' + (s.who || 'your Telegram') : 'Waiting for the message…';
+  $('tgrepw').hidden = !(s.on && s.chat); $('tgrep').checked = !!s.report;
   clearTimeout(tgPoll); if (s.on && !s.chat && $('dset').open) tgPoll = setTimeout(loadTg, 3000);
 }
 $('tgsave').onclick = async () => {
@@ -1595,6 +1723,11 @@ $('tgsave').onclick = async () => {
   $('tgtok').value = ''; loadTg();
 };
 $('tgtok').oninput = () => $('tgtok').setCustomValidity('');
+$('tgrep').onchange = async e => {
+  const on = e.target.checked, r = await api('/api/telegram/report', { method: 'POST', body: JSON.stringify({ on }) }).catch(() => ({ error: 'No contact with the server.' }));
+  if (r.error) { e.target.checked = !on; toast(esc(r.error)); return; }
+  toast(on ? 'Summaries on. The next one comes on Sunday evening.' : 'Summaries off.'); loadTg();
+};
 $('tgset').onsubmit = e => e.preventDefault(); // ett formulär (lösenordsfält hör hemma i ett); Enter trycker på Connect
 twoStep($('tgoff'), 'tgoffq', 'Messages to the bot will no longer be logged.', 'Yes, disconnect', async () => {
   await api('/api/telegram/off', { method: 'POST', body: '{}' }).catch(() => {}); await loadTg(); $('tgtok').focus(); // knappen försvann; fokus till fältet för en ny token
@@ -1666,7 +1799,7 @@ function showTab(k) {
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'tab-' + k);
   if (k === 'pat') drawProf(); // ritas om i rätt bredd nu när panelen syns
-  if (k === 'ins') { loadWeek(); aiStatus(); }
+  if (k === 'ins') { loadWeek(); loadMonth(moKey); aiStatus(); }
   try { localStorage.setItem('tab', k); } catch {}
 }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
@@ -1702,7 +1835,7 @@ $('imfile').onchange = async () => {
 nowTime();
 try { const k = localStorage.getItem('tab'); if (k && $('tab-' + k)) showTab(k); } catch {}
 api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { renderMeals(); renderLib(); renderInsulin(); syncNav(); refresh(); loadProf(); });
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); }, 150); });
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) renderMonth(); }, 150); });
 setInterval(refresh, 6e4);
 </script>
 </body>
