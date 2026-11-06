@@ -105,9 +105,9 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .li .res{font-size:.8125rem;color:var(--mut)}.li .res b{font-weight:600}
 /* Känning efter måltiden: i ord och i rött, på egen rad under toppen så att den inte drunknar i siffrorna */
 .lowres{display:block;margin-top:2px;color:var(--low);font-weight:600;font-size:.8125rem}.lowres b{font-weight:700}
-/* Utfallet efter en måltid: siffrorna, en grå etikett och en liten skala med målområdet */
+/* Utfallet efter en måltid: siffrorna med pil och en kort grå etikett */
 .oc{font-size:.9375rem;font-weight:500;color:var(--fg);white-space:nowrap}.oc b{font-weight:700}.oc .ar{color:var(--mut);margin:0 3px}
-.ocn{font-size:.75rem;color:var(--mut);display:inline-block;white-space:nowrap}.ocb{display:block;margin:4px 0 0}.oct{fill:var(--sub)}.ocz{fill:var(--ok);opacity:.25}.ocl{stroke:var(--mut);stroke-width:2;stroke-linecap:round;opacity:.7}.ocs{fill:var(--card);stroke:var(--fg);stroke-width:1.5}
+.ocn{font-size:.75rem;color:var(--mut);display:inline-block;white-space:nowrap}
 .acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:.75rem}
 /* ✕ dämpad och ramlös; namnet är en knapp utan knappens utseende som öppnar detaljvyn */
 .acts .rx{border-color:transparent;background:none;color:var(--mut)}.acts .rx:hover{color:var(--low);background:var(--sub)}
@@ -743,16 +743,6 @@ $('chart').addEventListener('focusout', e => { if (e.target.id === 'chsvg' && !s
 
 const sg = v => (v < 0 ? '−' : '+') + f1(Math.abs(v));
 const ARR = '<span class="ar" aria-hidden="true">→</span><span class="sr">to</span>'; // "→" läses som "to" av skärmläsare
-// Utfallet som en liten skala 2–20 mmol/L (värden utanför hamnar vid kanten). Bara en bild av siffrorna bredvid,
-// så den är dold för skärmläsare.
-function ocBar(b, e, l) {
-  const W = 120, X = mg => 5 + (Math.min(20, Math.max(2, mm(mg))) - 2) / 18 * (W - 10), ps = [b, e, l].filter(Boolean), xs = ps.map(p => X(p[1]));
-  return `<svg class="ocb" width="${W}" height="12" viewBox="0 0 ${W} 12" aria-hidden="true"><rect class="oct" x="1" y="4" width="${W - 2}" height="4" rx="2"/><rect class="ocz" x="${X(70).toFixed(1)}" y="2" width="${(X(180) - X(70)).toFixed(1)}" height="8" rx="2"/>`
-    + (ps.length > 1 ? `<line class="ocl" x1="${Math.min(...xs).toFixed(1)}" x2="${Math.max(...xs).toFixed(1)}" y1="6" y2="6"/>` : '')
-    + (l ? `<circle cx="${X(l[1]).toFixed(1)}" cy="6" r="3.5" style="fill:var(--low)"/>` : '')
-    + (e ? `<circle cx="${X(e[1]).toFixed(1)}" cy="6" r="4" style="fill:${col(mm(e[1]))}"/>` : '')
-    + `<circle class="ocs" cx="${X(b[1]).toFixed(1)}" cy="6" r="3.5"/></svg>`;
-}
 // Aktivitet: måltider och anteckningar i samma lista, nyast först
 function renderLog() {
   const ins24 = db.log.filter(m => m.t > Date.now() - 864e5).reduce((a, m) => a + m.ins, 0), lm = db.log[0];
@@ -768,21 +758,18 @@ function renderLog() {
   const rows = all.slice(0, logLimit).map(({ m, n }) => {
     // Namnet är en knapp som öppnar detaljvyn (där Remove finns); på pekskärm räcker ett tryck på raden
     // Behandlad känning: värdet då och när det var tillbaka över 3.9 (samma uppgifter som i detaljvyn)
-    // Samma form som måltiderna: värdet då, en etikett och skalan (röd prick = lägsta efteråt). Första värdet tillbaka
+    // Samma form som måltiderna: värdet då och en etikett. Första värdet tillbaka
     // är alltid ungefär 3.9, så det visas som tid i etiketten i stället för som en siffra efter en pil.
     const lt = n && n.kind === LOWT && out[n.id], up = lt && lt.up;
     const ltRes = !lt || !lt.b ? '' : `<span class="oc"><span style="color:${col(mm(lt.b[1]))}">${f1(mm(lt.b[1]))}</span></span> `
-      + `<span class="ocn">${up ? `when treated, back above 3.9 after ${dur(up[0] - n.t)}` : lt.lo && lt.lo[1] >= 70 ? 'when treated, stayed above 3.9' : lt.done ? 'not back above 3.9 within 3 h' : 'when treated, waiting to be back above 3.9'}</span>`
-      + ocBar(lt.b, null, lt.lo && lt.lo[1] < lt.b[1] ? lt.lo : null);
+      + `<span class="ocn">${up ? `when treated, back above 3.9 after ${dur(up[0] - n.t)}` : lt.lo && lt.lo[1] >= 70 ? 'when treated, stayed above 3.9' : lt.done ? 'not back above 3.9 within 3 h' : 'when treated, waiting to be back above 3.9'}</span>`;
     if (n) return `<div class="li" data-row="${n.id}">${tm(n.t, n.dur)}<div class="n2"><button class="lk" data-open="${n.id}"><span class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</span><span class="sr">: </span>${esc(n.text || '')}<span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="res">${ltRes}</div><div class="acts"><button class="rx" data-nid="${n.id}" title="Remove" aria-label="Remove note ${esc(kindLabel(n.kind))}${n.text ? ' ' + esc(n.text) : ''}">✕</button></div></div>`;
     // Utfallet: start → topp, och en känning inom 3 h när det blev en. Förut syntes bara toppen, så en måltid som
     // slutade på 2.7 såg ut som en av de bästa. "→" läses som "to" av skärmläsare, inte "rightwards arrow".
     // Correction (insulin utan mat): start → lägsta, eftersom det är sänkningen som spelar roll, inte en topp.
-    // Pågående (de 3 timmar som mäts): en liten stapel och hur länge det är kvar, i stället för "In progress · now 11.6"
-    // på varje rad (vad pågick, och värdet nu står redan överst).
+    // Pågående (de 3 timmar som mäts): hur länge det är kvar står i etiketten.
     const { b, pk, lo, done } = out[m.id] || {}, low = lo && lo[1] < 70, live = out[m.id] && !done, cor = isCorr(m.name);
-    // Siffrorna först (start → topp, eller → lägsta för en Correction), en liten grå etikett, och under dem en skala
-    // 2–20 mmol/L med målområdet: ring = start, prick = topp/lägsta i zonfärg, röd prick = känning. Förut var det en
+    // Bara siffrorna med en pil (start → topp, eller → lägsta för en Correction) och en kort grå etikett. Förut var det en
     // mening med små bokstäver ("start 6.7 → peak 11.6 (+4.9)") som såg olika ut på varje rad och var svår att skumma.
     const arrow = ARR;
     const left = m.t + 3 * 36e5 - Date.now(), still = live ? ` · ${left > 6e4 ? dur(left) + ' left' : 'almost done'}` : '';
@@ -790,9 +777,8 @@ function renderLog() {
     const sNum = b && `<span${b[1] < 70 ? ' style="color:var(--low)"' : ''}>${f1(mm(b[1]))}</span>`;
     const lab = !b ? '' : !end ? (b[1] < 70 ? 'start, started low' : 'start') + still
       : cor ? `lowest${live ? ' so far' : ''}${still}`
-      : `${b[1] < 70 ? 'started low, ' : ''}peak${live ? ' so far' : ''}${live ? '' : ' ' + sg(mm(end[1] - b[1]))}${still}`;
+      : `${b[1] < 70 ? 'started low, ' : ''}peak${live ? ' so far' : ''}${still}`;
     const res = !b ? '' : `<span class="oc">${sNum}${end ? ` ${arrow} <b style="color:${col(mm(end[1]))}">${f1(mm(end[1]))}</b>` : ''}</span> <span class="ocn">${lab}</span>`
-      + ocBar(b, end, low && !cor ? lo : null)
       + (low ? `<span class="lowres">${lowWord(lo[1])} <b>${f1(mm(lo[1]))}</b> <span class="nw">after ${dur(lo[0] - m.t)}</span></span>` : '');
     return `<div class="li" data-row="${m.id}">${tm(m.t)}<div><button class="lk" data-open="${m.id}"><b>${esc(m.name)}</b><span class="sr">, ${dshort(m.t)} ${hhmm(m.t)}</span></button></div><div class="ins"><b>${units(m.ins)}</b>${m.type ? `<span>${esc(m.type)}</span>` : ''}</div><div class="res">${res}</div><div class="acts">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : `<button data-keep="${m.id}" title="Add to your saved meals with this dose">Save to Meals</button>`}<button class="rx" data-id="${m.id}" title="Remove" aria-label="Remove ${esc(m.name)}, ${units(m.ins)} at ${hhmm(m.t)}">✕</button></div></div>`;
   });
