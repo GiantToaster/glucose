@@ -6,15 +6,26 @@
 // 3) Open http://localhost:3000 and log in with that account. The password is kept in the server's memory only,
 //    never written to disk. With "Stay logged in" ticked, the login key (token) LibreLinkUp hands out is saved
 //    in data/session.json so you skip the login after a restart. "Log out" deletes it.
-//    (Add HOST=0.0.0.0 to reach it from your phone on the same wifi. The password then travels unencrypted over your wifi when you log in.)
+//
+// Log in your own words: type "pizza 7,5 enheter" or "promenad 45 min" in the box at the top of the dashboard, or send it
+//    to your own Telegram bot from your phone (Settings > Telegram shows how to create and connect it). The computer
+//    fetches the messages itself, so nothing is opened in the router, and messages wait at Telegram for up to 24 h if
+//    the computer is off. Only the meal texts pass through Telegram, never glucose values.
+//
+// Local AI (Insights tab and reading what you type): install Ollama and a model, e.g.  ollama pull gemma4:12b
+//    Uses a gemma model if one is installed. OLLAMA_MODEL picks another, OLLAMA_URL points to another address.
+//    Everything stays on this computer. Without it, a simple built-in reader handles the logging.
 //
 // Optional: LLU_EMAIL and LLU_PASSWORD environment variables log in automatically at start.
-// Try without logging in:  DEMO=1 node server.js
+// Try without logging in:  DEMO=1 node server.js  (made-up person with meals, notes and 90 days of readings in
+//    data-demo/, so screenshots never show your own health data. Delete data-demo/ to generate it again.)
 // Login refused (version/Account-Id)? Set LLU_VERSION to the latest LibreLinkUp app version (default 4.16.0).
 // Data is stored in the data/ folder. LibreLinkUp only returns about 12 h of history, so history builds up while the server runs.
 
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
-const { LLU_EMAIL, LLU_PASSWORD, DEMO, PORT = 3000, HOST = '127.0.0.1', LLU_VERSION = '4.16.0' } = process.env;
+const { LLU_EMAIL, LLU_PASSWORD, DEMO, PORT = 3000, HOST = '127.0.0.1', LLU_VERSION = '4.16.0', OLLAMA_URL = 'http://127.0.0.1:11434', OLLAMA_MODEL, OLLAMA_AUTOSTART, TELEGRAM_API = 'https://api.telegram.org' } = process.env;
+// Skyddsnät: ett missat fel i ett asynkront anrop ska skrivas ut, inte stänga av servern
+process.on('unhandledRejection', e => console.error('Unhandled:', e));
 
 const DIR = path.join(__dirname, DEMO ? 'data-demo' : 'data'), RF = path.join(DIR, 'readings.jsonl'), DBF = path.join(DIR, 'db.json'), SF = path.join(DIR, 'session.json');
 fs.mkdirSync(DIR, { recursive: true });
@@ -27,13 +38,25 @@ try { const s = JSON.parse(fs.readFileSync(SF, 'utf8')); if (!DEMO && !creds && 
 let status = DEMO ? 'demo' : creds || token ? 'starting' : 'login';
 const forget = () => fs.rmSync(SF, { force: true });
 
-if (fs.existsSync(RF)) for (const l of fs.readFileSync(RF, 'utf8').split('\n')) { try { const [t, v] = JSON.parse(l); R.set(t, v); } catch {} }
-const add = (t, v) => { t = Math.floor(t / 6e4) * 6e4; if (R.has(t)) return; R.set(t, v); fs.appendFileSync(RF, JSON.stringify([t, v]) + '\n'); };
+// Rimliga mätvärden: Libre visar 40–500 mg/dL. Allt annat (t.ex. trasiga rader i en import) hoppas över.
+const okT = t => Number.isFinite(t) && t > Date.UTC(2014, 0, 1) && t < Date.now() + 36e5, okV = v => Number.isFinite(v) && v >= 20 && v <= 600;
+if (fs.existsSync(RF)) for (const l of fs.readFileSync(RF, 'utf8').split('\n')) { try { const [t, v] = JSON.parse(l); if (okT(t) && okV(v)) R.set(t, v); } catch {} }
+// S: samma mätvärden sorterade på tid, så att en period hittas med binärsökning i stället för att alla värden
+// (hundratusentals efter ett år) kopieras och sorteras vid varje anrop. R behålls för uppslag på exakt minut.
+let S = [...R].sort((x, y) => x[0] - y[0]);
+const lowerBound = t => { let a = 0, b = S.length; while (a < b) { const m = (a + b) >> 1; if (S[m][0] < t) a = m + 1; else b = m; } return a; };
+const range = (from, to) => S.slice(lowerBound(from), lowerBound(to)); // [from, to)
+const add = (t, v) => {
+  t = Math.floor(t / 6e4) * 6e4; v = Math.round(v); if (!okT(t) || !okV(v) || R.has(t)) return;
+  R.set(t, v); fs.appendFileSync(RF, JSON.stringify([t, v]) + '\n');
+  if (!S.length || t > S[S.length - 1][0]) S.push([t, v]); else S.splice(lowerBound(t), 0, [t, v]); // nya värden hamnar nästan alltid sist
+};
 
 // ---------- LibreLinkUp ----------
 const hdr = () => ({ 'content-type': 'application/json', product: 'llu.android', version: LLU_VERSION, ...(token && { authorization: 'Bearer ' + token, 'account-id': acct }) });
 async function call(p, body) {
-  const r = await fetch(base + p, { method: body ? 'POST' : 'GET', headers: hdr(), body: body && JSON.stringify(body) });
+  // Timeout: ett anrop som hänger får inte blockera alla följande minuters hämtningar
+  const r = await fetch(base + p, { method: body ? 'POST' : 'GET', headers: hdr(), body: body && JSON.stringify(body), signal: AbortSignal.timeout(20e3) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || (j.status && j.status !== 0)) throw Object.assign(new Error(`${p}: HTTP ${r.status} ${JSON.stringify(j).slice(0, 200)}`), { http: r.status, llu: j.status });
   return j;
@@ -52,10 +75,17 @@ function logout(err = '') { gen++; creds = token = pid = last = user = null; bas
 const why = e => e.llu === 2 ? 'LibreLinkUp did not accept that email and password.'
   : e.llu === 4 ? 'Open the LibreLinkUp app with this account, accept the terms there, then log in again.'
   : e.http === 429 ? 'Too many attempts. Wait a few minutes and try again.'
+  : e.name === 'TimeoutError' ? 'LibreLinkUp did not answer in time. Trying again in a minute.'
   : e.message;
-// "10/25/2026 2:35:12 PM" (FactoryTimestamp är UTC) -> ms
-const ts = s => { const m = s.match(/(\d+)\/(\d+)\/(\d+),? (\d+):(\d+):(\d+) ?(AM|PM)/i); return Date.UTC(+m[3], m[1] - 1, +m[2], (m[4] % 12) + (/pm/i.test(m[7]) ? 12 : 0), +m[5], +m[6]); };
-async function poll() {
+// "10/25/2026 2:35:12 PM" (FactoryTimestamp är UTC) -> ms. Okänt format ger NaN, och add() hoppar då över värdet.
+const ts = s => {
+  const m = String(s).match(/(\d+)\/(\d+)\/(\d+),? (\d+):(\d+):(\d+) ?(AM|PM)?/i);
+  return m ? Date.UTC(+m[3], m[1] - 1, +m[2], m[7] ? (m[4] % 12) + (/pm/i.test(m[7]) ? 12 : 0) : +m[4], +m[5], +m[6]) : NaN;
+};
+// Bara en hämtning åt gången. Inloggningen väntar in en pågående hämtning innan den startar en egen.
+let running = null;
+const poll = () => running ||= pollOnce().finally(() => running = null);
+async function pollOnce(retry = true) {
   if (!token && !creds) return;
   const g0 = gen;
   try {
@@ -65,31 +95,88 @@ async function poll() {
       if (!p) throw new Error('This account follows nobody yet. Accept the invitation in the LibreLinkUp app first.');
       pid = p.patientId;
     }
-    const d = (await call(`/llu/connections/${pid}/graph`)).data, g = d.connection.glucoseMeasurement;
+    const d = (await call(`/llu/connections/${pid}/graph`)).data, g = d.connection && d.connection.glucoseMeasurement;
     if (g0 !== gen) return; // in- eller utloggad medan anropet pågick
-    [...d.graphData, g].forEach(x => add(ts(x.FactoryTimestamp), x.ValueInMgPerDl ?? x.Value));
-    last = { t: ts(g.FactoryTimestamp), v: g.ValueInMgPerDl ?? g.Value, trend: g.TrendArrow };
+    // Inget aktuellt värde (t.ex. sensorbyte eller uppvärmning): spara historiken och behåll senaste kända värdet.
+    [...(d.graphData || []), ...(g ? [g] : [])].forEach(x => add(ts(x.FactoryTimestamp), x.ValueInMgPerDl ?? x.Value));
+    const t = g && ts(g.FactoryTimestamp);
+    if (Number.isFinite(t)) last = { t, v: g.ValueInMgPerDl ?? g.Value, trend: g.TrendArrow };
     status = 'ok';
   } catch (e) {
     console.error(e.message);
     if (g0 !== gen) return;
     // Fel uppgifter: sluta försöka (upprepade försök kan låsa kontot) och visa inloggningen igen.
     if (e.llu === 2 || e.llu === 4) return logout(why(e));
-    // Token ogiltig: logga in igen med lösenordet om det finns i minnet, annars (efter omstart) be om inloggning.
-    if (e.http === 401) { if (!creds) return logout('Your saved login has expired. Please log in again.'); token = null; }
+    // Token ogiltig: logga in igen direkt med lösenordet om det finns i minnet, annars (efter omstart) be om inloggning.
+    if (e.http === 401) { if (!creds) return logout('Your saved login has expired. Please log in again.'); token = null; if (retry) return pollOnce(false); }
     status = why(e); // nätverksfel o.d.: behåll token, ingen ny inloggning varje minut
   }
 }
 
 // ---------- Demo ----------
-let dv = 120;
-const step = () => (dv = Math.min(300, Math.max(45, dv + (Math.random() - .5) * 14 + (125 - dv) * .05)));
-async function demo() { add(Date.now(), Math.round(step())); last = { t: Date.now(), v: Math.round(dv), trend: 3 }; status = 'demo'; }
-if (DEMO && !R.size) for (let t = Date.now() - 90 * 864e5; t < Date.now(); t += 3e5) add(t, Math.round(step()));
+// En påhittad men trovärdig person: tre måltider om dagen med olika rätter och doser, gryningsfenomen,
+// ibland träning eller en för stor dos som ger en känning, och en sensorlucka då och då. Samma dag ger
+// alltid samma kurva, så historiken och det som kommer in live hänger ihop.
+const rng = seed => () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+const MENU = [ // [timme, [namn, vanlig dos, ökning i mg/dL, minuter till toppen]]
+  [7.5, [['Havregrynsgröt', 4, 70, 55], ['Kvarg med bär', 3, 35, 50], ['Mackor', 2, 50, 50]]],
+  [12.25, [['Pasta bolognese', 6, 75, 70], ['Kycklingsallad', 3, 30, 60], ['Pad Ka Pao', 6, 70, 65]]],
+  [18.25, [['Pizza', 7, 95, 110], ['Lax med potatis', 5, 55, 70], ['Tacos', 6, 80, 80]]]];
+const midnight = t => new Date(t).setHours(0, 0, 0, 0);
+const plans = new Map();
+function plan(d) {
+  if (plans.has(d)) return plans.get(d);
+  const r = rng(Math.round(d / 36e5) * 2654435761), meals = [], notes = [];
+  for (const [h, opts] of MENU) {
+    const [name, usual, rise, peak] = opts[Math.floor(r() * opts.length)], extra = [-1, -.5, 0, 0, 0, .5, 1][Math.floor(r() * 7)];
+    // Mer insulin än vanligt: lägre topp och risk för känning efter 2–3 h. Mindre: högre topp.
+    meals.push({ t: d + (h + (r() - .5) * 1.2) * 36e5, name, ins: usual + extra, a: rise * 1.35 * (1 - extra * .3) * (.7 + r() * .6), peak,
+      dip: extra > 0 && r() < .7 ? 55 + r() * 35 : r() < .1 ? 45 : 0 });
+  }
+  if (r() < .3) notes.push({ t: d + (16.5 + r()) * 36e5, kind: 'Exercise', text: ['45 min promenad', 'Gym', 'Cykel till jobbet'][Math.floor(r() * 3)], dip: 45 + r() * 30 });
+  const p = { meals, notes, base: 95 + r() * 40, gap: r() < .07 ? d + (9 + r() * 6) * 36e5 : 0 };
+  plans.set(d, p); if (plans.size > 200) plans.delete(plans.keys().next().value);
+  return p;
+}
+const bell = (x, m, s) => Math.exp(-((x - m) ** 2) / (2 * s * s));
+function model(t) {
+  // Allt glider över i varandra: basnivån tonas från gårdagens till dagens under natten, och en måltid
+  // räknas tills dess kurva har klingat av helt, så att det inte blir trappsteg i kurvan.
+  const d = midnight(t), p = plan(d), y = plan(midnight(d - 1)), h = (t - d) / 36e5, k = Math.min(1, h / 5);
+  let v = y.base + (p.base - y.base) * k * k * (3 - 2 * k) + 22 * bell(h, 6, 1.3) - 10 * bell(h, 2.5, 1.2) + 9 * Math.sin(t / 58e5) + 5 * Math.sin(t / 23e5 + 1.7);
+  for (const q of [y, p]) {
+    for (const m of q.meals) { const x = (t - m.t) / 6e4; if (x > 0) v += m.a * (x / m.peak) ** 2 * Math.exp(2 - 2 * x / m.peak) - m.dip * bell(x, 165, 40); }
+    for (const n of q.notes) { const x = (t - n.t) / 6e4; if (x > 0) v -= n.dip * bell(x, 75, 40); }
+  }
+  return Math.min(400, Math.max(40, v));
+}
+const inGap = t => { const g = plan(midnight(t)).gap; return g && t >= g && t < g + 2 * 36e5; };
+async function demo() {
+  const now = Date.now(), v = model(now) + (Math.random() - .5) * 4, slope = (model(now) - model(now - 15 * 6e4)) / 15;
+  add(now, v); status = 'demo';
+  last = { t: now, v: Math.round(v), trend: slope > 2 ? 5 : slope > 1 ? 4 : slope < -2 ? 1 : slope < -1 ? 2 : 3 };
+}
+if (DEMO && !R.size) for (let t = Math.floor((Date.now() - 90 * 864e5) / 3e5) * 3e5; t < Date.now(); t += 3e5) if (!inGap(t)) add(t, model(t) + (Math.random() - .5) * 4);
+if (DEMO && !fs.existsSync(DBF)) { // måltider och anteckningar för de senaste 30 dagarna, i samma format som appen sparar
+  const log = [], notes = [], id = () => crypto.randomBytes(6).toString('hex');
+  for (let d = midnight(Date.now() - 30 * 864e5); d < Date.now(); d = midnight(d + 36 * 36e5)) {
+    const p = plan(d);
+    for (const m of p.meals) if (m.t < Date.now()) log.push({ id: id(), t: Math.round(m.t / 6e4) * 6e4, name: m.name, ins: m.ins, type: 'Fiasp' });
+    for (const n of p.notes) if (n.t < Date.now()) notes.push({ id: id(), t: Math.round(n.t / 6e4) * 6e4, kind: n.kind, text: n.text });
+  }
+  // Behandlade känningar där demokurvan går under 3.9, så att snabbknapparna med egna mängder syns i demon
+  let pv = 999;
+  for (const t of [...R.keys()].filter(t => t > Date.now() - 30 * 864e5).sort((a, b) => a - b)) {
+    const v = R.get(t); if (v < 70 && pv >= 70 && t + 15 * 6e4 < Date.now()) notes.push({ id: id(), t: t + 10 * 6e4, kind: 'Low treated', text: ['15 g, Dextro', '15 g', '20 g, juice'][notes.length % 3] }); pv = v;
+  }
+  notes.sort((a, b) => a.t - b.t);
+  const meals = MENU.flatMap(([, o]) => o).map(([name, ins]) => ({ id: id(), name, ins }));
+  fs.writeFileSync(DBF, JSON.stringify({ meals, log: log.reverse(), notes: notes.reverse(), settings: { fast: 'Fiasp', long: 'Tresiba' }, rev: 1 }));
+}
 
 // ---------- Statistik (tidsvägd, luckor över 15 min räknas inte) ----------
 function stats() {
-  const now = Date.now(), a = [...R].filter(r => r[0] >= now - 2160 * 36e5).sort((x, y) => x[0] - y[0]), out = {};
+  const now = Date.now(), a = range(now - 2160 * 36e5, Infinity), out = {};
   for (const [k, h] of Object.entries({ '24h': 24, '7d': 168, '14d': 336, '30d': 720, '90d': 2160 })) {
     const from = now - h * 36e5; let w = 0, s = 0, lo = 0, hi = 0;
     for (let i = 0; i < a.length; i++) {
@@ -107,11 +194,27 @@ function outcome(t) {
   const t0 = Math.floor(t / 6e4) * 6e4, o = { done: t + 3 * 36e5 <= Date.now() };
   let n = 0, pk, lo;
   for (let k = t0 - 15 * 6e4; k <= t0; k += 6e4) if (R.has(k)) o.b = [k, R.get(k)];
+  // Åts måltiden under en känning (ofta just för att häva den) räknas en känning först när kurvan har varit tillbaka
+  // på minst 3.9; förut fick måltiden skulden för den känning den åts mot ("Very low 2.5 after 2 min").
+  let rec = !(o.b && o.b[1] < 70); if (!rec) o.sl = true;
   for (let k = t0 + 6e4; k <= t0 + 3 * 36e5; k += 6e4) {
     const v = R.get(k); if (v === undefined) continue;
-    n++; if (!pk || v > pk[1]) pk = [k, v]; if (!lo || v < lo[1]) lo = [k, v];
+    n++; if (!pk || v > pk[1]) pk = [k, v];
+    if (!rec && v >= 70) rec = true;
+    if (rec && (!lo || v < lo[1])) lo = [k, v];
   }
   if (n > 3) Object.assign(o, { pk, lo });
+  return o;
+}
+// ---------- Efter en behandlad känning ("Low treated"): värdet då, lägsta inom 2 h och när det var tillbaka över 3.9 ----------
+// up = första värdet på minst 70 mg/dL efter det lägsta. Gick det aldrig under 70 finns inget "tillbaka".
+function treated(t) {
+  const t0 = Math.floor(t / 6e4) * 6e4, o = { done: t + 3 * 36e5 <= Date.now() };
+  for (let k = t0 - 15 * 6e4; k <= t0; k += 6e4) if (R.has(k)) o.b = [k, R.get(k)];
+  let lo = o.b;
+  for (let k = t0 + 6e4; k <= t0 + 2 * 36e5; k += 6e4) { const v = R.get(k); if (v !== undefined && (!lo || v < lo[1])) lo = [k, v]; }
+  if (lo) o.lo = lo;
+  if (lo && lo[1] < 70) for (let k = lo[0] + 6e4; k <= t0 + 3 * 36e5; k += 6e4) { const v = R.get(k); if (v !== undefined && v >= 70) { o.up = [k, v]; break; } }
   return o;
 }
 
@@ -119,40 +222,544 @@ function outcome(t) {
 // Ett värde per 15 min, så att dagar med minutdata inte väger tyngre än nätter som bara har 15-minutersvärden.
 function profile(days) {
   const from = Date.now() - days * 864e5, slot = new Map(), dates = new Set(), b = Array.from({ length: 48 }, () => []);
-  for (const [t, v] of R) { const k = Math.floor(t / 9e5); if (t >= from && !slot.has(k)) slot.set(k, [t, v]); }
+  for (const [t, v] of range(from, Infinity)) { const k = Math.floor(t / 9e5); if (!slot.has(k)) slot.set(k, [t, v]); }
   for (const [t, v] of slot.values()) { const d = new Date(t); dates.add(d.toDateString()); b[d.getHours() * 2 + (d.getMinutes() >= 30 ? 1 : 0)].push(v); }
-  return { days: dates.size, b: b.map(a => {
+  // Ett fönster på 14 dygn räknat från nu berör 15 kalenderdagar; visa aldrig fler dagar än perioden
+  // lo = andel värden under 70 mg/dL per halvtimme (null = för få värden), till remsan "när känningar händer"
+  // starts = när varje känning (minst 15 min under 70) började under perioden: samma definition som veckosammanfattningen,
+  // så att Mönster och Insikter ger samma svar på "när blir jag låg?"
+  const now = Date.now(), pr = period(sorted(from, now), from, now);
+  return { days: Math.min(days, dates.size), starts: pr ? pr.lows.map(l => l[0]) : [], lo: b.map(a => a.length < 5 ? null : a.filter(v => v < 70).length / a.length), b: b.map(a => {
     if (a.length < 5) return null;
     a.sort((x, y) => x - y);
     return [.05, .25, .5, .75, .95].map(p => a[Math.min(a.length - 1, Math.floor(p * a.length))]);
   }) };
 }
 
+// ---------- En period: tid i mål, känningar m.m. ----------
+// a = mätvärden sorterade på tid inom [from, to). En känning = minst 15 min i följd under 70 mg/dL (internationell definition).
+const sorted = (from, to) => range(from, to);
+function period(a, from, to) {
+  let w = 0, s = 0, lo = 0, hi = 0, ev = null, mn = null, mx = null; const lows = [];
+  for (let i = 0; i < a.length; i++) {
+    const [t, v] = a[i], next = a[i + 1] ? a[i + 1][0] : to, d = Math.min(next - t, 15 * 6e4);
+    w += d; s += v * d; if (v < 70) lo += d; else if (v > 180) hi += d;
+    if (!mn || v < mn[1]) mn = [t, v]; if (!mx || v > mx[1]) mx = [t, v];
+    if (v < 70) { if (!ev) lows.push(ev = { t, dur: 0, min: v }); ev.dur += d; ev.min = Math.min(ev.min, v); }
+    if (v >= 70 || next - t > 20 * 6e4) ev = null; // ett värde i mål eller en lucka avslutar känningen
+  }
+  if (!w) return null;
+  return { avg: s / w, low: lo / w * 100, high: hi / w * 100, tir: (w - lo - hi) / w * 100, cov: Math.min(100, w / (to - from) * 100), min: mn, max: mx,
+    lows: lows.filter(e => e.dur >= 15 * 6e4).map(e => [e.t, e.min, Math.round(e.dur / 6e4)]) };
+}
+// Senaste 7 dygnen mot de 7 före, plus hur varje måltid gick (bara de som började i mål, som i appens jämförelse)
+function weekly() {
+  const now = Date.now(), W = 7 * 864e5, a = sorted(now - 2 * W, now), db = readDb(), part = (f, t) => a.filter(r => r[0] >= f && r[0] < t);
+  const meals = new Map(), notes = {};
+  for (const m of db.log) {
+    if (!(m.t >= now - W && m.t <= now)) continue;
+    if (isCorr(m.name)) continue; // korrigeringsdoser är inga måltider
+    const o = outcome(m.t); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
+    const k = String(m.name).toLowerCase(), x = meals.get(k) || { name: String(m.name), n: 0, hi: 0, lo: 0, peak: 0 };
+    x.n++; x.hi += o.pk[1] > 180 ? 1 : 0; x.lo += o.lo[1] < 70 ? 1 : 0; x.peak += o.pk[1]; meals.set(k, x);
+  }
+  for (const n of db.notes) if (n.t >= now - W && n.t <= now) notes[n.kind] = (notes[n.kind] || 0) + 1;
+  return { cur: period(part(now - W, now), now - W, now), prev: period(part(now - 2 * W, now - W), now - 2 * W, now - W),
+    meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes };
+}
+
+// ---------- Lokal AI (Ollama) ----------
+// Allt körs på den här datorn. Modellen får en sammanfattning av de senaste 14 dagarna och svarar på frågor om den.
+// Den får aldrig ge dosråd; det står i instruktionen och i appen.
+const p2 = n => String(n).padStart(2, '0'), hm = t => { const d = new Date(t); return p2(d.getHours()) + ':' + p2(d.getMinutes()); };
+const ymd = t => { const d = new Date(t); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; };
+// Ollama startas när dashboarden startar (och igen om den behövs och inte svarar), när den ska köra på den här
+// datorn. OLLAMA_AUTOSTART=0 stänger av det. En Ollama som dashboarden själv startat stängs när dashboarden stängs;
+// en som redan körde (t.ex. Ollamas egen app) lämnas ifred. Ett nytt startförsök görs tidigast efter en minut.
+const cp = require('child_process');
+const OLLAMA_HERE = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/i.test(OLLAMA_URL);
+const ollamaUp = () => fetch(OLLAMA_URL + '/api/tags', { signal: AbortSignal.timeout(2e3) }).then(r => r.ok, () => false);
+let ollamaStarting = null, ollamaChild = null;
+function stopOllama() {
+  const p = ollamaChild; ollamaChild = null;
+  if (!p || p.exitCode !== null) return;
+  // Hela trädet: Ollama kör modellen i en egen underprocess som annars blir kvar och håller grafikminnet
+  if (process.platform === 'win32') cp.spawnSync('taskkill', ['/pid', String(p.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
+  else try { p.kill('SIGTERM'); } catch {}
+}
+process.on('exit', stopOllama);
+// Ctrl+C, stängt konsolfönster (SIGHUP på Windows) eller avstängning: stäng Ollama först, avsluta sedan
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(sig, () => { stopOllama(); process.exit(0); });
+function startOllama() {
+  if (!OLLAMA_HERE || OLLAMA_AUTOSTART === '0') return Promise.resolve(false);
+  return ollamaStarting ||= (async () => {
+    if (await ollamaUp()) return true;
+    const exe = [path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe'), '/usr/local/bin/ollama', '/opt/homebrew/bin/ollama', '/usr/bin/ollama']
+      .find(f => path.isAbsolute(f) && fs.existsSync(f)) || 'ollama';
+    const spawned = await new Promise(done => {
+      const p = cp.spawn(exe, ['serve'], { stdio: 'ignore', windowsHide: true, env: { ...process.env, OLLAMA_HOST: new URL(OLLAMA_URL).host } });
+      p.once('error', e => { console.error('Could not start Ollama:', e.message); done(false); });
+      p.once('spawn', () => { ollamaChild = p; p.once('exit', () => { if (ollamaChild === p) ollamaChild = null; }); done(true); });
+    });
+    if (spawned) for (let i = 0; i < 40; i++) { await sleep(500); if (await ollamaUp()) { console.log('Started Ollama (local AI).'); return true; } }
+    return false;
+  })().finally(() => setTimeout(() => { ollamaStarting = null; }, 6e4));
+}
+let tags = { t: 0, names: [] };
+async function aiModel() {
+  if (Date.now() - tags.t > 6e4) {
+    const get = async () => (await (await fetch(OLLAMA_URL + '/api/tags', { signal: AbortSignal.timeout(3e3) })).json()).models || [];
+    // Inte igång: starta (på den här datorn) och försök igen. På en annan dator (t.ex. från en Raspberry Pi) betyder
+    // ett uteblivet svar att den datorn är av, sover eller inte släpper igenom port 11434.
+    let ms; try { ms = await get(); } catch (e) { if (!(await startOllama())) throw OLLAMA_HERE ? e : Object.assign(new Error('x'), { cause: e }); ms = await get(); }
+    tags = { t: Date.now(), names: ms.map(m => m.name) };
+  }
+  const n = tags.names;
+  if (OLLAMA_MODEL) { if (n.some(x => x === OLLAMA_MODEL || x === OLLAMA_MODEL + ':latest')) return OLLAMA_MODEL; throw new Error(`The model ${OLLAMA_MODEL} is not installed. Run: ollama pull ${OLLAMA_MODEL}`); }
+  const m = n.find(x => x.startsWith('gemma4')) || n.find(x => x.startsWith('gemma')) || n[0];
+  if (!m) throw new Error('No AI model is installed. Run: ollama pull gemma4:12b');
+  return m;
+}
+const aiErr = e => e.name === 'TimeoutError' ? 'The local AI took too long to answer. Try again.'
+  : e.cause || e.name === 'TypeError' ? (OLLAMA_HERE ? 'The local AI is not running. Start Ollama and try again.'
+    : `The AI computer (${new URL(OLLAMA_URL).hostname}) is not answering. It may be off or asleep.`) : e.message;
+// Ollamas standardfönster är ofta bara 4096 tokens, och då kapas BÖRJAN av texten (dagens datum, sammanfattningen och de
+// senaste måltiderna) utan varning. Samma storlek i alla anrop, annars laddar Ollama om modellen mellan dem.
+const NUM_CTX = 16384;
+async function ollama(o, signal) {
+  const r = await fetch(OLLAMA_URL + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal,
+    body: JSON.stringify({ model: await aiModel(), keep_alive: '15m', think: false, ...o, options: { ...o.options, num_ctx: NUM_CTX } }) });
+  if (!r.ok) throw new Error(`The local AI answered HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return r;
+}
+// Hur många tokens den lokala AI:n använder: en rad per svar i data/ai-tokens.jsonl (bara antal, aldrig texten)
+const TOKF = path.join(DIR, 'ai-tokens.jsonl');
+const logTokens = (kind, j) => { if (!j || !Number.isFinite(j.eval_count)) return;
+  fs.appendFile(TOKF, JSON.stringify({ t: Date.now(), kind, model: j.model, prompt: j.prompt_eval_count || 0, out: j.eval_count, ms: Math.round((j.total_duration || 0) / 1e6) }) + '\n', () => {}); };
+// ---------- Modellen laddad bara medan dashboarden är öppen ----------
+// Varje öppen sida frågar /api/now varje minut med sitt eget id (c). Så länge någon sida är öppen hålls modellen laddad
+// (den tunga delen, flera GB på grafikkortet); när den sista stängs (/api/bye, eller efter 3 min utan anrop) släpps
+// den direkt i stället för efter Ollamas egna 5 min. Ollama-programmet själv kan vara igång hela tiden. Telegram och
+// fritexten laddar modellen när de behöver den, som förut. OLLAMA_PRELOAD=0 stänger av det här.
+const pages = new Map(); let aiWarm = 0;
+const aiKeep = keep_alive => aiModel().then(model => fetch(OLLAMA_URL + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(6e4),
+  body: JSON.stringify({ model, keep_alive, options: { num_ctx: NUM_CTX } }) }));
+function pageSeen(c) {
+  if (!c || process.env.OLLAMA_PRELOAD === '0') return;
+  pages.set(String(c).slice(0, 40), Date.now());
+  if (Date.now() - aiWarm < 5 * 6e4) return; // laddad: förläng var 5:e minut (keep_alive 10 min)
+  aiWarm = Date.now(); aiKeep('10m').catch(() => { aiWarm = Date.now() - 3 * 6e4; }); // datorn av: försök igen om 2 min
+}
+function pageGone(c) { pages.delete(String(c)); if (!pages.size) aiRelease(); }
+function aiRelease() { if (!aiWarm) return; aiWarm = 0; aiKeep(0).then(() => console.log('Released the AI model (no dashboard open).'), () => {}); }
+setInterval(() => { for (const [k, t] of pages) if (Date.now() - t > 3 * 6e4) pages.delete(k); if (!pages.size) aiRelease(); }, 6e4).unref();
+function aiContext() {
+  const now = Date.now(), db = readDb(), mm = v => (v / 18.016).toFixed(1), L = [];
+  const sum = p => `average ${mm(p.avg)}, in range ${p.tir.toFixed(0)} %, below 3.9 ${p.low.toFixed(1)} %, above 10 ${p.high.toFixed(0)} %, lows ${p.lows.length}, data ${p.cov.toFixed(0)} %`;
+  L.push(`Now: ${ymd(now)} ${hm(now)} (${new Date(now).toLocaleDateString('en-GB', { weekday: 'long' })}). Current reading: ${last ? `${mm(last.v)} mmol/L at ${hm(last.t)}` : 'none'}.`,
+    'All glucose values are mmol/L. Target range 3.9-10.0. Goals: in range over 70 %, below 3.9 under 4 %, above 10 under 25 %. A "low" is at least 15 minutes below 3.9.');
+  const s = db.settings || {}; if (s.fast || s.long) L.push(`Insulin: mealtime ${s.fast || 'not set'}, basal ${s.long || 'not set'}.`);
+  const w = weekly();
+  const span = (a, b) => `${ymd(a)} ${hm(a)} to ${ymd(b)} ${hm(b)}`; // skrivs ut så att modellen inte gissar datumen själv
+  L.push('', 'SUMMARY', `Last 7 days (${span(now - 7 * 864e5, now)}): ${w.cur ? sum(w.cur) : 'no readings'}`,
+    `The 7 days before (${span(now - 14 * 864e5, now - 7 * 864e5)}): ${w.prev ? sum(w.prev) : 'no readings'}`);
+  L.push('', 'DAYS (newest first; lows listed as start time, lowest value, minutes)');
+  const a = sorted(now - 15 * 864e5, now);
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    const from = d.getTime(); d.setDate(d.getDate() + 1); const to = Math.min(d.getTime(), now);
+    const p = period(a.filter(r => r[0] >= from && r[0] < to), from, to), lab = `${ymd(from)} ${new Date(from).toLocaleDateString('en-GB', { weekday: 'short' })}${i === 0 ? ' (today so far)' : ''}`;
+    L.push(p ? `${lab}: ${sum(p)}, lowest ${mm(p.min[1])} at ${hm(p.min[0])}, highest ${mm(p.max[1])} at ${hm(p.max[0])}${p.lows.length ? ', lows: ' + p.lows.map(([t, v, n]) => `${hm(t)} ${mm(v)} ${n} min`).join('; ') : ''}` : `${lab}: no readings`);
+  }
+  L.push('', 'MEALS, last 14 days (glucose at the meal, the peak within 3 h, then the lowest value between the peak and 3 h after the meal)');
+  // Lägsta värdet efter toppen: det som spelar roll för en känning. Lägsta inom hela 3 h är ofta bara värdet före stigningen.
+  const lowAfter = (from, to) => { let lo = null; for (let k = Math.ceil(from / 6e4) * 6e4; k <= to; k += 6e4) { const v = R.get(k); if (v !== undefined && (!lo || v < lo[1])) lo = [k, v]; } return lo; };
+  for (const m of db.log.filter(m => m.t >= now - 14 * 864e5 && m.t <= now)) {
+    const o = outcome(m.t), min = t => Math.round((t - m.t) / 6e4) + ' min', la = o.pk && lowAfter(o.pk[0], m.t + 3 * 36e5);
+    L.push(`${ymd(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
+  }
+  const notes = db.notes.filter(n => n.t >= now - 14 * 864e5 && n.t <= now);
+  if (notes.length) L.push('', 'NOTES, last 14 days', ...notes.map(n => `${ymd(n.t)} ${hm(n.t)}${n.dur ? '-' + hm(n.t + n.dur * 6e4) : ''} ${n.kind}${n.text ? ': ' + n.text : ''}`));
+  const pr = profile(14).b; L.push('', 'TIME OF DAY, last 14 days (typical value and the low end, 5th percentile)');
+  for (let h = 0; h < 24; h += 2) {
+    const q = pr.slice(h * 2, h * 2 + 4).filter(Boolean);
+    if (q.length) L.push(`${p2(h)}-${p2(h + 2)}: typical ${mm(q.reduce((x, y) => x + y[2], 0) / q.length)}, low end ${mm(Math.min(...q.map(x => x[0])))}`);
+  }
+  return L.join('\n');
+}
+const ASK = `You are the assistant in a personal blood glucose dashboard. The user has type 1 diabetes, wears a FreeStyle Libre sensor and logs meals with mealtime insulin. Their recent data is below.
+Answer using only this data. Be concise and concrete: name dates, times, meals and numbers. Use mmol/L. If the data cannot answer the question, say so.
+Rules, most important first:
+1. Never recommend, suggest or estimate an insulin dose, a dose change, an insulin-to-carb ratio, carbohydrate amounts or any other treatment change, not even as a range or an example, and not even when asked directly. Describe what happened instead and suggest bringing it up with their diabetes team.
+2. Do not diagnose.
+3. Only use numbers that appear in the data. Do not calculate new kinds of values.
+4. Answer in the language of the question. Plain text: short paragraphs or "- " bullet points, **bold** at most, no headings, no LaTeX or math symbols.
+
+DATA
+`;
+// Modellen följer inte alltid instruktionen ovan (i test gav den ett dosförslag på en direkt fråga). Därför:
+// 1) frågor som ber om en dos besvaras här med ett fast svar och når aldrig modellen,
+// 2) regeln upprepas sist i varje fråga, där en liten modell tar störst hänsyn till den.
+const DOSE_WORDS = '(units?|insulin|doses?|bolus|ratio|enhet(er)?|dos(en|er)?|insulinet|kvot(en)?)';
+const DOSE_Q = new RegExp(`(how (many|much)|should i|shall i|do i need|recommend|suggest|advise|what dose|which dose|correct(ion)?|hur (många|mycket)|ska jag|bör jag|borde jag|behöver jag|rekommendera|föreslå|vilken dos|korrigera|korrektion).{0,60}${DOSE_WORDS}|${DOSE_WORDS}.{0,60}(should i|ska jag|bör jag|borde jag|recommend|rekommendera|föreslå)`, 'i');
+const DOSE_NO = sv => sv
+  ? 'Jag kan inte ge råd om doser eller ändringar i behandlingen. Det beslutet är ditt och ditt diabetesteams.\n\nNär du loggar en måltid visar appen hur det gick de senaste gångerna med samma måltid och dos, och under Patterns jämförs dina måltider. Jag kan gärna beskriva vad som hände efter en viss måltid, till exempel: "Hur har det gått de senaste gångerna jag ätit pizza?"'
+  : 'I can\'t give advice on doses or treatment changes. That decision is yours and your diabetes team\'s.\n\nWhen you log a meal, the app shows how it went the last times with the same meal and dose, and Patterns compares your meals. I can describe what happened after a meal, for example: "How did it go the last times I had pizza?"';
+const SWEDISH = /[åäö]|\b(jag|ska|hur|vad|och|mina?|varför|när|vilka?)\b/i;
+const REMIND = '\n\n(Answer from the data only. Do not recommend or estimate insulin doses, ratios or treatment changes.)';
+
+// ---------- Logga med egna ord: "pizza 7,5 enheter", "promenad 45 min" ----------
+// Används av textfältet på dashboarden och av Telegram-boten. Den lokala AI:n tolkar texten; är den inte igång tar en
+// enkel regelbaserad tolkare över. ref = när texten skrevs, så att "för 20 min sen" blir rätt även när ett
+// Telegram-meddelande läses först när datorn startar.
+// "Low treated" = snabba kolhydrater mot en känning (samma namn som anteckningstypen på dashboarden)
+const KINDS = ['Exercise', 'Alcohol', 'Illness', 'Stress', 'Low treated', 'Other'];
+const INTERPRET = names => `Turn the user's message into one entry for a diabetes diary. It can be in any language and may be dictated.
+Saved meals: ${names.join('; ') || '(none)'}
+- type: "meal" if they ate something, "note" for exercise, alcohol, illness, stress, treating a low (dextrose, juice or sweets taken because glucose was low) or a similar event, "other" if it is neither (a question, a greeting, unclear).
+- meal: for a meal, the saved meal name exactly if the text refers to one (also in another language or misspelled). Otherwise a short, natural dish name in the user's language: capital first letter, obvious typos fixed, separate foods joined the way people write a dish ("fläskfärs ris" -> "Fläskfärs och ris", "kyckling pasta pesto" -> "Kyckling med pasta och pesto", "chicken rice" -> "Chicken and rice"). Never add or drop foods. "" otherwise.
+- Insulin taken without food is a correction dose ("1,5 enheter ingen mat", "2 units correction", "tog 2 e för att jag låg högt"): type "meal", meal "Correction", units = the dose. Never a note.
+- units: insulin units taken for the meal. A bare number next to the food usually means units. A number with g, gram or carbs is never units. null if not given.
+- note_kind: for a note one of Exercise, Alcohol, Illness, Stress, Low treated (sugar taken against a low: "druvsocker 15 g", "känning, drack juice"), Other. "" otherwise.
+- note_text: for a note, a short natural description in the user's language with a capital first letter, WITHOUT the duration (the app shows it as a time span): "promenad 5 minuter" -> "Kort promenad", "gymmade en timme" -> "Gym", "promenad 5 km" -> "Promenad 5 km", "tog två öl" -> "Två öl". Keep distances and amounts. "" otherwise.
+- duration_minutes: for a note, how long the activity lasted if said ("5 minuter" = 5, "en timme" = 60, "1,5 h" = 90). A distance is not a duration. null otherwise.
+- minutes_ago: only when they say it happened some time ago ("för 20 min sen", "20 min ago", "för en halvtimme sen" = 30). Never the length of an activity. null otherwise.
+- clock: "HH:MM" in 24 h if a clock time is given, otherwise null.
+Never invent numbers.`;
+const INTERPRET_SCHEMA = { type: 'object', required: ['type', 'meal', 'units', 'note_kind', 'note_text', 'duration_minutes', 'minutes_ago', 'clock'], properties: {
+  type: { type: 'string', enum: ['meal', 'note', 'other'] }, meal: { type: 'string' }, units: { type: ['number', 'null'] },
+  note_kind: { type: 'string', enum: [...KINDS, ''] }, note_text: { type: 'string' }, duration_minutes: { type: ['number', 'null'] },
+  minutes_ago: { type: ['number', 'null'] }, clock: { type: ['string', 'null'] } } };
+// En anteckning med längd ("promenad 5 minuter") slutar när den skrevs, om inte en starttid angavs ("kl 17", "för en timme sen")
+const okDur = d => Number.isFinite(d) && d >= 1 && d <= 1440 ? Math.round(d) : null;
+const noteAt = (kind, text, dur, t, timed, ref) => ({ type: 'note', kind, text: text ? text.charAt(0).toUpperCase() + text.slice(1) : '', ...(dur && { dur }), t: dur && !timed ? ref - dur * 6e4 : t });
+const mealNames = db => [...new Map([...db.meals.map(m => m.name), ...db.log.slice(0, 300).map(m => m.name)].map(n => [String(n).toLowerCase(), String(n)])).values()].slice(0, 80);
+// En klocktid mer än 5 min efter ref betyder dagen innan ("kl 22" skrivet strax efter midnatt)
+const atClock = (h, m, ref) => { const d = new Date(ref); d.setHours(h, m, 0, 0); if (d - ref > 5 * 6e4) d.setDate(d.getDate() - 1); return d.getTime(); };
+
+// Den enkla tolkaren: tal + enhet = dos, "20 min sen"/"kl 18:30" = tid, några ord = anteckning, resten = maten
+const UNIT = /^(u|units?|e|enh|enhet|enheter|ie|iu)$/, MINW = /^(m|min|mins|minut|minuter|minute|minutes)$/, HOURW = /^(h|hr|hrs|hour|hours|tim|timme|timmar)$/, AGO = /^(ago|sedan|sen|sedn)$/;
+const DIST = /^(km|kilometer|kilometers|mil|meter|steg|steps)$/, GRAM = /^(g|gr|gram|grams|grammes?|kh|carbs?|kolhydrater)$/;
+const EDGE = new Set(['i', 'had', 'have', 'ate', 'eat', 'eaten', 'took', 'take', 'with', 'and', 'at', 'about', 'around', 'kl', 'klockan', 'för', 'med', 'och', 'tog', 'åt', 'jag', 'har', 'ett', 'en', 'a', 'an', 'the', 'of', 'insulin', 'some', 'lite', 'cirka', 'ca', 'runt', 'typ', 'just', 'nyss', 'now', 'nu', 'plus', 'samt']);
+// Känning först: "promenad, känning efteråt" handlar om känningen
+const NOTE_WORDS = [['Low treated', /^(druvsocker|dextro|dextrosol|glukos|glukostabletter|glucose|hypo|känning|känningen|känningar)$/], ['Exercise',/^(träna|tränade|träning|gym|gymmade|gymmet|promenad|promenerade|cykel|cyklade|cykling|löpning|sprang|jogga|joggade|simmade|simning|walk|walked|run|ran|running|workout|exercise|bike|biked|cycling|swim|swam|yoga|fotboll|padel|tennis)$/],
+  ['Alcohol', /^(öl|vin|alkohol|drink|drinkar|beer|beers|wine|alcohol|cocktail|cider|sprit)$/], ['Illness', /^(sjuk|förkyld|feber|influensa|magsjuk|ill|sick|fever|flu)$/], ['Stress', /^(stress|stressad|stressed)$/]];
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+// Returnerar [namn, känd]: känd = en sparad eller tidigare loggad rätt
+function matchMeal(raw, names) {
+  const q = norm(raw), hit = names.find(n => norm(n) === q); if (hit) return [hit, true];
+  // Del av ett namn ("pasta" -> "Pasta bolognese"), annars flest gemensamma ord
+  const qt = q.split(' '), sc = names.map(n => { const nt = norm(n).split(' '); return { n, s: qt.filter(a => a.length > 2 && nt.some(b => b.startsWith(a) || (a.startsWith(b) && b.length > 2))).length / qt.length }; })
+    .filter(x => x.s >= .6).sort((a, b) => b.s - a.s || a.n.length - b.n.length);
+  return sc.length ? [sc[0].n, true] : [raw.charAt(0).toUpperCase() + raw.slice(1), false];
+}
+// Insulin utan mat ("1,5 enheter ingen mat", "2 e korrigering", "2 units"): en korrigeringsdos. Den loggas som en rad i
+// måltidsloggen med namnet Correction, så att den räknas i insulinsumman och visar insulintypen, men den jämförs inte
+// med måltiderna. Förut blev "1,5 enheter ingen mat" en anteckning (Other) med AI:n och en måltid "Ingen mat" utan.
+const CORR = 'Correction';
+const NOFOOD = /^(ingen|utan|no|without|not|inte|mat|food|meal|måltid|ate|åt|bara|only|dos|dosen|dose|korr\w*|correct\w*|fiasp|novorapid|humalog|lyumjev|apidra|actrapid|trurapi)$/;
+const isCorr = name => String(name).toLowerCase() === CORR.toLowerCase();
+// Frågor och hälsningar är aldrig måltider ("hej", "hur ligger jag?") när den enkla tolkaren används utan AI
+const NOT_MEAL = /\?\s*$|^(hej|hejsan|hallå|tja|tjena|tack|hi|hello|hey|thanks|ok|okej|hur|vad|när|varför|vilken|vilka|how|what|when|why|which|is|am|are|do|does|can)\b/i;
+function interpretLocal(text, ref, names) {
+  // Skiljetecken bort, men inte decimalpunkten i 7.5 ("ris." -> "ris")
+  const tk = text.toLowerCase().replace(/(\d),(\d)/g, '$1.$2').replace(/[,;!?]+|\.(?!\d)/g, ' ').split(/\s+/).filter(Boolean);
+  let ins = null, ago = null, clock = null, dur = null; const words = [], agoAt = k => AGO.test(tk[k] || '');
+  for (let i = 0; i < tk.length; i++) {
+    const w = tk[i], nx = tk[i + 1] || ''; let m;
+    if ((m = w.match(/^(?:kl\.?)?([01]?\d|2[0-3])[:.]([0-5]\d)$/))) { clock = [+m[1], +m[2]]; continue; }
+    if ((m = w.match(/^(\d+(?:\.\d+)?)(u|e|ie|iu|units?|enheter|enh)$/))) { ins = +m[1]; continue; }
+    // "20 min sen" är en tid sedan; "45 min" utan "sen" är en längd (t.ex. en promenad)
+    if ((m = w.match(/^(\d+(?:\.\d+)?)(min|m|h|tim)$/))) { const n = /^(h|tim)$/.test(m[2]) ? m[1] * 60 : +m[1]; if (agoAt(i + 1)) { ago = n; i++; } else dur = n; continue; }
+    if (/^\d+(?:\.\d+)?(km|k)$/.test(w)) { words.push(w); continue; } // "5km" är en sträcka
+    // Gram (kolhydrater, vikt) är aldrig en dos: "30 g choklad" gav förut en måltid med 30 enheter
+    // Sparas som { g } så att mängden står kvar i en anteckning ("Druvsocker 15 g") men inte i ett måltidsnamn
+    const carbs = () => { if (/^(kh|carbs?|kolhydrater)$/.test(tk[i + 1] || '')) i++; };
+    if (/^\d+(?:\.\d+)?(g|gr)$/.test(w)) { words.push({ g: w.replace(/(\d)(g|gr)$/, '$1 g') }); carbs(); continue; }
+    if (/^\d+(?:\.\d+)?$/.test(w)) {
+      if (UNIT.test(nx)) { ins = +w; i++; }
+      else if (MINW.test(nx) || HOURW.test(nx)) { const n = HOURW.test(nx) ? w * 60 : +w; if (agoAt(i + 2)) { ago = n; i += 2; } else { dur = n; i++; } }
+      else if (GRAM.test(nx)) { words.push({ g: w + ' g' }); i++; carbs(); } // "15 g"
+      else if (DIST.test(nx)) { words.push(w, nx); i++; } // "5 km"
+      else words.push({ n: +w }); // ett tal utan enhet: dosen för en måltid, en mängd för en anteckning ("3 öl")
+      continue;
+    }
+    if (/^halvtimm[ae]$/.test(w)) { if (agoAt(i + 1)) { ago = 30; i++; } else dur = 30; continue; }
+    if (w === 'half' && /^an?$/.test(nx) && HOURW.test(tk[i + 2] || '')) { if (agoAt(i + 3)) { ago = 30; i += 3; } else { dur = 30; i += 2; } continue; }
+    if ((w === 'an' || w === 'en' || w === 'a') && HOURW.test(nx)) { if (agoAt(i + 2)) { ago = 60; i += 2; } else { dur = 60; i++; } continue; }
+    if ((w === 'kl' || w === 'klockan' || w === 'at') && /^([01]?\d|2[0-3])$/.test(nx)) { clock = [+nx, 0]; i++; continue; }
+    if (!AGO.test(w)) words.push(w);
+  }
+  const trim = ws => { ws = [...ws]; while (ws.length && EDGE.has(ws[0])) ws.shift(); while (ws.length && EDGE.has(ws[ws.length - 1])) ws.pop(); return ws; };
+  const t = clock ? atClock(clock[0], clock[1], ref) : ago ? ref - ago * 6e4 : ref, strs = words.filter(x => typeof x === 'string');
+  const kind = (NOTE_WORDS.find(([, re]) => strs.some(w => re.test(w))) || [])[0];
+  if (kind && ins === null) return noteAt(kind, trim(words).map(x => typeof x === 'string' ? x : x.g || x.n).join(' '), okDur(dur), t, !!(clock || ago), ref);
+  if (ins !== null && !kind && strs.every(w => NOFOOD.test(w) || EDGE.has(w))) return { type: 'meal', name: CORR, ins, t, corr: true };
+  const bare = words.find(x => typeof x === 'object' && 'n' in x), raw = trim(strs).join(' ');
+  if (!raw || NOT_MEAL.test(text.trim())) return { type: 'other' };
+  // En måltid kräver en dos eller en känd rätt; annars är det troligen inte en måltid ("hej") och inget loggas
+  const [name, known] = matchMeal(raw, names), dose = ins ?? (bare ? bare.n : null);
+  // Ett tal utan "units/e/enheter" är en gissning, utom sist efter en känd rätt ("pizza 7"). En gissning sparas aldrig
+  // direkt: dashboarden öppnar dialogen ifylld och Telegram frågar (förut blev "2 skivor bröd" 2 enheter).
+  const guess = ins === null && bare && !(known && words[words.length - 1] === bare);
+  // Ett kort namn utan dos ("kebab") är troligen en måltid: dashboarden och Telegram frågar efter dosen. Förut gav det
+  // ett fel, medan en sparad rätt ("pizza") öppnade dialogen. Längre text utan dos är troligen inte en måltid.
+  if (dose === null && !known) return raw.split(' ').length <= 4 ? { type: 'meal', name, ins: null, t } : { type: 'other' };
+  return { type: 'meal', name, ins: dose, t, ...(guess && { guess: true }) };
+}
+async function interpret(text, ref) {
+  const names = mealNames(readDb()), L = interpretLocal(text, ref, names);
+  if (L.corr) return { ...L, via: 'rule' }; // en dos utan mat är entydig; AI:n behövs inte (och gjorde en anteckning av den)
+  let o;
+  try {
+    const r = await ollama({ stream: false, format: INTERPRET_SCHEMA, options: { temperature: 0 }, messages: [{ role: 'system', content: INTERPRET(names) }, { role: 'user', content: text }] }, AbortSignal.timeout(45e3));
+    const j = await r.json(); logTokens('interpret', j); o = JSON.parse(j.message.content);
+  } catch (e) { console.error('Reading the text with the simple reader:', aiErr(e)); return { ...L, via: 'simple' }; }
+  const c = typeof o.clock === 'string' && o.clock.match(/^(\d{1,2})[:.](\d{2})$/);
+  const t = c && +c[1] < 24 && +c[2] < 60 ? atClock(+c[1], +c[2], ref) : Number.isFinite(o.minutes_ago) && o.minutes_ago > 0 && o.minutes_ago <= 1440 ? ref - o.minutes_ago * 6e4 : L.t || ref;
+  const timed = !!c || (Number.isFinite(o.minutes_ago) && o.minutes_ago > 0);
+  if (o.type === 'note' && KINDS.includes(o.note_kind)) return { ...noteAt(o.note_kind, cleanName(o.note_text || '').slice(0, 200), okDur(o.duration_minutes), t, timed, ref), via: 'ai' };
+  const name = /^(correction|korrigering|korrektion|correction dose|korrigeringsdos)$/i.test(cleanName(o.meal || '')) ? CORR : cleanName(o.meal || '');
+  if (o.type !== 'meal' || !name) return { type: 'other', via: 'ai' };
+  // Saknar AI:n en dos som den enkla tolkaren hittade ("kebab 5"), används den
+  const ins = Number.isFinite(o.units) && o.units >= 0 ? Math.round(o.units * 10) / 10 : L.type === 'meal' ? L.ins : null;
+  const unitWord = /\d\s*(u|e|ie|iu|units?|enheter|enhet|enh)(?![a-zåäö])/i.test(text.replace(/(\d),(\d)/g, '$1.$2'));
+  const sure = unitWord || (L.type === 'meal' && !L.guess && L.ins === ins);
+  return { type: 'meal', name: names.find(n => n.toLowerCase() === name.toLowerCase()) || name, ins, t, via: 'ai', ...(ins != null && !sure && { guess: true }) };
+}
+// Sparar en tolkad måltid eller anteckning. Samma id två gånger (ett Telegram-meddelande som läses igen) sparas en gång.
+function addEntry(r, id) {
+  const db = readDb(), t = Math.min(Math.round(r.t), Date.now());
+  if (db.log.some(m => m.id === id) || db.notes.some(n => n.id === id)) return null;
+  let e;
+  if (r.type === 'meal') {
+    if (!(r.ins >= 0 && r.ins <= 100)) throw new Error('bad dose');
+    e = { id, t, name: r.name, ins: Math.round(r.ins * 10) / 10, ...(db.settings && db.settings.fast && { type: db.settings.fast }) };
+    db.log.push(e); db.log.sort((a, b) => b.t - a.t);
+  } else { e = { id, t, kind: r.kind, ...(r.text && { text: r.text }), ...(r.dur && { dur: r.dur }) }; db.notes.push(e); db.notes.sort((a, b) => b.t - a.t); }
+  db.rev++; writeDb(db); return e;
+}
+// "Fläskfärs ris." -> "Fläskfärs ris": AI:n tar ibland med punkten från meningen
+function cleanName(s) { return String(s).trim().replace(/[\s.,;:!?]+$/, '').slice(0, 100); }
+// "Save to Meals": sparar en loggad rätt bland måltiderna med dosen som vanlig dos. Hade namnet ett skiljetecken
+// på slutet rättas det även i loggen, så att rätten känns igen som sparad.
+function saveMeal(entryId) {
+  const db = readDb(), e = db.log.find(m => m.id === entryId); if (!e) return null;
+  const name = cleanName(e.name);
+  if (db.meals.some(m => m.name.toLowerCase() === name.toLowerCase())) return { name, already: true };
+  db.meals.push({ id: crypto.randomBytes(6).toString('hex'), name, ins: e.ins });
+  const old = e.name; if (old !== name) for (const m of db.log) if (m.name === old) m.name = name;
+  db.rev++; writeDb(db); return { name, ins: e.ins };
+}
+// Kontroll av skrivfel (samma regel som på sidan): en dos långt från måltidens vanliga dos (sparad, annars medianen av
+// de senaste gångerna) eller över 30 enheter. Ingen rekommendation, bara en extra bekräftelse så att 75 i stället för 7.5
+// inte loggas och förstör statistiken.
+// Samma måltid redan loggad inom 15 min (t.ex. både från Telegram och i dialogen): fråga innan den räknas två gånger.
+function doseCheck(name, ins, db, t) {
+  const k = String(name).toLowerCase(), twice = t && db.log.find(m => String(m.name).toLowerCase() === k && Math.abs(m.t - t) < 15 * 6e4);
+  if (twice) return `You already logged ${name}, ${twice.ins} units at ${hm(twice.t)}. Is this a second time?`;
+  if (!(ins > 0)) return null;
+  const saved = db.meals.find(m => m.name.toLowerCase() === k);
+  const past = db.log.filter(m => String(m.name).toLowerCase() === k).slice(0, 10).map(m => m.ins).sort((a, b) => a - b);
+  const ref = saved ? saved.ins : past.length >= 2 ? past[past.length >> 1] : null;
+  if (ref > 0 && (ins >= ref * 2 || ins <= ref / 2) && Math.abs(ins - ref) >= 3)
+    return `${ins} units is ${ins > ref ? (ins / ref >= 3 ? Math.round(ins / ref) : (ins / ref).toFixed(1)) + '× your usual' : 'much less than your usual'} ${ref} ${ref === 1 ? 'unit' : 'units'} for ${name}.`;
+  return ins > 30 ? `${ins} units is a lot for one meal.` : null;
+}
+function removeEntry(id) {
+  const db = readDb(), n = db.log.length + db.notes.length;
+  db.log = db.log.filter(m => m.id !== id); db.notes = db.notes.filter(m => m.id !== id);
+  if (db.log.length + db.notes.length === n) return false;
+  db.rev++; writeDb(db); return true;
+}
+
+// ---------- Telegram: logga genom att skriva till en egen bot ----------
+// Datorn hämtar meddelandena själv (long polling), så inget öppnas i routern. Bara den chatt som parkopplats med
+// koden från Settings får logga; alla andra ignoreras. Token och chatt sparas i data/telegram.json.
+// Inga glukosvärden skickas till Telegram, bara bekräftelser på det du själv skrivit.
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [] };
+let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
+try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
+const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function tgApi(method, body, signal, token = tg.token) {
+  const r = await fetch(`${TELEGRAM_API}/bot${token}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}), signal: signal || AbortSignal.timeout(15e3) });
+  const j = await r.json().catch(() => ({}));
+  if (!j.ok) throw Object.assign(new Error(j.description || 'HTTP ' + r.status), { code: j.error_code || r.status });
+  return j.result;
+}
+const he = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const whenTxt = t => { const d = new Date(t).toDateString(); return (d === new Date().toDateString() ? '' : d === new Date(Date.now() - 864e5).toDateString() ? 'yesterday ' : ymd(t) + ' ') + hm(t); };
+const describe = e => e.name !== undefined ? `<b>${he(e.name)}</b> · ${e.ins} ${e.ins === 1 ? 'unit' : 'units'} · ${whenTxt(e.t)}`
+  : `<b>${he(e.kind)}</b>${e.text ? ': ' + he(e.text) : ''} · ${whenTxt(e.t)}${e.dur ? '–' + hm(e.t + e.dur * 6e4) : ''}`;
+const tgSay = (text, extra = {}) => tgApi('sendMessage', { chat_id: tg.chat, text, parse_mode: 'HTML', ...extra }).catch(e => console.error('Telegram send:', e.message));
+// Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
+const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
+const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.';
+async function tgLogged(r, id, late) {
+  const e = addEntry(r, id); if (!e) return;
+  tg.last = [...tg.last, e.id].slice(-20); saveTg();
+  const isMeal = e.name !== undefined, saved = isMeal && (isCorr(e.name) || readDb().meals.some(m => m.name.toLowerCase() === e.name.toLowerCase()));
+  await tgSay((isMeal ? '✅ ' : '📝 ') + describe(e)
+    + (late ? '\n<i>Read when the dashboard started, logged at the time you sent it.</i>' : '')
+    + (r.via === 'simple' ? '\n<i>(the local AI was off, so the simple reader was used)</i>' : ''), buttons(e.id, isMeal && !saved));
+}
+async function tgHandle(u) {
+  const q = u.callback_query;
+  if (q) { // knapparna Undo (u:) och Save to Meals (s:)
+    if (!tg.chat || !q.message || q.message.chat.id !== tg.chat) return;
+    const [, act, id] = String(q.data || '').match(/^([us]):(.+)$/) || [], answer = text => tgApi('answerCallbackQuery', { callback_query_id: q.id, text }).catch(() => {});
+    if (act === 's') {
+      const s = saveMeal(id);
+      await answer(!s ? 'That meal is no longer in the log' : s.already ? `${s.name} is already in Meals` : `Saved ${s.name} to Meals`);
+      if (s) await tgApi('editMessageReplyMarkup', { chat_id: tg.chat, message_id: q.message.message_id, ...buttons(id, false) }).catch(() => {});
+      return;
+    }
+    const ok = act === 'u' && removeEntry(id);
+    await answer(ok ? 'Removed' : 'Already removed');
+    if (ok) await tgApi('editMessageText', { chat_id: tg.chat, message_id: q.message.message_id, parse_mode: 'HTML', text: `<s>${he(q.message.text || '')}</s>\n↩️ Removed` }).catch(() => {});
+    return;
+  }
+  const m = u.message; if (!m || !m.chat) return;
+  const text = (m.text || '').trim();
+  if (m.chat.id !== tg.chat) { // parkoppling: "/start 123456" med koden från Settings, bara i en privat chatt
+    const c = text.match(/^\/start\s+(\d{6})$/);
+    if (!tg.chat && tg.code && c && c[1] === tg.code && m.chat.type === 'private') {
+      tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; saveTg();
+      await tgSay('Connected to your glucose dashboard. 👋\n\n' + HELP);
+    }
+    return;
+  }
+  if (!text) return tgSay('I can only read text. Use the microphone on your keyboard to dictate.');
+  if (/^\/(start|help)\b/.test(text)) return tgSay(HELP);
+  if (/^\/undo\b/.test(text)) {
+    const id = tg.last.pop(), db = readDb(), e = id && (db.log.find(x => x.id === id) || db.notes.find(x => x.id === id)); saveTg();
+    if (!e) return tgSay('Nothing to undo.');
+    removeEntry(id); return tgSay('↩️ Removed ' + describe(e));
+  }
+  // Svar på "How many units?" eller på en dos som behövde bekräftas (gäller i 30 min)
+  if (tgPending && Date.now() - tgPending.at < 30 * 6e4) {
+    if (tgPending.confirm && /^(yes|ja|j|y|ok)$/i.test(text)) { const p = tgPending; tgPending = null; return tgLogged(p, 'tg' + u.update_id); }
+    if (/^\d+([.,]\d+)?$/.test(text)) {
+      const ins = parseFloat(text.replace(',', '.'));
+      if (ins > 100) return tgSay('That seems like a lot. Send the number of units again.');
+      const p = { ...tgPending, ins }, chk = !tgPending.confirm && doseCheck(p.name, ins, readDb(), p.t);
+      if (chk) { tgPending = { ...p, confirm: true, at: Date.now() }; return tgSay(`⚠ ${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
+      tgPending = null; return tgLogged(p, 'tg' + u.update_id);
+    }
+  }
+  const r = await interpret(text.slice(0, 300), m.date * 1000);
+  if (r.type === 'other') return tgSay("I didn't catch a meal or a note there. Try: <i>pizza 7,5 enheter</i>");
+  if (r.type === 'meal' && r.ins == null) { tgPending = { type: 'meal', name: r.name, t: r.t, via: r.via, at: Date.now() }; return tgSay(`How many units did you take for <b>${he(r.name)}</b>? Reply with a number, or 0 if none.`); }
+  if (r.type === 'meal' && r.ins > 100) return tgSay('That dose seems too high. Send it again with the number of units.');
+  const chk = r.type === 'meal' && (r.guess ? `Did you take ${r.ins} ${r.ins === 1 ? 'unit' : 'units'} for ${r.name}?` : doseCheck(r.name, r.ins, readDb(), r.t));
+  if (chk) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`${r.guess ? '' : '⚠ '}${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
+  tgPending = null; return tgLogged(r, 'tg' + u.update_id, Date.now() - m.date * 1000 > 10 * 6e4); // >10 min gammalt: datorn var av
+}
+async function tgLoop() {
+  for (;;) {
+    if (!tg.token) { await sleep(2e3); continue; }
+    const token = tg.token, ac = tgAbort = new AbortController();
+    try {
+      const ups = await tgApi('getUpdates', { offset: tg.offset, timeout: 50, allowed_updates: ['message', 'callback_query'] }, AbortSignal.any([ac.signal, AbortSignal.timeout(65e3)]), token);
+      tgErr = '';
+      for (const u of ups) {
+        if (token !== tg.token) break; // bortkopplad eller ny bot under tiden
+        try { await tgHandle(u); } catch (e) { console.error('Telegram:', e); if (tg.chat) tgSay('Something went wrong, nothing was logged. Try again.'); }
+        tg.offset = u.update_id + 1; saveTg();
+      }
+    } catch (e) {
+      if (ac.signal.aborted) continue;
+      tgErr = e.code === 401 || e.code === 404 ? 'Telegram no longer accepts the bot token. Disconnect and connect again.'
+        : e.code === 409 ? 'Another program is reading this bot\'s messages. Is the dashboard running twice?' : 'No contact with Telegram right now. Retrying.';
+      await sleep(e.code === 409 ? 30e3 : 10e3);
+    }
+  }
+}
+const LOCALHOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+const file = (res, f, type) => fs.readFile(path.join(__dirname, f), (e, d) => { res.writeHead(e ? 404 : 200, { 'content-type': e ? 'text/plain' : type, 'cache-control': 'no-cache' }); res.end(e ? 'not found' : d); });
+
 // ---------- HTTP ----------
-const readDb = () => fs.existsSync(DBF) ? JSON.parse(fs.readFileSync(DBF, 'utf8')) : { meals: [], log: [] };
-const send = (res, o, c = 200) => { res.writeHead(c, { 'content-type': 'application/json' }); res.end(JSON.stringify(o)); };
+// db.json: måltider, logg, anteckningar och inställningar. rev räknas upp vid varje sparning, så att två
+// enheter (t.ex. datorn och mobilen) inte skriver över varandras ändringar: en sparning från en äldre
+// version avvisas med 409 och den aktuella versionen, och sidan gör om sin ändring på den.
+const isArr = Array.isArray, validDb = o => o && typeof o === 'object' && !isArr(o) && isArr(o.meals) && isArr(o.log) && (o.notes === undefined || isArr(o.notes));
+const readDb = () => {
+  let o; try { o = JSON.parse(fs.readFileSync(DBF, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') console.error('db.json could not be read:', e.message); }
+  return validDb(o) ? { notes: [], settings: {}, rev: 0, ...o } : { meals: [], log: [], notes: [], settings: {}, rev: 0 };
+};
+// Skriv till en temporär fil och byt namn, så att ett avbrott mitt i skrivningen aldrig lämnar en halv db.json
+const writeDb = o => { fs.writeFileSync(DBF + '.tmp', JSON.stringify(o)); fs.renameSync(DBF + '.tmp', DBF); dbRev = o.rev; };
+// Senaste versionsnumret, så att sidan kan se om db.json ändrats utan att hämta hela filen varje minut
+let dbRev = null;
+const currentRev = () => dbRev ??= readDb().rev;
+const send = (res, o, c = 200) => { res.writeHead(c, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); };
 // Läser JSON-kroppen. Kräver content-type application/json, så att andra webbsidor i webbläsaren
 // inte kan skicka hit anrop (t.ex. falska mätvärden) utan en CORS-förfrågan som servern aldrig godkänner.
 const body = (req, res, fn) => {
   if (!/^application\/json/.test(req.headers['content-type'] || '')) return send(res, { error: 'expected JSON' }, 415);
   let b = ''; req.on('data', c => b += c);
-  req.on('end', () => { let o; try { o = JSON.parse(b); } catch { return send(res, { error: 'invalid JSON' }, 400); } fn(o, b); });
+  req.on('end', () => {
+    let o; try { o = JSON.parse(b); } catch { return send(res, { error: 'invalid JSON' }, 400); }
+    // Fångar fel både i vanliga och asynkrona hanterare
+    Promise.resolve().then(() => fn(o === null ? {} : o)).catch(e => { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); });
+  });
 };
-http.createServer((req, res) => {
+// Bara localhost som värdnamn när servern lyssnar lokalt. Stoppar "DNS rebinding", där en främmande webbsida
+// får sitt eget domännamn att peka på 127.0.0.1 och sedan kan läsa dina värden.
+const LOCAL = /^(127\.|localhost$|::1$)/.test(HOST), okHost = h => !LOCAL || LOCALHOST.test(h || '');
+const server = http.createServer((req, res) => {
+  if (!okHost(req.headers.host)) return send(res, { error: 'forbidden host' }, 403);
+  try { route(req, res); } catch (e) { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); }
+});
+// Körs dashboarden redan (t.ex. startad vid inloggningen)? Då avslutas den här, i stället för att båda läser Telegram.
+server.on('error', e => {
+  if (e.code === 'EADDRINUSE') { console.log(`Port ${PORT} is already in use, so the dashboard is probably running already: http://localhost:${PORT}`); process.exit(1); }
+  throw e;
+});
+server.listen(PORT, HOST, () => {
+  console.log(`Dashboard: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}${DEMO ? ' (demo mode)' : creds ? '' : token ? ` (saved login: ${user})` : ' (open it and log in)'}`);
+  if (!LOCAL) console.log('Warning: HOST is not 127.0.0.1, so anyone on your network can open the dashboard and see your data.');
+  if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
+  // Hämtningar startar först när porten är vår
+  tick(); setInterval(tick, 6e4); tgLoop(); startOllama();
+});
+
+// "Start with Windows": en liten .cmd i Autostart-mappen som startar servern minimerad i aktivitetsfältet vid inloggning.
+// Stäng fönstret för att stoppa den. Inga lösenord skrivs dit; inloggningen sparas som vanligt med "Stay logged in".
+const STARTUP = process.platform === 'win32' && path.join(process.env.STARTUP_DIR || path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'), 'Glucose dashboard.cmd');
+const startupScript = () => {
+  const q = s => String(s).replace(/%/g, '%%');
+  return ['@echo off', 'rem Starts the glucose dashboard when you log in to Windows. Turn it off under Settings > Startup, or delete this file.',
+    `cd /d "${q(__dirname)}"`, ...['PORT', 'HOST', 'LLU_VERSION', 'OLLAMA_URL', 'OLLAMA_MODEL', 'OLLAMA_AUTOSTART'].filter(k => process.env[k]).map(k => `set "${k}=${q(process.env[k])}"`),
+    `start "Glucose dashboard" /min "${q(process.execPath)}" server.js`, ''].join('\r\n');
+};
+function route(req, res) {
   const u = new URL(req.url, 'http://x');
-  if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr });
+  if (u.pathname === '/icon.svg') return file(res, 'icon.svg', 'image/svg+xml');
+  if (u.pathname === '/api/bye') { pageGone(u.searchParams.get('c')); res.writeHead(204); return res.end(); }
+  if (u.pathname === '/api/now') pageSeen(u.searchParams.get('c'));
+  if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev() });
   if (u.pathname === '/api/stats') return send(res, stats());
   if (u.pathname === '/api/readings') {
     const q = u.searchParams, from = +q.get('from') || Date.now() - (+q.get('hours') || 24) * 36e5, to = +q.get('to') || Infinity;
-    return send(res, [...R].filter(r => r[0] >= from && r[0] <= to).sort((a, b) => a[0] - b[0]));
+    return send(res, range(from, to + 1)); // to är inklusive
   }
-  if (u.pathname === '/api/outcomes') return send(res, Object.fromEntries(readDb().log.map(m => [m.id, outcome(m.t)])));
+  // ?since=ms: bara måltider från och med den tiden. Ett utfall ändras inte efter 3 h, så sidan hämtar alla en gång
+  // och därefter bara de senaste varje minut.
+  if (u.pathname === '/api/outcomes') {
+    const since = +u.searchParams.get('since') || 0;
+    const db = readDb(); // måltider och behandlade känningar, nyckel = id
+    return send(res, Object.fromEntries([...db.log.filter(m => m.t >= since).map(m => [m.id, outcome(m.t)]),
+      ...db.notes.filter(n => n.kind === 'Low treated' && n.t >= since).map(n => [n.id, treated(n.t)])]));
+  }
   if (u.pathname === '/api/profile') return send(res, profile(Math.min(90, Math.max(1, +u.searchParams.get('days') || 14))));
   if (u.pathname === '/api/login' && req.method === 'POST') return body(req, res, async ({ email, password, remember }) => {
     if (DEMO) return send(res, { error: 'Not available in demo mode.' }, 400);
     if (!email || !password) return send(res, { error: 'Enter both email and password.' }, 400);
     const c = { email, password, remember: !!remember };
     try {
+      await running; // en hämtning som redan pågår hör till den gamla inloggningen
       await login(c);
       gen++; creds = c; loginErr = ''; status = 'starting';
       await poll(); send(res, { ok: 1 });
@@ -160,18 +767,93 @@ http.createServer((req, res) => {
   });
   if (u.pathname === '/api/logout' && req.method === 'POST') return body(req, res, () => { logout(); send(res, { ok: 1 }); });
   if (u.pathname === '/api/import' && req.method === 'POST') return body(req, res, rows => {
-    try {
-      let added = 0, lines = '';
-      for (const [t0, v] of rows) { const t = Math.floor(t0 / 6e4) * 6e4; if (v > 0 && !R.has(t)) { R.set(t, v); lines += JSON.stringify([t, v]) + '\n'; added++; } }
-      fs.appendFileSync(RF, lines); send(res, { added });
-    } catch { send(res, { error: 'bad data' }, 400); }
+    if (!isArr(rows)) return send(res, { error: 'bad data' }, 400);
+    const before = R.size, lines = [];
+    for (const row of rows) {
+      if (!isArr(row)) continue;
+      const t = Math.floor(Number(row[0]) / 6e4) * 6e4, v = Math.round(Number(row[1]));
+      if (okT(t) && okV(v) && !R.has(t)) { R.set(t, v); lines.push(JSON.stringify([t, v])); }
+    }
+    if (lines.length) { fs.appendFileSync(RF, lines.join('\n') + '\n'); S = [...R].sort((x, y) => x[0] - y[0]); } // en sortering för hela importen
+    send(res, { added: R.size - before, skipped: rows.length - (R.size - before) });
   });
   if (u.pathname === '/api/db') {
-    if (req.method === 'PUT') return body(req, res, (o, b) => { fs.writeFileSync(DBF, b); send(res, { ok: 1 }); });
+    if (req.method === 'PUT') return body(req, res, o => {
+      if (!validDb(o)) return send(res, { error: 'bad data' }, 400);
+      const cur = readDb();
+      if (o.rev !== undefined && o.rev !== cur.rev) return send(res, { error: 'conflict', db: cur }, 409);
+      const rev = cur.rev + 1; writeDb({ ...o, rev }); send(res, { ok: 1, rev });
+    });
     return send(res, readDb());
   }
-  fs.readFile(path.join(__dirname, 'index.html'), (e, d) => { res.writeHead(e ? 500 : 200, { 'content-type': 'text/html; charset=utf-8' }); res.end(d); });
-}).listen(PORT, HOST, () => console.log(`Dashboard: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}${DEMO ? ' (demo mode)' : creds ? '' : token ? ` (saved login: ${user})` : ' (open it and log in)'}`));
+  // Textfältet på dashboarden: "pizza 7,5 enheter" -> sparas direkt (dosen saknas: sidan frågar efter den)
+  if (u.pathname === '/api/quicklog' && req.method === 'POST') return body(req, res, async ({ text }) => {
+    if (typeof text !== 'string' || !text.trim() || text.length > 300) return send(res, { error: 'Type what you ate, e.g. pizza 7.5 units' }, 400);
+    const r = await interpret(text.trim(), Date.now());
+    if (r.type === 'other') return send(res, { error: 'That doesn\'t look like a meal, a dose or a note. Try: pizza 7.5 units' }, 422);
+    if (r.type === 'meal' && r.ins == null) return send(res, { need: 'units', name: r.name, t: r.t, via: r.via });
+    if (r.type === 'meal' && r.ins > 100) return send(res, { error: 'That dose seems too high.' }, 422);
+    // Långt från den vanliga dosen: logga inte direkt; sidan öppnar dialogen med kontrollen så att man kan rätta eller bekräfta
+    const chk = r.type === 'meal' && (r.guess ? `Is ${r.ins} the number of units you took?` : doseCheck(r.name, r.ins, readDb(), r.t));
+    if (chk) return send(res, { check: chk, name: r.name, ins: r.ins, t: r.t, via: r.via });
+    send(res, { ok: 1, entry: addEntry(r, 'w' + crypto.randomBytes(6).toString('hex')), via: r.via });
+  });
+  // Telegram-boten: koppla in med en token från @BotFather, länka chatten med en kod, koppla bort
+  if (u.pathname === '/api/telegram' && req.method === 'POST') return body(req, res, async ({ token: t }) => {
+    if (typeof t !== 'string' || !/^\d{5,}:[\w-]{30,}$/.test(t.trim())) return send(res, { error: 'That doesn\'t look like a bot token. It looks like 123456789:ABC-def…' }, 400);
+    let me; try { me = await tgApi('getMe', {}, AbortSignal.timeout(10e3), t.trim()); } catch (e) { return send(res, { error: e.code === 401 || e.code === 404 ? 'Telegram did not accept that token.' : 'No contact with Telegram.' }, 400); }
+    await tgApi('deleteWebhook', {}, undefined, t.trim()).catch(() => {}); // en webhook skulle stoppa hämtningen
+    tgApi('setMyCommands', { commands: [{ command: 'undo', description: 'Remove the last thing you logged' }, { command: 'help', description: 'How to log' }] }, undefined, t.trim()).catch(() => {});
+    tg = { ...TG0, token: t.trim(), bot: me.username, code: String(crypto.randomInt(100000, 1000000)) }; tgErr = ''; tgPending = null; saveTg();
+    if (tgAbort) tgAbort.abort();
+    send(res, { ok: 1 });
+  });
+  if (u.pathname === '/api/telegram/off' && req.method === 'POST') return body(req, res, () => {
+    tg = { ...TG0 }; tgErr = ''; tgPending = null; fs.rmSync(TF, { force: true }); if (tgAbort) tgAbort.abort(); send(res, { ok: 1 });
+  });
+  if (u.pathname === '/api/autostart') {
+    const ok = !!STARTUP && !DEMO, state = () => ({ supported: ok, on: ok && fs.existsSync(STARTUP) });
+    if (req.method !== 'POST') return send(res, state());
+    return body(req, res, ({ on }) => {
+      if (!ok) return send(res, { error: DEMO ? 'Not available in demo mode.' : 'Only on Windows.' }, 400);
+      if (on) { fs.mkdirSync(path.dirname(STARTUP), { recursive: true }); fs.writeFileSync(STARTUP, startupScript()); } else fs.rmSync(STARTUP, { force: true });
+      send(res, state());
+    });
+  }
+  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr });
+  if (u.pathname === '/api/weekly') return send(res, weekly());
+  // Exakt det som skickas till AI:n, så att man kan se vad den svarar utifrån
+  if (u.pathname === '/api/ai/context') { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(ASK + aiContext()); }
+  // Är den lokala AI:n igång? Med ?warm=1 laddas modellen in i förväg, så att första svaret inte tar 20 s.
+  if (u.pathname === '/api/ai') return aiModel().then(model => {
+    if (u.searchParams.get('warm')) fetch(OLLAMA_URL + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, keep_alive: '15m', options: { num_ctx: NUM_CTX } }) }).catch(() => {});
+    send(res, { ok: true, model });
+  }, e => send(res, { ok: false, error: aiErr(e) }));
+  if (u.pathname === '/api/ask' && req.method === 'POST') return body(req, res, async ({ messages } = {}) => {
+    const msgs = (isArr(messages) ? messages : []).slice(-8).filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+      .map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
+    if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return send(res, { error: 'bad data' }, 400);
+    const q = msgs[msgs.length - 1].content;
+    if (DOSE_Q.test(q)) { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(DOSE_NO(SWEDISH.test(q))); }
+    msgs[msgs.length - 1] = { role: 'user', content: q + REMIND };
+    const ac = new AbortController(); res.on('close', () => { if (!res.writableFinished) ac.abort(); }); // sidan stängd: sluta generera
+    let r;
+    try { r = await ollama({ stream: true, options: { temperature: 0.3 }, messages: [{ role: 'system', content: ASK + aiContext() }, ...msgs] }, ac.signal); }
+    catch (e) { return send(res, { error: aiErr(e) }, 503); }
+    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+    try { // Ollama skickar en JSON-rad per bit text
+      const dec = new TextDecoder(); let buf = '';
+      for await (const chunk of r.body) {
+        buf += dec.decode(chunk, { stream: true }); let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (!line) continue;
+          const j = JSON.parse(line); if (j.message && j.message.content) res.write(j.message.content); if (j.error) res.write('\n\n(' + j.error + ')'); if (j.done) logTokens('ask', j);
+        }
+      }
+    } catch (e) { if (!ac.signal.aborted) { console.error(e.message); res.write('\n\n(The answer was cut off.)'); } }
+    res.end();
+  });
+  fs.readFile(path.join(__dirname, 'index.html'), (e, d) => { res.writeHead(e ? 500 : 200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' }); res.end(e ? 'index.html missing' : d); });
+}
 
 const tick = DEMO ? demo : poll;
-tick(); setInterval(tick, 6e4);
