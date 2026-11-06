@@ -195,7 +195,13 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Insikterna som en lista med avdelare (en kolumn): inga halvtomma rutor, och raderna läses uppifrån och ned */
 .wkg{display:grid;grid-template-columns:1fr}
 .mlab{min-width:9.5em;text-align:center;font-weight:600}.mdays{margin-top:2px}svg rect.mdn{fill:var(--bd)}svg .mgl{stroke:var(--mut);stroke-dasharray:3 3;opacity:.7}
-.moa{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}.moa span{flex:1 1 260px}
+/* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
+.insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;align-items:start}.igc{min-width:0}@media(max-width:760px){.igrid{grid-template-columns:minmax(0,1fr)}}
+.ipad{padding:10px 0;border-top:1px solid var(--bd)}
+.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
+@media(max-width:440px){.tabs button{padding-inline:9px}}
 .stack{display:flex;flex-direction:column;gap:4px}
 .lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
 .grp{margin:20px 0 8px;font-size:.75rem;font-weight:600;color:var(--mut);letter-spacing:.02em}@media(max-width:640px){.wkg{grid-template-columns:1fr}}
@@ -278,6 +284,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <button role="tab" id="t-act" aria-controls="tab-act" data-tab="act" aria-selected="true">Activity</button>
   <button role="tab" id="t-pat" aria-controls="tab-pat" data-tab="pat" aria-selected="false" tabindex="-1">Patterns</button>
   <button role="tab" id="t-ins" aria-controls="tab-ins" data-tab="ins" aria-selected="false" tabindex="-1">Insights</button>
+  <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
   <button role="tab" id="t-lib" aria-controls="tab-lib" data-tab="lib" aria-selected="false" tabindex="-1">Meals</button>
 </div>
 
@@ -306,11 +313,18 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 </section>
 
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
-  <div class="ph"><h2>This week</h2><span class="mut fine">Last 7 days, compared with the 7 before</span></div>
+  <h2 class="sr">Insights</h2>
+  <div class="insbar">
+    <div class="seg" id="iseg" role="group" aria-label="Period"><button data-v="week" class="on" aria-pressed="true">This week</button><button data-v="month" aria-pressed="false">Month</button></div>
+    <span class="mut fine" id="wksub">Last 7 days, compared with the 7 before</span>
+    <div class="nav" id="monav" hidden><button id="mprev" aria-label="Previous month">‹</button><span class="mlab" id="mlab" aria-live="polite"></span><button id="mnext" aria-label="Next month">›</button></div>
+  </div>
   <div id="wk"></div>
-  <div class="ph subh"><h3 class="m0">Month in review</h3><div class="nav" id="monav" hidden><button id="mprev" aria-label="Previous month">‹</button><span class="mlab" id="mlab" aria-live="polite"></span><button id="mnext" aria-label="Next month">›</button></div></div>
-  <div id="mo"></div>
-  <div class="ph subh"><h3 class="m0">Ask about your data</h3><span class="mut fine" id="aist"></span></div>
+  <div id="mo" hidden></div>
+</section>
+
+<section class="card panel" id="tab-ask" role="tabpanel" aria-labelledby="t-ask" hidden>
+  <div class="ph"><h2>Ask about your data</h2><span class="mut fine" id="aist"></span></div>
   <div class="chat" id="chat"></div><div class="sr" id="chatsr" aria-live="polite"></div>
   <div class="chips" id="sugg">
     <button data-q="Summarize my last 7 days. What stands out compared with the week before?">Explain my week</button>
@@ -603,7 +617,7 @@ async function refresh() {
     const d = s['24h'];
     $('tir24').innerHTML = d ? `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>` : '';
     drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); mealWarn();
-    if (!$('tab-ins').hidden) loadWeek();
+    if (!$('tab-ins').hidden && iview === 'week') loadWeek();
   } catch { setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; }
 }
 
@@ -1429,56 +1443,82 @@ for (const k in INSULINS) {
   $('i' + k + 'o').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 }
 
-// Veckan i korthet: senaste 7 dygnen mot de 7 före. Bara uträknade fakta, ingen AI.
-let wk = null;
+// Insights: veckan och månaden visas på samma sätt. Fyra nyckeltal med jämförelse mot perioden före, en stapel per dag,
+// sedan två spalter med det som stack ut, och en lugn rad längst ner. Förut var det två långa listor efter varandra,
+// med chatten under; chatten har nu en egen flik. Bara uträknade fakta, ingen AI.
+let wk = null, mo = null, moKey = null, iview = 'week';
+try { if (localStorage.getItem('insv') === 'month') iview = 'month'; } catch {}
+const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
+const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows', tms = n => n === 1 ? 'once' : n + ' times';
+const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${val}</b><span>${sub}</span></div>`;
+const irow = (color, main, sub) => `<div class="insi"><i style="background:${color}"></i><div>${main}</div>${sub ? `<span>${sub}</span>` : ''}</div>`;
+const igroup = (title, rows) => rows.length ? `<div class="igc"><h3 class="grp">${title}</h3><div class="wkg">${rows.join('')}</div></div>` : '';
+// De fyra nyckeltalen. p = perioden före (eller null), pl = vad den heter ("Week before", "September").
+// Med en jämförelse står den under talet; utan står målet, som under Patterns.
+function ikpis(c, p, pl, lowsCur, lowsPrev) {
+  const was = (v, f) => p ? `${pl}: ${f(v)}` : '';
+  return `<div class="kpis k4">${ikpi('In range', c.tir.toFixed(0) + ' %', p ? was(p.tir, v => v.toFixed(0) + ' %') : 'goal over&nbsp;70&nbsp;%', c.tir >= 70 ? 'var(--ok)' : 'var(--high)')}
+    ${ikpi('Lows', lowsCur, lowsPrev != null ? `${pl}: ${lowsPrev}` : '15 min or more below 3.9', lowsCur ? 'var(--low)' : '')}
+    ${ikpi('Average', f1(mm(c.avg)), p ? was(p.avg, v => f1(mm(v))) : 'mmol/L', col(mm(c.avg)))}
+    ${ikpi('Above 10', c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : 'goal under&nbsp;25&nbsp;%', c.high >= 25 ? 'var(--high)' : '')}</div>`;
+}
+// En stapel per dag: grön från 70 % i mål, ockra under, ett kort streck för dagar utan tillräckligt med värden.
+// N = antal platser (7 för veckan, månadens längd), lab(i) = etikett under stapeln eller ''.
+function dayBars(el, days, N, lab, say, tip) {
+  const z = chartScale(), w = Math.max(280, Math.round(el.clientWidth) || 700), h = Math.round(92 * z), l = 30 * z, r = 4, B = 18 * z, top = 6;
+  const bw = (w - l - r) / N, Y = v => h - B - v / 100 * (h - B - top);
+  let sv = `<line class="mgl" x1="${l}" x2="${w - r}" y1="${Y(70)}" y2="${Y(70)}"/><text x="${l - 5 * z}" y="${Y(70) + 4 * z}" text-anchor="end">70 %</text>`;
+  for (let i = 0; i < N; i++) {
+    const v = days[i] ? days[i][1] : undefined, ww = Math.min(bw * .72, 34 * z), bx = l + i * bw + (bw - ww) / 2;
+    sv += v == null ? `<rect class="mdn" x="${bx.toFixed(1)}" y="${(Y(0) - 2).toFixed(1)}" width="${ww.toFixed(1)}" height="2" rx="1"/>`
+      : `<rect x="${bx.toFixed(1)}" y="${Y(v).toFixed(1)}" width="${ww.toFixed(1)}" height="${Math.max(2, Y(0) - Y(v)).toFixed(1)}" rx="${Math.min(4, ww / 3).toFixed(1)}" style="fill:var(${v >= 70 ? '--ok' : '--high-fill'})"><title>${tip(i)}: ${v} % in range</title></rect>`;
+    const t = lab(i); if (t) sv += `<text x="${(l + (i + .5) * bw).toFixed(1)}" y="${h - 4 * z}" text-anchor="middle">${t}</text>`;
+  }
+  return `<svg class="mdays" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg>`;
+}
+const barSay = (days, what) => { const had = days.filter(d => d[1] != null); return `Time in range per day, ${what}. ${had.filter(d => d[1] >= 70).length} of ${had.length} days with readings were at 70 % or more.`; };
+
 const loadWeek = () => api('/api/weekly').then(w => { wk = w; renderWeek(); }).catch(() => {});
+const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(() => {});
+function loadIns() { if (iview === 'month') loadMonth(moKey); else loadWeek(); }
+function setView(v) {
+  iview = v; try { localStorage.setItem('insv', v); } catch {}
+  document.querySelectorAll('#iseg button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-pressed', b.dataset.v === v); });
+  $('wk').hidden = $('wksub').hidden = v !== 'week'; $('mo').hidden = v !== 'month'; $('monav').hidden = v !== 'month' || !(mo && mo.months && mo.months.length);
+  loadIns();
+}
+document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => setView(b.dataset.v));
+
 function renderWeek() {
-  const el = $('wk'), c = wk && wk.cur, p = wk && wk.prev; if (!wk) return;
+  const el = $('wk'), c = wk && wk.cur, p = wk && wk.prev; if (!wk || iview !== 'week') return;
   // Med nästan ingen data (t.ex. första timmen efter ett uppehåll) blir "100 % in range, no lows" missvisande
   if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">Too few readings in the last 7 days to sum up${c ? ` (${c.cov.toFixed(0)} % of the week has readings)` : ''}. They build up while the server runs.</div>`; return; }
-  // En inledande mening (tid i målområdet och känningar mot veckan före), sedan grupperat: känningar först, sedan
-  // nivåerna, sedan måltiderna. Förut var allt lika stora rutor i en enda rad, utan något som sa vad som var viktigast.
-  const both = p && p.cov >= 50 && c.cov >= 50, G = { Lows: [], Range: [], Meals: [] };
-  const it = (g, color, main, sub) => G[g].push(`<div class="insi"><i style="background:${color}"></i><div>${main}</div>${sub ? `<span>${sub}</span>` : ''}</div>`);
-  const was = (a, b, unit, dec) => !both ? '' : Math.abs(a - b) < (dec ? .15 : 1.5) ? 'About the same as the week before' : `${a > b ? 'Up' : 'Down'} from ${b.toFixed(dec)}${unit} the week before`;
-  const lows = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
-  const lead = `<p class="lead"><b style="color:${c.tir >= 70 ? 'var(--ok)' : 'var(--high)'}">${c.tir.toFixed(0)} %</b> in range and <b${c.lows.length ? ' style="color:var(--low)"' : ''}>${lows(c.lows.length)}</b> in the last 7 days.`
-    + (both ? ` <span class="mut">The week before: ${p.tir.toFixed(0)} % and ${lows(p.lows.length)}.</span>` : '') + '</p>';
-  // När känningarna börjar har ett hem: Mönster. Här en länk dit, med samma 7 dagar, i stället för en egen uträkning
-  // (förut gav Insikter och Mönster olika svar på samma fråga, eftersom perioderna var 7 och 14 dagar).
-  const lw = lowWhen(c.lows.map(l => l[0]));
-  if (lw) it('Lows', 'var(--low)', `${lw.text}. <button class="lk" id="lowpat">See the strip in Patterns</button>`, 'Last 7 days. A low = at least 15 min below 3.9');
-  it('Range', c.high >= 25 ? 'var(--high)' : 'var(--mut)', `<b>${c.high.toFixed(0)} %</b> of the time above 10`, was(c.high, p && p.high, ' %', 0));
-  it('Range', col(mm(c.avg)), `Average <b>${f1(mm(c.avg))}</b> mmol/L`, was(mm(c.avg), p && mm(p.avg), '', 1));
-  if (c.cov < 70) it('Range', 'var(--high)', `Readings cover <b>${c.cov.toFixed(0)} %</b> of the week`, 'Treat these numbers with caution');
-  const ms = wk.meals;
-  // En mening per måltid med både toppar och känningar (förut kunde samma måltid stå i två grupper, och man fick
-  // pussla ihop dem själv). Känningar först, sedan flest över 10, sedan de som höll sig i mål. Högst 5.
-  const tms = n => n === 1 ? '1 time' : n + ' times', mealLine = m => [
-    m.hi ? `went above 10 after ${m.hi} of ${tms(m.n)}` : '', m.lo ? `was followed by a low ${m.lo} of ${tms(m.n)}` : ''].filter(Boolean).join(', and ');
-  ms.filter(m => m.lo || (m.n >= 2 && m.hi / m.n >= .5) || (m.n >= 2 && !m.hi))
+  const both = p && p.cov >= 50 && c.cov >= 50, days = wk.days || [];
+  const bars = days.length ? `<h3 class="grp">Each day</h3>` + dayBars(el, days, 7, i => days[i] ? (i === days.length - 1 ? 'Today' : new Date(days[i][0]).toLocaleDateString('en-GB', { weekday: 'short' })) : '', barSay(days, 'last 7 days'), i => dDate(days[i][0])) : '';
+  // Känningar: när de brukar börja (samma svar som Patterns, med länk dit). Måltider: en mening var, känningar först.
+  const L = [], M = [], lw = lowWhen(c.lows.map(l => l[0]));
+  if (lw) L.push(irow('var(--low)', `${lw.text}. <button class="lk" id="lowpat">See the strip in Patterns</button>`, 'A low = at least 15 min below 3.9'));
+  else L.push(irow('var(--ok)', 'No lows in the last 7 days', 'A low = at least 15 min below 3.9'));
+  if (c.cov < 70) L.push(irow('var(--high)', `Readings cover <b>${c.cov.toFixed(0)} %</b> of the week`, 'Treat these numbers with caution'));
+  const mealLine = m => [m.hi ? `went above 10 after ${m.hi} of ${m.n === 1 ? '1 time' : m.n + ' times'}` : '', m.lo ? `was followed by a low ${m.lo} of ${m.n === 1 ? '1 time' : m.n + ' times'}` : ''].filter(Boolean).join(', and ');
+  wk.meals.filter(m => m.lo || (m.n >= 2 && m.hi / m.n >= .5) || (m.n >= 2 && !m.hi))
     .sort((a, b) => (b.lo / b.n - a.lo / a.n) || (b.hi / b.n - a.hi / a.n) || b.n - a.n).slice(0, 5)
-    .forEach(m => it('Meals', m.lo ? 'var(--low)' : m.hi ? 'var(--high)' : 'var(--ok)',
-      `<b>${esc(m.name)}</b> ${mealLine(m) || `stayed in range all ${tms(m.n)}`}`, `Peak ${f1(mm(m.peak))} mmol/L on average${m.lo ? '. A low here = below 3.9 within 3 hours after eating' : ''}`));
+    .forEach(m => M.push(irow(m.lo ? 'var(--low)' : m.hi ? 'var(--high)' : 'var(--ok)', `<b>${esc(m.name)}</b> ${mealLine(m) || `stayed in range all ${m.n} times`}`, `Peak ${f1(mm(m.peak))} mmol/L on average`)));
+  if (!M.length) M.push(`<p class="mut fine m0 ipad">Meals show up here once they have 3 hours of readings after them, and have started in range.</p>`);
   const nk = Object.entries(wk.notes);
-  el.innerHTML = lead + Object.entries(G).filter(([, a]) => a.length).map(([g, a]) => `<h3 class="grp">${g}</h3><div class="wkg">${a.join('')}</div>`).join('')
-    + (ms.length ? '' : '<p class="mut foot">Meals show up here once they have 3 hours of readings after them.</p>')
-    + (nk.length ? `<p class="mut foot">Notes this week: ${nk.map(([k, v]) => `${esc(kindLabel(k))} ${v}`).join(', ')}</p>` : '');
+  el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars
+    + `<div class="igrid">${igroup('Lows', L)}${igroup('Meals', M)}</div>`
+    + `<div class="ifoot"><span>${nk.length ? 'Notes: ' + nk.map(([k, v]) => `${esc(kindLabel(k))} ${v}`).join(', ') + '. ' : ''}A meal's outcome counts once it has 3 hours of readings after it.</span></div>`;
 }
-
 $('wk').onclick = e => {
   if (!e.target.closest('#lowpat')) return;
   $('prng').querySelector('[data-pd="7"]').click(); showTab('pat'); $('t-pat').focus({ preventScroll: true });
   $('psum').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'center' });
 };
-// Månaden i siffror ("Month in review"): samma slags rader som veckan, en stapel per dag och en bild att spara och dela.
-// Bara uträknade fakta från servern (/api/month), ingen AI och inga råd.
-let mo = null, moKey = null;
-const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
-const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(() => {});
-// Höjdpunkterna, i den här ordningen: samma i listan och på bilden
+
+// Höjdpunkterna i månaden, i den här ordningen: samma i listan och på bilden
 function moFacts(x) {
   const f = [], N = x.days.filter(d => d[1] != null).length;
   if (x.best) f.push({ k: 'best', lab: 'Best day', val: dDate(x.best.t), sub: `${x.best.tir} % in range` });
@@ -1490,38 +1530,23 @@ function moFacts(x) {
   return f;
 }
 function renderMonth() {
-  const el = $('mo'); if (!mo) return;
+  const el = $('mo'); if (!mo || iview !== 'month') return;
   const L = mo.months || [], i = L.indexOf(mo.m), x = mo, c = x.cur;
   $('monav').hidden = !L.length; $('mprev').disabled = i <= 0; $('mnext').disabled = i < 0 || i >= L.length - 1;
   $('mlab').textContent = x.m ? monthName(x.m) + (x.partial ? ' so far' : '') : '';
   if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">${!L.length ? 'Your month in review shows up here once there is a day of readings.' : `Too few readings in ${monthName(x.m)} to sum up${c ? ` (${c.cov.toFixed(0)} % of the month has readings)` : ''}.`}</div>`; return; }
-  const name = monthName(x.m).split(' ')[0], p = x.prev, pn = p && monthName(p.m).split(' ')[0], lows = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
-  const lead = `<p class="lead"><b style="color:${c.tir >= 70 ? 'var(--ok)' : 'var(--high)'}">${c.tir.toFixed(0)} %</b> in range and <b${c.lows ? ' style="color:var(--low)"' : ''}>${lows(c.lows)}</b> in ${name}${x.partial ? ' so far' : ''}.`
-    + (p ? ` <span class="mut">${pn}: ${p.tir.toFixed(0)} %${x.partial ? '' : ' and ' + lows(p.lows)}.</span>` : '') + '</p>';
-  // En stapel per dag i månaden (även dagar som inte kommit än), grön från 70 %, ockra under. Streckad linje = målet 70 %.
-  const z = chartScale(), w = Math.max(280, Math.round(el.clientWidth) || 700), h = Math.round(88 * z), l = 30 * z, r = 4, B = 18 * z, top = 6;
-  const yy = +x.m.slice(0, 4), m0 = +x.m.slice(5, 7) - 1, N = new Date(yy, m0 + 1, 0).getDate(), bw = (w - l - r) / N, Y = v => h - B - v / 100 * (h - B - top);
-  let sv = `<line class="mgl" x1="${l}" x2="${w - r}" y1="${Y(70)}" y2="${Y(70)}"/><text x="${l - 5 * z}" y="${Y(70) + 4 * z}" text-anchor="end">70 %</text>`;
-  for (let d = 0; d < N; d++) {
-    const v = x.days[d] ? x.days[d][1] : undefined, bx = l + d * bw + Math.max(1, bw * .14), ww = Math.max(2, bw * .72);
-    sv += v == null ? `<rect class="mdn" x="${bx.toFixed(1)}" y="${(Y(0) - 2).toFixed(1)}" width="${ww.toFixed(1)}" height="2" rx="1"/>`
-      : `<rect x="${bx.toFixed(1)}" y="${Y(v).toFixed(1)}" width="${ww.toFixed(1)}" height="${Math.max(2, Y(0) - Y(v)).toFixed(1)}" rx="${Math.min(3, ww / 3).toFixed(1)}" style="fill:var(${v >= 70 ? '--ok' : '--high-fill'})"><title>${dDate(new Date(yy, m0, d + 1).getTime())}: ${v} % in range</title></rect>`;
-    // Dag 1, 8, 15, 22, 29 och den sista (utom när den sista ligger tätt intill 29)
-    if (d % 7 === 0 && d < N - 2 || d === N - 1) sv += `<text x="${(l + (d + .5) * bw).toFixed(1)}" y="${h - 4 * z}" text-anchor="middle">${d + 1}</text>`;
-  }
-  const had = x.days.filter(d => d[1] != null), good = had.filter(d => d[1] >= 70).length;
-  const say = `Time in range per day in ${name}. ${good} of ${had.length} days with readings were at 70 % or more.${x.best ? ` Best: ${dDate(x.best.t)}, ${x.best.tir} %.` : ''}`;
-  const G = { Highlights: [], Meals: [], 'In numbers': [] }, it = (g, color, main, sub) => G[g].push(`<div class="insi"><i style="background:${color}"></i><div>${main}</div>${sub ? `<span>${sub}</span>` : ''}</div>`);
-  for (const f of moFacts(x)) if (f.k !== 'top') it('Highlights', f.k === 'nolow' ? 'var(--note)' : 'var(--ok)', `${f.lab}: <b>${esc(f.val)}</b>`, esc(f.sub));
-  if (x.top.length) it('Meals', 'var(--acc)', `Most logged: <b>${esc(x.top[0].name)}</b>, ${x.top[0].n === 1 ? 'once' : x.top[0].n + ' times'}`,
-    (x.top.length > 1 ? 'Then ' + x.top.slice(1).map(m => `${esc(m.name)} ${m.n}`).join(', ') + '. ' : '') + `${x.meals} meals logged in all`);
-  if (x.steady) it('Meals', 'var(--ok)', `Lowest peaks after eating: <b>${esc(x.steady.name)}</b>`, `Peak ${f1(mm(x.steady.peak))} mmol/L on average, ${x.steady.n} times that started in range`);
-  const ex = x.notes.Exercise; if (ex) it('Meals', 'var(--note)', `Exercise logged <b>${ex === 1 ? 'once' : ex + ' times'}</b>`, x.exMin ? `${dur(x.exMin * 6e4)} with a length written down` : '');
-  it('In numbers', col(mm(c.avg)), `Average <b>${f1(mm(c.avg))}</b> mmol/L · Est. HbA1c <b>${gmi(c.avg)}</b> mmol/mol`, 'GMI, estimated from the average, not a lab value');
-  it('In numbers', c.cov < 70 ? 'var(--high)' : 'var(--mut)', `<b>${x.n.toLocaleString('en-GB')}</b> readings`, `Sensor active ${c.cov.toFixed(0)} % of the ${x.partial ? 'month so far' : 'month'}${c.cov < 70 ? '. Treat these numbers with caution' : ''}`);
-  el.innerHTML = lead + `<h3 class="grp">Each day</h3><svg class="mdays" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg>`
-    + Object.entries(G).filter(([, a]) => a.length).map(([g, a]) => `<h3 class="grp">${g}</h3><div class="wkg">${a.join('')}</div>`).join('')
-    + `<div class="moa"><button id="mimg">Save as image</button><span class="mut fine">A picture of ${x.partial ? 'the month so far' : 'the month'} to share (1080 × 1350). It shows your numbers, so choose where you post it.</span></div>`;
+  const name = monthName(x.m).split(' ')[0], p = x.prev, pn = p && monthName(p.m).split(' ')[0];
+  const yy = +x.m.slice(0, 4), m0 = +x.m.slice(5, 7) - 1, N = new Date(yy, m0 + 1, 0).getDate();
+  const bars = `<h3 class="grp">Each day</h3>` + dayBars(el, x.days, N, d => d % 7 === 0 && d < N - 2 || d === N - 1 ? String(d + 1) : '', barSay(x.days, 'in ' + name), d => dDate(new Date(yy, m0, d + 1).getTime()));
+  const H = moFacts(x).filter(f => f.k !== 'top').map(f => irow(f.k === 'nolow' ? 'var(--note)' : 'var(--ok)', `${f.lab}: <b>${esc(f.val)}</b>`, esc(f.sub))), M = [];
+  if (!H.length) H.push(`<p class="mut fine m0 ipad">Highlights show up once a few days have readings most of the day.</p>`);
+  if (x.top.length) M.push(irow('var(--acc)', `Most logged: <b>${esc(x.top[0].name)}</b>, ${tms(x.top[0].n)}`, (x.top.length > 1 ? 'Then ' + x.top.slice(1).map(m => `${esc(m.name)} ${m.n}`).join(', ') + '. ' : '') + `${x.meals} meals logged in all`));
+  if (x.steady) M.push(irow('var(--ok)', `Lowest peaks after eating: <b>${esc(x.steady.name)}</b>`, `Peak ${f1(mm(x.steady.peak))} mmol/L on average, ${x.steady.n} times that started in range`));
+  const ex = x.notes.Exercise; if (ex) M.push(irow('var(--note)', `Exercise logged <b>${tms(ex)}</b>`, x.exMin ? `${dur(x.exMin * 6e4)} with a length written down` : ''));
+  if (!M.length) M.push(`<p class="mut fine m0 ipad">No meals logged this month.</p>`);
+  el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
+    + `<div class="igrid">${igroup('Highlights', H)}${igroup('Meals and activity', M)}</div>`
+    + `<div class="ifoot"><span>${x.n.toLocaleString('en-GB')} readings · sensor active ${c.cov.toFixed(0)} %${c.cov < 70 ? ' (treat with caution)' : ''} · Est. HbA1c ${gmi(c.avg)} mmol/mol (GMI, from the average)</span><button id="mimg">Save as image</button></div>`;
 }
 $('mprev').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i > 0) loadMonth(L[i - 1]); };
 $('mnext').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i >= 0 && i < L.length - 1) loadMonth(L[i + 1]); };
@@ -1799,7 +1824,8 @@ function showTab(k) {
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'tab-' + k);
   if (k === 'pat') drawProf(); // ritas om i rätt bredd nu när panelen syns
-  if (k === 'ins') { loadWeek(); loadMonth(moKey); aiStatus(); }
+  if (k === 'ins') setView(iview);
+  if (k === 'ask') aiStatus();
   try { localStorage.setItem('tab', k); } catch {}
 }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
@@ -1835,7 +1861,7 @@ $('imfile').onchange = async () => {
 nowTime();
 try { const k = localStorage.getItem('tab'); if (k && $('tab-' + k)) showTab(k); } catch {}
 api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { renderMeals(); renderLib(); renderInsulin(); syncNav(); refresh(); loadProf(); });
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) renderMonth(); }, 150); });
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); } }, 150); });
 setInterval(refresh, 6e4);
 </script>
 </body>

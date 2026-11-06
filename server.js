@@ -253,6 +253,13 @@ function period(a, from, to) {
   return { avg: s / w, low: lo / w * 100, high: hi / w * 100, tir: (w - lo - hi) / w * 100, cov: Math.min(100, w / (to - from) * 100), min: mn, max: mx,
     lows: lows.filter(e => e.dur >= 15 * 6e4).map(e => [e.t, e.min, Math.round(e.dur / 6e4)]) };
 }
+// Tid i mål per kalenderdag i [from, to): [dagens början, procent eller null, perioden]. null = under halva dygnet har värden.
+// Samma uträkning för veckan, månaden och Telegram, så att staplarna alltid stämmer med varandra.
+function perDay(from, to) {
+  const out = [], d = new Date(from);
+  while (d.getTime() < to) { const ds = d.getTime(); d.setDate(d.getDate() + 1); const de = Math.min(d.getTime(), to), q = period(range(ds, de), ds, de); out.push([ds, q && q.cov >= 50 ? Math.round(q.tir) : null, q]); }
+  return out;
+}
 // Senaste 7 dygnen mot de 7 före, plus hur varje måltid gick (bara de som började i mål, som i appens jämförelse)
 function weekly() {
   const now = Date.now(), W = 7 * 864e5, a = sorted(now - 2 * W, now), db = readDb(), part = (f, t) => a.filter(r => r[0] >= f && r[0] < t);
@@ -265,8 +272,9 @@ function weekly() {
     x.n++; x.hi += o.pk[1] > 180 ? 1 : 0; x.lo += o.lo[1] < 70 ? 1 : 0; x.peak += o.pk[1]; meals.set(k, x);
   }
   for (const n of db.notes) if (n.t >= now - W && n.t <= now) notes[n.kind] = (notes[n.kind] || 0) + 1;
+  const d0 = new Date(now); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - 6);
   return { cur: period(part(now - W, now), now - W, now), prev: period(part(now - 2 * W, now - W), now - 2 * W, now - W),
-    meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes };
+    meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes, days: perDay(d0.getTime(), now).map(([t, v]) => [t, v]) };
 }
 
 // ---------- Månaden i siffror ("Month in review") ----------
@@ -294,10 +302,9 @@ function monthly(k) {
   const pf = mstart(mkey(from - 1)), pp = period(range(pf, from), pf, from), lowDay = new Set(p.lows.map(l => ymd(l[0])));
   // Dag för dag: tid i mål (null = under halva dygnet har värden), bästa dagen (minst 70 % täckning) och dagar i rad utan
   // känning. En dag utan tillräckligt med värden bryter raden, eftersom man inte vet hur den gick.
-  const days = [], d = new Date(from); let best = null, run = null, noLow = null;
-  while (d.getTime() < to) {
-    const ds = d.getTime(); d.setDate(d.getDate() + 1); const de = Math.min(d.getTime(), to), q = period(range(ds, de), ds, de), ok = q && q.cov >= 50;
-    days.push([ds, ok ? Math.round(q.tir) : null]);
+  const days = []; let best = null, run = null, noLow = null;
+  for (const [ds, v, q] of perDay(from, to)) {
+    const ok = v !== null; days.push([ds, v]);
     if (q && q.cov >= 70 && (!best || q.tir >= best.tir)) best = { t: ds, tir: Math.round(q.tir) };
     if (ok && !lowDay.has(ymd(ds))) { run = run ? { ...run, to: ds, n: run.n + 1 } : { from: ds, to: ds, n: 1 }; if (!noLow || run.n > noLow.n) noLow = run; } else run = null;
   }
@@ -671,12 +678,7 @@ const hmin = m => m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' 
 function weekText() {
   const now = Date.now(), w = weekly(), c = w.cur, p = w.prev;
   if (!c || c.cov < 20) return '📊 Too few readings in the last 7 days for a summary.';
-  const rows = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
-    const from = d.getTime(), to = Math.min(new Date(d).setDate(d.getDate() + 1), now), q = period(range(from, to), from, to);
-    rows.push(`${dayName(from)} ${q && q.cov >= 50 ? bar(q.tir) + ' ' + pct(q.tir).padStart(5) : '░'.repeat(10) + ' ' + '–'.padStart(5)}`);
-  }
+  const rows = w.days.map(([t, v]) => `${dayName(t)} ${v !== null ? bar(v) + ' ' + pct(v).padStart(5) : '░'.repeat(10) + ' ' + '–'.padStart(5)}`);
   const cnt = new Map(); for (const m of readDb().log) if (m.t >= now - 7 * 864e5 && m.t <= now && !isCorr(m.name)) { const k = String(m.name).toLowerCase(), x = cnt.get(k) || { name: String(m.name), n: 0 }; x.n++; cnt.set(k, x); }
   const both = p && p.cov >= 50 && c.cov >= 50, top = [...cnt.values()].sort((x, y) => y.n - x.n).slice(0, 3);
   const ex = w.notes.Exercise;
