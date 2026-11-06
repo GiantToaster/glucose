@@ -294,7 +294,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <section class="card panel" id="tab-act" role="tabpanel" aria-labelledby="t-act">
   <h2 class="sr">Activity</h2>
   <div class="ahead"><input id="lq" type="search" aria-keyshortcuts="F" title="Filter (F)" placeholder="Filter, e.g. pizza or low" aria-label="Filter activity" autocomplete="off"><span class="mut" id="ins24"></span></div>
-  <p class="mut fine legend">Meals and doses are followed for 3 hours: the peak, and a low if there was one. Low = below 3.9, Very low = below 3.0.</p>
+  <p class="mut fine legend">Meals and doses are followed for 3 hours: the peak, and a low if there was one.</p>
   <div id="log"></div>
 </section>
 
@@ -767,17 +767,16 @@ function renderLog() {
     // Utfallet: start → topp, och en känning inom 3 h när det blev en. Förut syntes bara toppen, så en måltid som
     // slutade på 2.7 såg ut som en av de bästa. "→" läses som "to" av skärmläsare, inte "rightwards arrow".
     // Correction (insulin utan mat): start → lägsta, eftersom det är sänkningen som spelar roll, inte en topp.
-    // Pågående (de 3 timmar som mäts): hur länge det är kvar står i etiketten.
+    // Pågående (de 3 timmar som mäts): "so far" i etiketten
     const { b, pk, lo, done } = out[m.id] || {}, low = lo && lo[1] < 70, live = out[m.id] && !done, cor = isCorr(m.name);
     // Bara siffrorna med en pil (start → topp, eller → lägsta för en Correction) och en kort grå etikett. Förut var det en
     // mening med små bokstäver ("start 6.7 → peak 11.6 (+4.9)") som såg olika ut på varje rad och var svår att skumma.
     const arrow = ARR;
-    const left = m.t + 3 * 36e5 - Date.now(), still = live ? ` · ${left > 6e4 ? dur(left) + ' left' : 'almost done'}` : '';
     const end = cor ? (lo && lo[1] < b?.[1] ? lo : null) : pk;
     const sNum = b && `<span${b[1] < 70 ? ' style="color:var(--low)"' : ''}>${f1(mm(b[1]))}</span>`;
-    const lab = !b ? '' : !end ? (b[1] < 70 ? 'start, started low' : 'start') + still
-      : cor ? `lowest${live ? ' so far' : ''}${still}`
-      : `${b[1] < 70 ? 'started low, ' : ''}peak${live ? ' so far' : ''}${still}`;
+    const lab = !b ? '' : !end ? (b[1] < 70 ? 'start, started low' : 'start')
+      : cor ? `lowest${live ? ' so far' : ''}`
+      : `${b[1] < 70 ? 'started low, ' : ''}peak${live ? ' so far' : ''}`;
     const res = !b ? '' : `<span class="oc">${sNum}${end ? ` ${arrow} <b style="color:${col(mm(end[1]))}">${f1(mm(end[1]))}</b>` : ''}</span> <span class="ocn">${lab}</span>`
       + (low ? `<span class="lowres">${lowWord(lo[1])} <b>${f1(mm(lo[1]))}</b> <span class="nw">after ${dur(lo[0] - m.t)}</span></span>` : '');
     return `<div class="li" data-row="${m.id}">${tm(m.t)}<div><button class="lk" data-open="${m.id}"><b>${esc(m.name)}</b><span class="sr">, ${dshort(m.t)} ${hhmm(m.t)}</span></button></div><div class="ins"><b>${units(m.ins)}</b>${m.type ? `<span>${esc(m.type)}</span>` : ''}</div><div class="res">${res}</div><div class="acts">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : `<button data-keep="${m.id}" title="Add to your saved meals with this dose">Save to Meals</button>`}<button class="rx" data-id="${m.id}" title="Remove" aria-label="Remove ${esc(m.name)}, ${units(m.ins)} at ${hhmm(m.t)}">✕</button></div></div>`;
