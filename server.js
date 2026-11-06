@@ -10,7 +10,8 @@
 // Log in your own words: type "pizza 7,5 enheter" or "promenad 45 min" in the box at the top of the dashboard, or send it
 //    to your own Telegram bot from your phone (Settings > Telegram shows how to create and connect it). The computer
 //    fetches the messages itself, so nothing is opened in the router, and messages wait at Telegram for up to 24 h if
-//    the computer is off. Only the meal texts pass through Telegram, never glucose values.
+//    the computer is off. Only the meal texts pass through Telegram, never glucose readings. A weekly and monthly summary
+//    (time in range, lows, average) is sent only if you turn it on under Settings > Telegram, or ask with /week or /month.
 //
 // Local AI (Insights tab and reading what you type): install Ollama and a model, e.g.  ollama pull gemma4:12b
 //    Uses a gemma model if one is installed. OLLAMA_MODEL picks another, OLLAMA_URL points to another address.
@@ -268,6 +269,66 @@ function weekly() {
     meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes };
 }
 
+// ---------- Månaden i siffror ("Month in review") ----------
+// Bara uträknade fakta om en kalendermånad, inga råd: tid i mål mot månaden före, bästa dagen, längsta tiden i följd i mål,
+// flest dagar i rad utan känning, mest loggade rätter och en typisk dag (median per halvtimme). Visas under Insights, kan
+// sparas som bild, och skickas av Telegram-boten den 1:a om man slagit på rapporterna.
+const mkey = t => ymd(t).slice(0, 7), mstart = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).getTime(), mnext = k => new Date(+k.slice(0, 4), +k.slice(5, 7), 1).getTime();
+// Månader med minst ett dygns värden (96 kvartsvärden), äldst först
+function monthList() {
+  const out = []; if (!S.length) return out;
+  for (let t = mstart(mkey(S[0][0])); t <= Date.now(); t = mnext(mkey(t))) { const k = mkey(t); if (lowerBound(mnext(k)) - lowerBound(t) >= 96) out.push(k); }
+  return out;
+}
+// Hur stor del av månaden (hittills) som har värden, i procent
+const monthCov = k => { const f = mstart(k), t = Math.min(mnext(k), Date.now()), p = period(range(f, t), f, t); return p ? p.cov : 0; };
+// Förvald månad: den förra så länge den nya är under en vecka gammal, annars den nya; har den för lite värden (under 20 %,
+// t.ex. ett uppehåll eller bara en gammal import) den senaste månaden som har tillräckligt
+const defaultMonth = list => {
+  const k = mkey(Date.now()), pk = mkey(mstart(k) - 1), pref = (Date.now() - mstart(k) < 7 * 864e5 ? [pk, k] : [k, pk]).filter(m => list.includes(m));
+  return pref.find(m => monthCov(m) >= 20) || [...list].reverse().find(m => monthCov(m) >= 20) || list[list.length - 1];
+};
+function monthly(k) {
+  const now = Date.now(), from = mstart(k), to = Math.min(mnext(k), now), a = range(from, to), p = period(a, from, to);
+  if (!p || from >= now) return null;
+  const pf = mstart(mkey(from - 1)), pp = period(range(pf, from), pf, from), lowDay = new Set(p.lows.map(l => ymd(l[0])));
+  // Dag för dag: tid i mål (null = under halva dygnet har värden), bästa dagen (minst 70 % täckning) och dagar i rad utan
+  // känning. En dag utan tillräckligt med värden bryter raden, eftersom man inte vet hur den gick.
+  const days = [], d = new Date(from); let best = null, run = null, noLow = null;
+  while (d.getTime() < to) {
+    const ds = d.getTime(); d.setDate(d.getDate() + 1); const de = Math.min(d.getTime(), to), q = period(range(ds, de), ds, de), ok = q && q.cov >= 50;
+    days.push([ds, ok ? Math.round(q.tir) : null]);
+    if (q && q.cov >= 70 && (!best || q.tir >= best.tir)) best = { t: ds, tir: Math.round(q.tir) };
+    if (ok && !lowDay.has(ymd(ds))) { run = run ? { ...run, to: ds, n: run.n + 1 } : { from: ds, to: ds, n: 1 }; if (!noLow || run.n > noLow.n) noLow = run; } else run = null;
+  }
+  // Längsta tiden i följd mellan 3.9 och 10. En lucka över 20 min avslutar den, precis som för en känning.
+  let inR = null, s = null;
+  for (let i = 0; i < a.length; i++) {
+    const [t, v] = a[i], ok = v >= 70 && v <= 180;
+    if (ok && (!s || t - a[i - 1][0] > 20 * 6e4)) s = t;
+    if (!ok) s = null; else if (!inR || t - s > inR.min * 6e4) inR = { t: s, min: Math.round((t - s) / 6e4) };
+  }
+  // Måltider: flest gånger, och den som höll sig lägst efteråt (minst 3 gånger, började i mål, 3 h värden efter)
+  const db = readDb(), cnt = new Map(), calm = new Map();
+  for (const m of db.log) {
+    if (!(m.t >= from && m.t < to) || isCorr(m.name)) continue;
+    const key = String(m.name).toLowerCase(), c = cnt.get(key) || { name: String(m.name), n: 0 }; c.n++; cnt.set(key, c);
+    const o = outcome(m.t); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
+    const x = calm.get(key) || { name: c.name, n: 0, peak: 0 }; x.n++; x.peak += o.pk[1]; calm.set(key, x);
+  }
+  const steady = [...calm.values()].filter(x => x.n >= 3).map(x => ({ ...x, peak: x.peak / x.n })).sort((x, y) => x.peak - y.peak)[0] || null;
+  const notes = {}; let exMin = 0;
+  for (const n of db.notes) if (n.t >= from && n.t < to) { notes[n.kind] = (notes[n.kind] || 0) + 1; if (n.kind === 'Exercise' && n.dur) exMin += n.dur; }
+  // Typisk dag: ett värde per kvart (som i dygnsprofilen), median och mittersta hälften per halvtimme
+  const slot = new Map(), b = Array.from({ length: 48 }, () => []);
+  for (const [t, v] of a) { const q = Math.floor(t / 9e5); if (!slot.has(q)) slot.set(q, [t, v]); }
+  for (const [t, v] of slot.values()) { const x = new Date(t); b[x.getHours() * 2 + (x.getMinutes() >= 30 ? 1 : 0)].push(v); }
+  const prof = b.map(x => { if (x.length < 4) return null; x.sort((u, w) => u - w); return [.25, .5, .75].map(q => x[Math.min(x.length - 1, Math.floor(q * x.length))]); });
+  const sum = x => x && { tir: x.tir, low: x.low, high: x.high, avg: x.avg, cov: x.cov, lows: x.lows.length };
+  return { m: k, from, to, partial: mnext(k) > now, n: a.length, cur: sum(p), prev: pp && pp.cov >= 20 ? { m: mkey(pf), ...sum(pp) } : null,
+    days, best, noLow, inR, top: [...cnt.values()].sort((x, y) => y.n - x.n).slice(0, 3), meals: [...cnt.values()].reduce((x, y) => x + y.n, 0), steady, notes, exMin, prof };
+}
+
 // ---------- Lokal AI (Ollama) ----------
 // Allt körs på den här datorn. Modellen får en sammanfattning av de senaste 14 dagarna och svarar på frågor om den.
 // Den får aldrig ge dosråd; det står i instruktionen och i appen.
@@ -460,7 +521,7 @@ const CORR = 'Correction';
 const NOFOOD = /^(ingen|utan|no|without|not|inte|mat|food|meal|måltid|ate|åt|bara|only|dos|dosen|dose|korr\w*|correct\w*|fiasp|novorapid|humalog|lyumjev|apidra|actrapid|trurapi)$/;
 const isCorr = name => String(name).toLowerCase() === CORR.toLowerCase();
 // Frågor och hälsningar är aldrig måltider ("hej", "hur ligger jag?") när den enkla tolkaren används utan AI
-const NOT_MEAL = /\?\s*$|^(hej|hejsan|hallå|tja|tjena|tack|hi|hello|hey|thanks|ok|okej|hur|vad|när|varför|vilken|vilka|how|what|when|why|which|is|am|are|do|does|can)\b/i;
+const NOT_MEAL = /\?\s*$|^(hej|hejsan|hallå|tja|tjena|tack|hi|hello|hey|thanks|ok|okej|hur|vad|när|varför|vilken|vilka|how|what|when|why|which|is|am|are|do|does|can)(?![\p{L}\d])/iu; // inte \b: den räknar å/ä/ö som ordgräns, så "okänd rätt" lästes som "ok"
 function interpretLocal(text, ref, names) {
   // Skiljetecken bort, men inte decimalpunkten i 7.5 ("ris." -> "ris")
   const tk = text.toLowerCase().replace(/(\d),(\d)/g, '$1.$2').replace(/[,;!?]+|\.(?!\d)/g, ' ').split(/\s+/).filter(Boolean);
@@ -577,7 +638,9 @@ function removeEntry(id) {
 // Datorn hämtar meddelandena själv (long polling), så inget öppnas i routern. Bara den chatt som parkopplats med
 // koden från Settings får logga; alla andra ignoreras. Token och chatt sparas i data/telegram.json.
 // Inga glukosvärden skickas till Telegram, bara bekräftelser på det du själv skrivit.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [] };
+// report: veckorapport söndag kväll och månadsrapport den 1:a (av från början, eftersom den skickar siffror via Telegram).
+// sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '' };
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
 const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
@@ -595,7 +658,57 @@ const describe = e => e.name !== undefined ? `<b>${he(e.name)}</b> · ${e.ins} $
 const tgSay = (text, extra = {}) => tgApi('sendMessage', { chat_id: tg.chat, text, parse_mode: 'HTML', ...extra }).catch(e => console.error('Telegram send:', e.message));
 // Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
 const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
-const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.';
+const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/week and /month send a summary of your numbers.';
+const COMMANDS = [{ command: 'undo', description: 'Remove the last thing you logged' }, { command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
+
+// ---------- Rapporter i Telegram: veckan och månaden i text ----------
+// Bara siffror som redan visas på dashboarden. Staplarna är tecken (█░) i en <pre>, så att de står rakt i Telegram.
+const mmol = v => (v / 18.016).toFixed(1), pct = v => Math.round(v) + ' %', lowsTxt = n => n === 1 ? '1 low' : n + ' lows';
+const bar = v => '█'.repeat(Math.round(v / 10)) + '░'.repeat(10 - Math.round(v / 10));
+const dayName = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short' }), dayDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+const monthName = k => new Date(mstart(k)).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+const hmin = m => m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
+function weekText() {
+  const now = Date.now(), w = weekly(), c = w.cur, p = w.prev;
+  if (!c || c.cov < 20) return '📊 Too few readings in the last 7 days for a summary.';
+  const rows = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    const from = d.getTime(), to = Math.min(new Date(d).setDate(d.getDate() + 1), now), q = period(range(from, to), from, to);
+    rows.push(`${dayName(from)} ${q && q.cov >= 50 ? bar(q.tir) + ' ' + pct(q.tir).padStart(5) : '░'.repeat(10) + ' ' + '–'.padStart(5)}`);
+  }
+  const cnt = new Map(); for (const m of readDb().log) if (m.t >= now - 7 * 864e5 && m.t <= now && !isCorr(m.name)) { const k = String(m.name).toLowerCase(), x = cnt.get(k) || { name: String(m.name), n: 0 }; x.n++; cnt.set(k, x); }
+  const both = p && p.cov >= 50 && c.cov >= 50, top = [...cnt.values()].sort((x, y) => y.n - x.n).slice(0, 3);
+  const ex = w.notes.Exercise;
+  return [`📊 <b>Your week</b> · ${dayDate(now - 6 * 864e5)} – ${dayDate(now)}`, '',
+    `In range <b>${pct(c.tir)}</b>${both ? ` (week before ${pct(p.tir)})` : ''}`,
+    `<b>${lowsTxt(c.lows.length)}</b>${both ? ` (week before ${p.lows.length})` : ''} · average <b>${mmol(c.avg)}</b> mmol/L`,
+    '', '<b>Time in range per day</b>', `<pre>${rows.join('\n')}</pre>`,
+    ...(top.length ? [`Meals: ${top.map(m => `${he(m.name)} ×${m.n}`).join(', ')}`] : []),
+    ...(ex ? [`Exercise logged ${ex === 1 ? 'once' : ex + ' times'}`] : []),
+    ...(c.cov < 70 ? [`<i>Readings cover ${pct(c.cov)} of the week.</i>`] : [])].join('\n');
+}
+function monthText(k) {
+  const x = monthly(k); if (!x || x.cur.cov < 20) return `🗓 Too few readings in ${monthName(k)} for a summary.`;
+  const c = x.cur, p = x.prev, L = [`🗓 <b>${monthName(k)}${x.partial ? ' so far' : ''}</b>`, '',
+    `In range <b>${pct(c.tir)}</b>${p ? ` (${monthName(p.m).split(' ')[0]}: ${pct(p.tir)})` : ''}`,
+    `<b>${lowsTxt(c.lows)}</b>${p && !x.partial ? ` (${p.lows} the month before)` : ''} · average <b>${mmol(c.avg)}</b> mmol/L`, ''];
+  if (x.best) L.push(`⭐ Best day: <b>${dayDate(x.best.t)}</b>, ${pct(x.best.tir)} in range`);
+  if (x.inR && x.inR.min >= 60) L.push(`🟢 Longest time in range: <b>${hmin(x.inR.min)}</b> in a row, from ${dayDate(x.inR.t)} ${hm(x.inR.t)}`);
+  if (x.noLow && x.noLow.n >= 2) L.push(`🛡 No lows for <b>${x.noLow.n} days</b> in a row (${dayDate(x.noLow.from)} – ${dayDate(x.noLow.to)})`);
+  if (x.top.length) L.push(`🍽 Most logged: ${x.top.map(m => `${he(m.name)} ×${m.n}`).join(', ')}`);
+  if (x.steady) L.push(`〰 Lowest peaks after eating: ${he(x.steady.name)}, ${mmol(x.steady.peak)} on average`);
+  if (x.notes.Exercise) L.push(`🚶 Exercise logged ${x.notes.Exercise === 1 ? 'once' : x.notes.Exercise + ' times'}${x.exMin ? ` (${hmin(x.exMin)} where you wrote how long)` : ''}`);
+  L.push('', `<i>${x.n.toLocaleString('en-GB')} readings · sensor active ${pct(c.cov)}. The full card is under Insights on the dashboard.</i>`);
+  return L.join('\n');
+}
+// Söndag från 19:00 och den 1:a från 09:00. Var servern av då skickas den när den startar samma dag.
+function reportTick() {
+  if (!tg.token || !tg.chat || !tg.report) return;
+  const d = new Date(), day = ymd(d), mk = mkey(mstart(mkey(d)) - 1);
+  if (d.getDay() === 0 && d.getHours() >= 19 && tg.sentW !== day) { tg.sentW = day; saveTg(); tgSay(weekText()); }
+  if (d.getDate() === 1 && d.getHours() >= 9 && tg.sentM !== mk) { tg.sentM = mk; saveTg(); tgSay(monthText(mk)); }
+}
 async function tgLogged(r, id, late) {
   const e = addEntry(r, id); if (!e) return;
   tg.last = [...tg.last, e.id].slice(-20); saveTg();
@@ -632,6 +745,8 @@ async function tgHandle(u) {
   }
   if (!text) return tgSay('I can only read text. Use the microphone on your keyboard to dictate.');
   if (/^\/(start|help)\b/.test(text)) return tgSay(HELP);
+  if (/^\/week\b/.test(text)) return tgSay(weekText());
+  if (/^\/month\b/.test(text)) { const list = monthList(), k = mkey(Date.now()); return tgSay(monthText(list.includes(k) && monthCov(k) >= 20 ? k : defaultMonth(list) || k)); }
   if (/^\/undo\b/.test(text)) {
     const id = tg.last.pop(), db = readDb(), e = id && (db.log.find(x => x.id === id) || db.notes.find(x => x.id === id)); saveTg();
     if (!e) return tgSay('Nothing to undo.');
@@ -723,6 +838,9 @@ server.listen(PORT, HOST, () => {
   if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
   // Hämtningar startar först när porten är vår
   tick(); setInterval(tick, 6e4); tgLoop(); startOllama();
+  setInterval(reportTick, 6e4); setTimeout(reportTick, 5e3);
+  // Kommandomenyn i Telegram (/week och /month kom till senare; en bot som kopplades in förut får dem här)
+  if (tg.token) tgApi('setMyCommands', { commands: COMMANDS }).catch(() => {});
 });
 
 // "Start with Windows": en liten .cmd i Autostart-mappen som startar servern minimerad i aktivitetsfältet vid inloggning.
@@ -803,7 +921,7 @@ function route(req, res) {
     if (typeof t !== 'string' || !/^\d{5,}:[\w-]{30,}$/.test(t.trim())) return send(res, { error: 'That doesn\'t look like a bot token. It looks like 123456789:ABC-def…' }, 400);
     let me; try { me = await tgApi('getMe', {}, AbortSignal.timeout(10e3), t.trim()); } catch (e) { return send(res, { error: e.code === 401 || e.code === 404 ? 'Telegram did not accept that token.' : 'No contact with Telegram.' }, 400); }
     await tgApi('deleteWebhook', {}, undefined, t.trim()).catch(() => {}); // en webhook skulle stoppa hämtningen
-    tgApi('setMyCommands', { commands: [{ command: 'undo', description: 'Remove the last thing you logged' }, { command: 'help', description: 'How to log' }] }, undefined, t.trim()).catch(() => {});
+    tgApi('setMyCommands', { commands: COMMANDS }, undefined, t.trim()).catch(() => {});
     tg = { ...TG0, token: t.trim(), bot: me.username, code: String(crypto.randomInt(100000, 1000000)) }; tgErr = ''; tgPending = null; saveTg();
     if (tgAbort) tgAbort.abort();
     send(res, { ok: 1 });
@@ -820,8 +938,17 @@ function route(req, res) {
       send(res, state());
     });
   }
-  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr });
+  // Rapporterna på/av. Vid påslag räknas dagens söndag/1:a som redan skickad, så att inget skickas direkt.
+  if (u.pathname === '/api/telegram/report' && req.method === 'POST') return body(req, res, ({ on }) => {
+    if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
+    tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
+  });
+  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report });
   if (u.pathname === '/api/weekly') return send(res, weekly());
+  if (u.pathname === '/api/month') {
+    const list = monthList(), q = u.searchParams.get('m'), k = list.includes(q) ? q : defaultMonth(list);
+    return send(res, { months: list, demo: !!DEMO, ...(k && monthly(k)) });
+  }
   // Exakt det som skickas till AI:n, så att man kan se vad den svarar utifrån
   if (u.pathname === '/api/ai/context') { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(ASK + aiContext()); }
   // Är den lokala AI:n igång? Med ?warm=1 laddas modellen in i förväg, så att första svaret inte tar 20 s.
