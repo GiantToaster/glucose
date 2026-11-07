@@ -649,7 +649,8 @@ function removeEntry(id) {
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
 // fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
 // knapparna fanns har fått dem en gång.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false };
+// app: adressen till Log-sidan (Telegram Mini App, t.ex. på GitHub Pages). Tom = ingen "📝 Log"-knapp.
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, app: '' };
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
 const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
@@ -737,9 +738,15 @@ function favKeyboard() {
   for (const m of db.log) if (m.t >= since && !isCorr(m.name)) { const name = cleanName(m.name), k = name.toLowerCase(), x = c.get(k) || { name, n: 0 }; x.n++; c.set(k, x); }
   const names = [...c.values()].sort((a, b) => b.n - a.n).map(x => x.name);
   for (const m of db.meals) if (names.length < 6 && !names.some(n => n.toLowerCase() === m.name.toLowerCase())) names.push(m.name);
-  const b = names.slice(0, 6).map(n => ({ text: FAV + n.slice(0, 60) }));
-  if (!b.length) return null;
-  const rows = []; b.forEach((x, i) => i % 2 ? rows[rows.length - 1].push(x) : rows.push([x]));
+  const b = names.slice(0, 6).map(n => ({ text: FAV + n.slice(0, 60) })), rows = [];
+  // Log-sidan (Mini App) överst, med favoriterna och deras doser i adressen: [namn, sparad dos, dos förra gången]
+  if (tg.app) {
+    const dose = n => { const k = n.toLowerCase(), s = db.meals.find(x => x.name.toLowerCase() === k), l = db.log.find(x => cleanName(x.name).toLowerCase() === k); return [n.slice(0, 60), s && s.ins > 0 ? s.ins : null, l && l.ins > 0 ? l.ins : null]; };
+    const f = Buffer.from(JSON.stringify(names.slice(0, 8).map(dose)), 'utf8').toString('base64url');
+    rows.push([{ text: '📝 Log', web_app: { url: tg.app + (tg.app.includes('?') ? '&' : '?') + 'f=' + f } }]);
+  }
+  if (!b.length && !rows.length) return null;
+  b.forEach((x, i) => i % 2 ? rows[rows.length - 1].push(x) : rows.push([x]));
   return { reply_markup: { keyboard: rows, resize_keyboard: true, is_persistent: true, input_field_placeholder: 'Or write, e.g. pizza 7,5 enheter' } };
 }
 // "How many units?" med en knapp för dosen man sparat för rätten och en för dosen förra gången. Det är ens egna siffror,
@@ -784,7 +791,17 @@ async function tgHandle(u) {
     return;
   }
   const m = u.message; if (!m || !m.chat) return;
-  const text = (m.text || '').trim();
+  // Från Log-sidan (Mini App): { k: 'meal', name, ins } med rätt och dos valda, eller { k: 'text', text } som skrivet i chatten
+  let app = null; if (m.web_app_data && m.chat.id === tg.chat) { try { app = JSON.parse(m.web_app_data.data); } catch {} if (!app || typeof app !== 'object') return; }
+  const text = (app ? (app.k === 'text' && typeof app.text === 'string' ? app.text : '') : m.text || '').trim().slice(0, 300);
+  if (app && app.k === 'meal') {
+    const name = cleanName(typeof app.name === 'string' ? app.name : ''), ins = Number(app.ins);
+    if (!name || !(ins >= 0 && ins <= 100)) return tgSay('Something was missing. Open Log and try again.');
+    const r = { type: 'meal', name: mealNames(readDb()).map(cleanName).find(n => n.toLowerCase() === name.toLowerCase()) || name, ins: Math.round(ins * 10) / 10, t: m.date * 1000, via: 'app' };
+    const chk = doseCheck(r.name, r.ins, readDb(), r.t);
+    if (chk) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`⚠ ${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
+    tgPending = null; return tgLogged(r, 'tg' + u.update_id);
+  }
   if (m.chat.id !== tg.chat) { // parkoppling: "/start 123456" med koden från Settings, bara i en privat chatt
     const c = text.match(/^\/start\s+(\d{6})$/);
     if (!tg.chat && tg.code && c && c[1] === tg.code && m.chat.type === 'private') {
@@ -992,11 +1009,20 @@ function route(req, res) {
     });
   }
   // Rapporterna på/av. Vid påslag räknas dagens söndag/1:a som redan skickad, så att inget skickas direkt.
+  // Adressen till Log-sidan. Telegram kräver https. Efter en ändring får chatten de nya knapparna direkt.
+  if (u.pathname === '/api/telegram/app' && req.method === 'POST') return body(req, res, ({ url: a }) => {
+    if (!tg.token || !tg.chat) return send(res, { error: 'Connect the bot first.' }, 400);
+    a = typeof a === 'string' ? a.trim() : '';
+    if (a && !/^https:\/\/[^\s?#]+$/i.test(a)) return send(res, { error: 'Use the https address of the page, e.g. https://name.github.io/glucose-log/' }, 400);
+    // En ny adress betyder att man vill ha knappen, så knappraden slås på igen om den gömts med /nofav
+    tg.app = a.slice(0, 300); if (a) tg.fav = true; saveTg(); send(res, { ok: 1, app: tg.app });
+    if (tg.fav !== false) tgSay(a ? 'The 📝 Log button is ready under the text field.' : 'Removed the 📝 Log button.', a ? {} : favKeyboard() || { reply_markup: { remove_keyboard: true } });
+  });
   if (u.pathname === '/api/telegram/report' && req.method === 'POST') return body(req, res, ({ on }) => {
     if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
     tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
   });
-  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report });
+  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, app: tg.app || '' });
   if (u.pathname === '/api/weekly') return send(res, weekly());
   if (u.pathname === '/api/month') {
     const list = monthList(), q = u.searchParams.get('m'), k = list.includes(q) ? q : defaultMonth(list);
