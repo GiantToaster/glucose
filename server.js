@@ -665,8 +665,8 @@ const describe = e => e.name !== undefined ? `<b>${he(e.name)}</b> · ${e.ins} $
 const tgSay = (text, extra = {}) => tgApi('sendMessage', { chat_id: tg.chat, text, parse_mode: 'HTML', ...extra }).catch(e => console.error('Telegram send:', e.message));
 // Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
 const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
-const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/week and /month send a summary of your numbers.';
-const COMMANDS = [{ command: 'undo', description: 'Remove the last thing you logged' }, { command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
+const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/week and /month send a summary of your numbers.';
+const COMMANDS = [{ command: 'fav', description: 'Buttons for the meals you log most' }, { command: 'undo', description: 'Remove the last thing you logged' },{ command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
 
 // ---------- Rapporter i Telegram: veckan och månaden i text ----------
 // Bara siffror som redan visas på dashboarden. Staplarna är tecken (█░) i en <pre>, så att de står rakt i Telegram.
@@ -719,11 +719,51 @@ async function tgLogged(r, id, late) {
     + (late ? '\n<i>Read when the dashboard started, logged at the time you sent it.</i>' : '')
     + (r.via === 'simple' ? '\n<i>(the local AI was off, so the simple reader was used)</i>' : ''), buttons(e.id, isMeal && !saved));
 }
+// ---------- Favoriter och "How many units?" ----------
+// /fav lägger de sex måltider man loggat flest gånger de senaste 30 dagarna (sedan sparade måltider) som knappar under
+// skrivfältet. Ett tryck skickar "⭐ Namn", och boten frågar bara efter dosen.
+const FAV = '⭐ ';
+function favKeyboard() {
+  const db = readDb(), since = Date.now() - 30 * 864e5, c = new Map();
+  // Loggen är nyast först, så vid lika antal kommer den senast ätna först (Map behåller ordningen, sort är stabil)
+  for (const m of db.log) if (m.t >= since && !isCorr(m.name)) { const name = cleanName(m.name), k = name.toLowerCase(), x = c.get(k) || { name, n: 0 }; x.n++; c.set(k, x); }
+  const names = [...c.values()].sort((a, b) => b.n - a.n).map(x => x.name);
+  for (const m of db.meals) if (names.length < 6 && !names.some(n => n.toLowerCase() === m.name.toLowerCase())) names.push(m.name);
+  const b = names.slice(0, 6).map(n => ({ text: FAV + n.slice(0, 60) }));
+  if (!b.length) return null;
+  const rows = []; b.forEach((x, i) => i % 2 ? rows[rows.length - 1].push(x) : rows.push([x]));
+  return { reply_markup: { keyboard: rows, resize_keyboard: true, is_persistent: true, input_field_placeholder: 'Or write, e.g. pizza 7,5 enheter' } };
+}
+// "How many units?" med en knapp för dosen man sparat för rätten och en för dosen förra gången. Det är ens egna siffror,
+// inget förslag; man kan alltid skriva en annan. Knapparna gäller bara den här frågan (nonce).
+function askUnits(r) {
+  const db = readDb(), k = String(r.name).toLowerCase(), saved = db.meals.find(x => x.name.toLowerCase() === k), last = db.log.find(x => String(x.name).toLowerCase() === k);
+  const nonce = crypto.randomBytes(3).toString('hex'), opts = [], uw = v => v === 1 ? 'unit' : 'units';
+  if (saved && saved.ins > 0) opts.push([saved.ins, 'saved']);
+  if (last && last.ins > 0 && !opts.some(o => o[0] === last.ins)) opts.push([last.ins, 'last time']);
+  tgPending = { type: 'meal', name: r.name, t: r.t, via: r.via, at: Date.now(), nonce };
+  return tgSay(`How many units did you take for <b>${he(r.name)}</b>? ${opts.length ? 'Tap one or send' : 'Reply with'} a number, or 0 if none.`,
+    opts.length ? { reply_markup: { inline_keyboard: [opts.map(([v, w]) => ({ text: `${v} ${uw(v)} (${w})`, callback_data: `d:${nonce}:${v}` }))] } } : {});
+}
+// Antal enheter som svar på "How many units?", skrivet eller från en knapp. Långt från det vanliga: fråga en gång till.
+async function tgUnits(ins, id) {
+  if (!(ins >= 0) || ins > 100) return tgSay('That seems like a lot. Send the number of units again.');
+  const p = { ...tgPending, ins }, chk = !tgPending.confirm && doseCheck(p.name, ins, readDb(), p.t);
+  if (chk) { tgPending = { ...p, confirm: true, at: Date.now() }; return tgSay(`⚠ ${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
+  tgPending = null; return tgLogged(p, id);
+}
 async function tgHandle(u) {
   const q = u.callback_query;
   if (q) { // knapparna Undo (u:) och Save to Meals (s:)
     if (!tg.chat || !q.message || q.message.chat.id !== tg.chat) return;
-    const [, act, id] = String(q.data || '').match(/^([us]):(.+)$/) || [], answer = text => tgApi('answerCallbackQuery', { callback_query_id: q.id, text }).catch(() => {});
+    const [, act, id] = String(q.data || '').match(/^([usd]):(.+)$/) || [], answer = text => tgApi('answerCallbackQuery', { callback_query_id: q.id, text }).catch(() => {});
+    if (act === 'd') { // en dosknapp under "How many units?": gäller bara den senaste frågan, och knapparna tas bort när man tryckt
+      const [nonce, v] = id.split(':'), ok = tgPending && tgPending.nonce === nonce && !tgPending.confirm && Date.now() - tgPending.at < 30 * 6e4;
+      await answer(ok ? '' : 'That question has expired. Send the meal again.');
+      await tgApi('editMessageReplyMarkup', { chat_id: tg.chat, message_id: q.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {});
+      if (ok) await tgUnits(parseFloat(v), 'tg' + u.update_id);
+      return;
+    }
     if (act === 's') {
       const s = saveMeal(id);
       await answer(!s ? 'That meal is no longer in the log' : s.already ? `${s.name} is already in Meals` : `Saved ${s.name} to Meals`);
@@ -747,6 +787,13 @@ async function tgHandle(u) {
   }
   if (!text) return tgSay('I can only read text. Use the microphone on your keyboard to dictate.');
   if (/^\/(start|help)\b/.test(text)) return tgSay(HELP);
+  if (/^\/fav\b/.test(text)) { const kb = favKeyboard(); return tgSay(kb ? 'Your most logged meals are now buttons under the text field. Tap one to log it.\n/fav updates them, /nofav removes them.' : 'Log a few meals first, then send /fav again.', kb || {}); }
+  if (/^\/nofav\b/.test(text)) return tgSay('Removed the buttons. Send /fav to get them back.', { reply_markup: { remove_keyboard: true } });
+  // En favoritknapp ("⭐ Havregrynsgröt"): rätten är känd, så bara dosen frågas efter. Ingen tolkning behövs.
+  if (text.startsWith(FAV)) {
+    const want = text.slice(FAV.length).trim().toLowerCase(), name = mealNames(readDb()).map(cleanName).find(n => n.toLowerCase().slice(0, 60) === want);
+    if (name) return askUnits({ name, t: m.date * 1000, via: 'fav' });
+  }
   if (/^\/week\b/.test(text)) return tgSay(weekText());
   if (/^\/month\b/.test(text)) { const list = monthList(), k = mkey(Date.now()); return tgSay(monthText(list.includes(k) && monthCov(k) >= 20 ? k : defaultMonth(list) || k)); }
   if (/^\/undo\b/.test(text)) {
@@ -757,17 +804,11 @@ async function tgHandle(u) {
   // Svar på "How many units?" eller på en dos som behövde bekräftas (gäller i 30 min)
   if (tgPending && Date.now() - tgPending.at < 30 * 6e4) {
     if (tgPending.confirm && /^(yes|ja|j|y|ok)$/i.test(text)) { const p = tgPending; tgPending = null; return tgLogged(p, 'tg' + u.update_id); }
-    if (/^\d+([.,]\d+)?$/.test(text)) {
-      const ins = parseFloat(text.replace(',', '.'));
-      if (ins > 100) return tgSay('That seems like a lot. Send the number of units again.');
-      const p = { ...tgPending, ins }, chk = !tgPending.confirm && doseCheck(p.name, ins, readDb(), p.t);
-      if (chk) { tgPending = { ...p, confirm: true, at: Date.now() }; return tgSay(`⚠ ${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
-      tgPending = null; return tgLogged(p, 'tg' + u.update_id);
-    }
+    if (/^\d+([.,]\d+)?$/.test(text)) return tgUnits(parseFloat(text.replace(',', '.')), 'tg' + u.update_id);
   }
-  const r = await interpret(text.slice(0, 300), m.date * 1000);
+  const r = await interpret((text.startsWith(FAV) ? text.slice(FAV.length) : text).slice(0, 300), m.date * 1000);
   if (r.type === 'other') return tgSay("I didn't catch a meal or a note there. Try: <i>pizza 7,5 enheter</i>");
-  if (r.type === 'meal' && r.ins == null) { tgPending = { type: 'meal', name: r.name, t: r.t, via: r.via, at: Date.now() }; return tgSay(`How many units did you take for <b>${he(r.name)}</b>? Reply with a number, or 0 if none.`); }
+  if (r.type === 'meal' && r.ins == null) return askUnits(r);
   if (r.type === 'meal' && r.ins > 100) return tgSay('That dose seems too high. Send it again with the number of units.');
   const chk = r.type === 'meal' && (r.guess ? `Did you take ${r.ins} ${r.ins === 1 ? 'unit' : 'units'} for ${r.name}?` : doseCheck(r.name, r.ins, readDb(), r.t));
   if (chk) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`${r.guess ? '' : '⚠ '}${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
