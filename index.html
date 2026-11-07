@@ -128,8 +128,11 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .lgd i.b2{background:color-mix(in srgb,var(--fg) 13%,transparent)}.lgd i.b1{background:color-mix(in srgb,var(--fg) 7%,transparent)}
 .lgd i.ln{height:3px;width:20px;vertical-align:2px;box-shadow:none;background:linear-gradient(90deg,var(--low) 0 25%,var(--fg) 25% 75%,var(--high) 75%)}
 .facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.75rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
-.lowstrip{display:grid;grid-template-columns:repeat(48,minmax(0,1fr));gap:1px;height:14px;margin:6px 0 1px;border-radius:4px;overflow:hidden}.lowstrip i{display:block}
-.lowax{display:flex;justify-content:space-between;font-size:.625rem;color:var(--mut);margin-bottom:4px}
+.lowbars{margin:8px 0 4px}
+/* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
+#keyd summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:28px}#keyd summary::-webkit-details-marker{display:none}
+#keyd summary::after{content:'';width:7px;height:7px;margin-left:auto;border:solid var(--mut);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .15s}#keyd[open] summary::after{transform:rotate(-135deg)}
+#keyd summary:hover h3{text-decoration:underline;text-underline-offset:3px}.keyb{display:flex;flex-direction:column;gap:10px;margin-top:10px}svg text.lbn{fill:var(--low);font-weight:650}.facts span.lwk{color:var(--fg);font-size:.875rem}
 #cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.75rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
 
 /* Måltider, sökruta och listor */
@@ -400,18 +403,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="seg" id="theme" role="group" aria-label="Theme"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div>
       <span class="mut fine">Dark is easier on the eyes at night. System follows your computer or phone.</span>
     </div>
-    <div class="sec" id="keysec"><h3>Keyboard shortcuts</h3>
-      <label class="chk"><input id="keys" type="checkbox" checked> Use single-key shortcuts</label>
-      <dl class="kl">
-        <dt><kbd>L</kbd> <kbd>N</kbd> <kbd>T</kbd></dt><dd>Log a meal, add a note, log a low treatment</dd>
-        <dt><kbd>/</kbd> <kbd>F</kbd></dt><dd>Write in your own words, filter Activity</dd>
-        <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Show the last 3, 6, 12 or 24 hours</dd>
-        <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous and next day</dd>
-        <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Read the chart (when it has focus; Shift = 30 min)</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Close details, dialogs and messages</dd>
-      </dl>
-      <span class="mut fine">Turn them off if you use speech input or they get in the way. They never act while you type in a field.</span>
-    </div>
     <div class="sec"><h3>Your insulin</h3>
       <div class="grid2">
         <div class="fld"><label for="ifast">Fast-acting (mealtime)</label><select id="ifast"></select><input id="ifasto" placeholder="Name of your insulin" hidden></div>
@@ -435,6 +426,21 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
         <span class="mut fine" id="tgrepq">Sundays at 19:00 and on the 1st of each month at 09:00: time in range, lows and average, never individual readings. It goes through Telegram. You can also ask for one any time with /week or /month.</span></div>
       <span class="fine warnq" id="tgoffq" aria-live="polite"></span>
     </div>
+    <!-- Hopfällt: det är en lista att slå upp i, inte något man ändrar ofta. Läget (On/Off) syns ändå på raden. -->
+    <div class="sec" id="keysec"><details id="keyd"><summary><h3>Keyboard shortcuts</h3><span class="mut fine" id="keyst">On</span></summary>
+      <div class="keyb">
+        <label class="chk"><input id="keys" type="checkbox" checked> Use single-key shortcuts</label>
+        <dl class="kl">
+          <dt><kbd>L</kbd> <kbd>N</kbd> <kbd>T</kbd></dt><dd>Log a meal, add a note, log a low treatment</dd>
+          <dt><kbd>/</kbd> <kbd>F</kbd></dt><dd>Write in your own words, filter Activity</dd>
+          <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Show the last 3, 6, 12 or 24 hours</dd>
+          <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Previous and next day</dd>
+          <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Read the chart (when it has focus; Shift = 30 min)</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Close details, dialogs and messages</dd>
+        </dl>
+        <span class="mut fine">Turn them off if you use speech input or they get in the way. They never act while you type in a field.</span>
+      </div>
+    </details></div>
     <div class="sec" id="acct" hidden><h3>Account</h3>
       <div class="ph m0"><span id="acctu"></span><button id="logout" aria-describedby="logoutq">Log out</button></div>
       <span class="fine warnq" id="logoutq" aria-live="polite"></span>
@@ -899,22 +905,34 @@ function drawProf() {
   const said = `Typical glucose by time of day, last ${pdays} days. Highest ${f1(hi[1])} at ${t(hi[0])}, lowest ${f1(lo[1])} at ${t(lo[0])}.`
     + (outT.length ? ` Typically above 10: ${rng(outT)}.` : ' The typical curve stays below 10.') + (outL.length ? ` Typically below 3.9: ${rng(outL)}.` : '');
   el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(said)}">${s}</svg>`;
-  const fact = (lab, val, sub, c, cls = '', extra = '') => `<div class="${cls}"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${val}</b>${extra}<span>${sub}</span></div>`;
   // När börjar känningarna? Samma definition och samma tvåtimmarsfönster som i Insikter (lowWhen), med perioden i
   // rubriken. Förut räknade Mönster andelen värden under 3.9 och Insikter starttider, och de gav olika svar.
-  // Remsan visar andelen värden under 3.9 per halvtimme, som bakgrund.
-  const share = prof.lo || [];
-  // Remsan i ord för skärmläsare: de tre halvtimmar med störst andel under 3.9 (title på varje cell gick inte att nå)
-  const top3 = share.map((s, i) => [i, s]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  const stripSay = 'Share of readings below 3.9 for each half hour. ' + (top3.length ? 'Highest: ' + top3.map(([i, s]) => `${t(i)}–${t((i + 1) % 48)}, ${Math.round(s * 100)} %`).join('; ') + '.' : 'No readings below 3.9.');
-  const strip = share.some(s => s != null) ? `<div class="lowstrip" role="img" aria-label="${esc(stripSay)}">${share.map((s, i) =>
-    `<i style="background:${s == null ? 'transparent' : `color-mix(in srgb,var(--low) ${Math.round(Math.min(1, s / .15) * 100)}%,var(--bd))`}" title="${t(i)}–${t((i + 1) % 48)}: ${s == null ? 'too few readings' : Math.round(s * 100) + ' % below 3.9'}"></i>`).join('')}</div>
-    <div class="lowax"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>` : '';
-  const dd = `${prof.days} ${prof.days === 1 ? 'day' : 'days'}`, lw = lowWhen(prof.starts || []), how = 'The strip above is a different measure: time spent below 3.9 in each half hour of the day. Stronger red = more time.';
-  const lowsFact = lw
-    ? fact(`When lows start, last ${dd}`, lw.all ? lw.text : `${dayPart(lw.from)}, ${hm2(lw.from)}–${hm2(lw.from + 120)}`,
-      `${lw.all ? `${lw.n === 1 ? '1 low' : lw.n + ' lows'} in total.` : `${lw.k} of ${lw.n} lows started then.`} ${how}`, 'var(--low)', 'wide', strip)
-    : fact(`When lows start, last ${dd}`, 'No lows', `No time with 15 minutes or more below 3.9. ${how}`, '', 'wide', strip);
+  // Staplarna visar samma mått som rubriken: hur många känningar som började i varje halvtimme. Halvtimmarna i rubrikens
+  // tvåtimmarsfönster är röda, resten dämpade. Förut var det en remsa med ett annat mått (tid under 3.9), som krävde en
+  // lång förklaring och gick att läsa som att den motsade rubriken.
+  const dd = `${prof.days} ${prof.days === 1 ? 'day' : 'days'}`, starts = prof.starts || [], lw = lowWhen(starts), cnt = Array(48).fill(0);
+  for (const ts of starts) { const d = new Date(ts); cnt[d.getHours() * 2 + (d.getMinutes() >= 30 ? 1 : 0)]++; }
+  const inWin = i => !lw || lw.all || ((i * 30 - lw.from + 1440) % 1440) < 120;
+  const lowBars = () => {
+    const bw0 = Math.max(280, ($('psum').clientWidth || 600) - 24), h = Math.round(84 * z), B = 18 * z, top = 16 * z, bw = bw0 / 48, mx = Math.max(1, ...cnt), Y = c => h - B - c / mx * (h - B - top);
+    let s = '';
+    if (lw && !lw.all) cnt.forEach((c, i) => { if (inWin(i)) s += `<rect x="${(i * bw).toFixed(1)}" y="0" width="${bw.toFixed(2)}" height="${h - B}" style="fill:var(--low)" opacity=".08"/>`; });
+    cnt.forEach((c, i) => {
+      const x = i * bw + bw * .15, ww = bw * .7;
+      s += c ? `<rect x="${x.toFixed(1)}" y="${Y(c).toFixed(1)}" width="${ww.toFixed(1)}" height="${(h - B - Y(c)).toFixed(1)}" rx="${Math.min(3, ww / 3).toFixed(1)}" style="fill:var(--low)" opacity="${inWin(i) ? 1 : .35}"><title>${t(i)}–${t((i + 1) % 48)}: ${c === 1 ? '1 low' : c + ' lows'} started</title></rect>`
+        + (bw >= 12 ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${(Y(c) - 4 * z).toFixed(1)}" text-anchor="middle"${inWin(i) ? ' class="lbn"' : ''}>${c}</text>` : '')
+        : `<rect class="mdn" x="${x.toFixed(1)}" y="${(h - B - 2).toFixed(1)}" width="${ww.toFixed(1)}" height="2" rx="1"/>`;
+    });
+    for (const k of [0, 3, 6, 9, 12, 15, 18, 21, 24]) s += `<text x="${(k / 24 * bw0).toFixed(1)}" y="${h - 3 * z}" text-anchor="${k === 0 ? 'start' : k === 24 ? 'end' : 'middle'}">${p2(k)}</text>`;
+    const top3 = cnt.map((c, i) => [i, c]).filter(([, c]) => c).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const say = `Lows that started in each half hour of the day, last ${dd}. Most: ` + top3.map(([i, c]) => `${t(i)}–${t((i + 1) % 48)}, ${c}`).join('; ') + '.';
+    return `<svg class="lowbars" viewBox="0 0 ${bw0} ${h}" role="img" aria-label="${esc(say)}">${s}</svg>`;
+  };
+  const lowsFact = `<div class="wide"><span>When lows start, last ${dd}</span>` + (lw
+    ? `<b style="color:var(--low)">${lw.all ? lw.text : `${dayPart(lw.from)}, ${hm2(lw.from)}–${hm2(lw.from + 120)}`}</b>`
+      + `<span class="lwk">${lw.all ? `${lw.n === 1 ? '1 low' : lw.n + ' lows'} in total.` : `<b>${lw.k} of ${lw.n}</b> lows started then.`}</span>`
+      + lowBars() + `<span>Each bar = lows that started in that half hour. A low = at least 15 minutes below 3.9.</span>`
+    : `<b>No lows</b><span>No time with 15 minutes or more below 3.9.</span>`) + '</div>';
   // Känningarna som en hel rad (med remsan), högst/lägst som en lugn textrad under profilen i stället för två halvtomma rutor
   $('psum').innerHTML = `<p class="kpi2 prof2"><span>Typical curve highest at <b>${t(hi[0])}</b> (<b style="color:${col(hi[1])}">${f1(hi[1])}</b>)</span><span>and lowest at <b>${t(lo[0])}</b> (<b style="color:${col(lo[1])}">${f1(lo[1])}</b>)</span></p>
     <div class="facts">${lowsFact}</div>
@@ -1506,7 +1524,7 @@ function renderWeek() {
   const bars = days.length ? `<h3 class="grp">Each day</h3>` + dayBars(el, days, 7, i => days[i] ? (i === days.length - 1 ? 'Today' : new Date(days[i][0]).toLocaleDateString('en-GB', { weekday: 'short' })) : '', barSay(days, 'last 7 days'), i => dDate(days[i][0])) : '';
   // Känningar: när de brukar börja (samma svar som Patterns, med länk dit). Måltider: en mening var, känningar först.
   const L = [], M = [], lw = lowWhen(c.lows.map(l => l[0]));
-  if (lw) L.push(irow('var(--low)', `${lw.text}. <button class="lk" id="lowpat">See the strip in Patterns</button>`, 'A low = at least 15 min below 3.9'));
+  if (lw) L.push(irow('var(--low)', `${lw.text}. <button class="lk" id="lowpat">See them in Patterns</button>`, 'A low = at least 15 min below 3.9'));
   else L.push(irow('var(--ok)', 'No lows in the last 7 days', 'A low = at least 15 min below 3.9'));
   if (c.cov < 70) L.push(irow('var(--high)', `Readings cover <b>${c.cov.toFixed(0)} %</b> of the week`, 'Treat these numbers with caution'));
   const mealLine = m => [m.hi ? `went above 10 after ${m.hi} of ${m.n === 1 ? '1 time' : m.n + ' times'}` : '', m.lo ? `was followed by a low ${m.lo} of ${m.n === 1 ? '1 time' : m.n + ' times'}` : ''].filter(Boolean).join(', and ');
@@ -1788,7 +1806,7 @@ setTheme(document.documentElement.dataset.theme || '');
 $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setTheme(b.dataset.th); };
 // Kortkommandon med en tangent: på som standard, går att stänga av (sparat i webbläsaren)
 const keysOn = () => { try { return localStorage.getItem('keys') !== 'off'; } catch { return true; } };
-const syncKeys = () => { $('keys').checked = keysOn(); document.documentElement.classList.toggle('nokeys', !keysOn()); };
+const syncKeys = () => { $('keys').checked = keysOn(); $('keyst').textContent = keysOn() ? 'On' : 'Off'; document.documentElement.classList.toggle('nokeys', !keysOn()); };
 $('keys').onchange = () => { try { localStorage.setItem('keys', $('keys').checked ? 'on' : 'off'); } catch {} syncKeys(); };
 syncKeys();
 // Hoppa förbi huvudkortet och grafens markeringar till flikarna (den valda fliken får fokus)
