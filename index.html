@@ -923,7 +923,13 @@ function drawProf() {
         + (bw >= 12 ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${(Y(c) - 4 * z).toFixed(1)}" text-anchor="middle"${inWin(i) ? ' class="lbn"' : ''}>${c}</text>` : '')
         : `<rect class="mdn" x="${x.toFixed(1)}" y="${(h - B - 2).toFixed(1)}" width="${ww.toFixed(1)}" height="2" rx="1"/>`;
     });
-    for (const k of [0, 3, 6, 9, 12, 15, 18, 21, 24]) s += `<text x="${(k / 24 * bw0).toFixed(1)}" y="${h - 3 * z}" text-anchor="${k === 0 ? 'start' : k === 24 ? 'end' : 'middle'}">${p2(k)}</text>`;
+    // Varje timme: ett litet streck vid varje heltimme och klockslaget under. På smala skärmar varannan timme i text
+    // (siffrorna får annars inte plats), men strecket finns för alla.
+    const every = bw0 / 24 >= 24 * z ? 1 : 2;
+    for (let k = 0; k <= 24; k++) {
+      const x = k / 24 * bw0; s += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${h - B}" y2="${h - B + 4 * z}" style="stroke:var(--field)"/>`;
+      if (k % every === 0) s += `<text x="${x.toFixed(1)}" y="${h - 3 * z}" text-anchor="${k === 0 ? 'start' : k === 24 ? 'end' : 'middle'}">${p2(k)}</text>`;
+    }
     const top3 = cnt.map((c, i) => [i, c]).filter(([, c]) => c).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const say = `Lows that started in each half hour of the day, last ${dd}. Most: ` + top3.map(([i, c]) => `${t(i)}–${t((i + 1) % 48)}, ${c}`).join('; ') + '.';
     return `<svg class="lowbars" viewBox="0 0 ${bw0} ${h}" role="img" aria-label="${esc(say)}">${s}</svg>`;
