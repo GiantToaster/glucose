@@ -647,7 +647,9 @@ function removeEntry(id) {
 // Inga glukosvärden skickas till Telegram, bara bekräftelser på det du själv skrivit.
 // report: veckorapport söndag kväll och månadsrapport den 1:a (av från början, eftersom den skickar siffror via Telegram).
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '' };
+// fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
+// knapparna fanns har fått dem en gång.
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false };
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
 const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
@@ -662,7 +664,13 @@ const he = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '
 const whenTxt = t => { const d = new Date(t).toDateString(); return (d === new Date().toDateString() ? '' : d === new Date(Date.now() - 864e5).toDateString() ? 'yesterday ' : ymd(t) + ' ') + hm(t); };
 const describe = e => e.name !== undefined ? `<b>${he(e.name)}</b> · ${e.ins} ${e.ins === 1 ? 'unit' : 'units'} · ${whenTxt(e.t)}`
   : `<b>${he(e.kind)}</b>${e.text ? ': ' + he(e.text) : ''} · ${whenTxt(e.t)}${e.dur ? '–' + hm(e.t + e.dur * 6e4) : ''}`;
-const tgSay = (text, extra = {}) => tgApi('sendMessage', { chat_id: tg.chat, text, parse_mode: 'HTML', ...extra }).catch(e => console.error('Telegram send:', e.message));
+// Ett svar utan egna knappar tar med favoritknapparna, så att de alltid ligger kvar under skrivfältet och följer det man
+// ätit på sistone, utan att man behöver skriva /fav. (Ett meddelande kan bara ha en sorts knappar, så svar med Undo
+// eller dosknappar lämnar dem som de är.)
+const tgSay = (text, extra = {}) => {
+  const kb = !extra.reply_markup && tg.fav !== false && tg.chat && favKeyboard();
+  return tgApi('sendMessage', { chat_id: tg.chat, text, parse_mode: 'HTML', ...(kb || {}), ...extra }).catch(e => console.error('Telegram send:', e.message));
+};
 // Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
 const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
 const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/week and /month send a summary of your numbers.';
@@ -780,15 +788,15 @@ async function tgHandle(u) {
   if (m.chat.id !== tg.chat) { // parkoppling: "/start 123456" med koden från Settings, bara i en privat chatt
     const c = text.match(/^\/start\s+(\d{6})$/);
     if (!tg.chat && tg.code && c && c[1] === tg.code && m.chat.type === 'private') {
-      tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; saveTg();
+      tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; tg.favSent = true; saveTg();
       await tgSay('Connected to your glucose dashboard. 👋\n\n' + HELP);
     }
     return;
   }
   if (!text) return tgSay('I can only read text. Use the microphone on your keyboard to dictate.');
   if (/^\/(start|help)\b/.test(text)) return tgSay(HELP);
-  if (/^\/fav\b/.test(text)) { const kb = favKeyboard(); return tgSay(kb ? 'Your most logged meals are now buttons under the text field. Tap one to log it.\n/fav updates them, /nofav removes them.' : 'Log a few meals first, then send /fav again.', kb || {}); }
-  if (/^\/nofav\b/.test(text)) return tgSay('Removed the buttons. Send /fav to get them back.', { reply_markup: { remove_keyboard: true } });
+  if (/^\/fav\b/.test(text)) { tg.fav = true; saveTg(); const kb = favKeyboard(); return tgSay(kb ? 'Your most logged meals are buttons under the text field. Tap one to log it. /nofav hides them.' : 'Log a few meals first, then the buttons show up here.', kb || {}); }
+  if (/^\/nofav\b/.test(text)) { tg.fav = false; saveTg(); return tgSay('Hid the buttons. Send /fav to get them back.', { reply_markup: { remove_keyboard: true } }); }
   // En favoritknapp ("⭐ Havregrynsgröt"): rätten är känd, så bara dosen frågas efter. Ingen tolkning behövs.
   if (text.startsWith(FAV)) {
     const want = text.slice(FAV.length).trim().toLowerCase(), name = mealNames(readDb()).map(cleanName).find(n => n.toLowerCase().slice(0, 60) === want);
@@ -884,6 +892,8 @@ server.listen(PORT, HOST, () => {
   setInterval(reportTick, 6e4); setTimeout(reportTick, 5e3);
   // Kommandomenyn i Telegram (/week och /month kom till senare; en bot som kopplades in förut får dem här)
   if (tg.token) tgApi('setMyCommands', { commands: COMMANDS }).catch(() => {});
+  // En bot som kopplades in innan favoritknapparna fanns får dem en gång, utan att man behöver skriva /fav
+  if (tg.token && tg.chat && !tg.favSent && tg.fav !== false && favKeyboard()) { tg.favSent = true; saveTg(); tgSay('New: your most logged meals are now buttons under the text field. Tap one to log it. /nofav hides them.'); }
 });
 
 // "Start with Windows": en liten .cmd i Autostart-mappen som startar servern minimerad i aktivitetsfältet vid inloggning.
