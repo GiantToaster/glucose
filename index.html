@@ -424,9 +424,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="ph m0" id="tgon" hidden><span class="mut fine" id="tgwho"></span><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
       <div class="stack" id="tgrepw" hidden><label class="chk"><input id="tgrep" type="checkbox" aria-describedby="tgrepq"> Send me a weekly and monthly summary</label>
         <span class="mut fine" id="tgrepq">Sundays at 19:00 and on the 1st of each month at 09:00: time in range, lows and average, never individual readings. It goes through Telegram. You can also ask for one any time with /week or /month.</span></div>
-      <div class="stack" id="tgappw" hidden><label for="tgapp" class="sm">Log page (opens from a 📝 Log button in the chat)</label>
-        <form class="tw" id="tgappf"><input id="tgapp" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://name.github.io/glucose-log/"><button id="tgappb">Save</button></form>
-        <span class="mut fine">Big buttons for your favourite meals and a text field, inside Telegram. The page holds no data of its own: the chat sends it your favourites and the doses you saved. Leave empty to turn it off.</span></div>
       <span class="fine warnq" id="tgoffq" aria-live="polite"></span>
     </div>
     <!-- Hopfällt: det är en lista att slå upp i, inte något man ändrar ofta. Läget (On/Off) syns ändå på raden. -->
@@ -1772,7 +1769,6 @@ async function loadTg() {
     + (s.error ? `<br><span class="err">${esc(s.error)}</span>` : '');
   $('tgwho').textContent = s.chat ? 'Linked to ' + (s.who || 'your Telegram') : 'Waiting for the message…';
   $('tgrepw').hidden = !(s.on && s.chat); $('tgrep').checked = !!s.report;
-  $('tgappw').hidden = !(s.on && s.chat); if (document.activeElement !== $('tgapp')) $('tgapp').value = s.app || '';
   clearTimeout(tgPoll); if (s.on && !s.chat && $('dset').open) tgPoll = setTimeout(loadTg, 3000);
 }
 $('tgsave').onclick = async () => {
@@ -1783,15 +1779,6 @@ $('tgsave').onclick = async () => {
   $('tgtok').value = ''; loadTg();
 };
 $('tgtok').oninput = () => $('tgtok').setCustomValidity('');
-// Log-sidans adress: sparas med Save eller Enter; ett fel visas vid fältet
-$('tgappf').onsubmit = async e => {
-  e.preventDefault(); const b = $('tgappb'); b.disabled = true;
-  const r = await api('/api/telegram/app', { method: 'POST', body: JSON.stringify({ url: $('tgapp').value.trim() }) }).catch(() => ({ error: 'No contact with the server.' }));
-  b.disabled = false;
-  if (r.error) { $('tgapp').setCustomValidity(r.error); $('tgapp').reportValidity(); return; }
-  toast(r.app ? 'Saved. The 📝 Log button is in the Telegram chat now.' : 'Log page turned off.'); loadTg();
-};
-$('tgapp').oninput = () => $('tgapp').setCustomValidity('');
 $('tgrep').onchange = async e => {
   const on = e.target.checked, r = await api('/api/telegram/report', { method: 'POST', body: JSON.stringify({ on }) }).catch(() => ({ error: 'No contact with the server.' }));
   if (r.error) { e.target.checked = !on; toast(esc(r.error)); return; }
