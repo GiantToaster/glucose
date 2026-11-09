@@ -135,7 +135,9 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 #cmp tr.cmpd td{padding:2px 0 14px;text-align:left;font-weight:400}
 .occ{border-radius:10px;background:var(--sub);padding:4px 14px;font-size:.8125rem}
 .occr{display:grid;grid-template-columns:minmax(120px,1fr) 80px minmax(0,1.3fr) minmax(0,1.7fr);gap:2px 14px;padding:8px 0;border-top:1px solid var(--bd);align-items:baseline}.occr:first-child{border-top:0}
-.occh{color:var(--mut);font-size:.75rem;padding:6px 0}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}
+.occh{color:var(--mut);font-size:.75rem;padding:6px 0}
+/* Ett tillfälle som följdes av en känning: en svag röd ton över hela raden, så att det är det man ser först */
+.occn{margin:8px 2px 0}.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}
 @media(max-width:600px){#cmp tr.cmpd{display:block;padding:0 0 10px}#cmp tr.cmpd td{display:block;padding:0}#cmp tr.cmpd td::before{content:none}.occh{display:none}.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 #keyd summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:28px}#keyd summary::-webkit-details-marker{display:none}
@@ -882,11 +884,12 @@ function occList(n) {
   const row = m => {
     const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && b[1] >= 70 && b[1] <= 180;
     const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : b[1] < 70 ? 'Started below 3.9' : b[1] > 180 ? 'Started above 10' : '';
-    return `<div class="occr${counted ? '' : ' nc'}" role="row"><span role="cell" class="occw">${esc(dshort(m.t))} ${hhmm(m.t)}</span><span role="cell">${units(m.ins)}</span>`
+    return `<div class="occr${counted ? '' : ' nc'}${low ? ' lw' : ''}" role="row"><span role="cell" class="occw">${esc(dshort(m.t))} ${hhmm(m.t)}</span><span role="cell">${units(m.ins)}</span>`
       + `<span role="cell">${b ? v(b) : '–'}${b && pk ? ` ${ARR} ${v(pk)} <span class="mut">${sg(mm(pk[1] - b[1]))}</span>` : ''}</span>`
       + `<span role="cell">${low ? `<span class="lowv">${lowWord(lo[1])} ${f1(mm(lo[1]))} after ${dur(lo[0] - m.t)}</span>` : counted ? '<span class="mut">No low</span>' : ''}${why ? `<span class="ncw">${why}, not in the averages</span>` : ''}</span></div>`;
   };
-  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Start → peak</span><span role="columnheader">Low within 3 h</span></div>${all.map(row).join('')}</div>`;
+  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Start → peak</span><span role="columnheader">Low within 3 h</span></div>${all.map(row).join('')}</div>`
+    + `<p class="mut fine occn">The peak is the meal's own rise: it is counted until a low or a logged low treatment, so sugar taken against a low does not count as the meal's peak.</p>`;
 }
 $('cmp').addEventListener('click', e => {
   const b = e.target.closest('[data-cmp]'); if (!b) return;

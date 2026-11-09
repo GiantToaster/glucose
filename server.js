@@ -191,22 +191,30 @@ function stats() {
 }
 
 // ---------- Efter en måltid: värdet vid måltiden (senaste 15 min) samt högsta och lägsta inom 3 h ----------
-function outcome(t) {
+// cut = när en känning behandlades efter måltiden (en "Low treated"-anteckning inom 3 h), annars Infinity.
+// Toppen är måltidens egen stigning: den räknas bara fram till en känning eller en behandling. Förut räknades den över
+// hela 3 h, så sockret man tog mot en känning kunde bli "toppen" ("6.2 → 7.5" fast kurvan gick ner till 3.6 först).
+function outcome(t, cut = Infinity) {
   const t0 = Math.floor(t / 6e4) * 6e4, o = { done: t + 3 * 36e5 <= Date.now() };
-  let n = 0, pk, lo;
+  let n = 0, pk, lo, first, lowAt = null;
   for (let k = t0 - 15 * 6e4; k <= t0; k += 6e4) if (R.has(k)) o.b = [k, R.get(k)];
   // Åts måltiden under en känning (ofta just för att häva den) räknas en känning först när kurvan har varit tillbaka
   // på minst 3.9; förut fick måltiden skulden för den känning den åts mot ("Very low 2.5 after 2 min").
-  let rec = !(o.b && o.b[1] < 70); if (!rec) o.sl = true;
+  let rec = !(o.b && o.b[1] < 70); if (!rec) { o.sl = true; cut = Infinity; } // åt under en känning: behandlingen hör till måltiden
   for (let k = t0 + 6e4; k <= t0 + 3 * 36e5; k += 6e4) {
     const v = R.get(k); if (v === undefined) continue;
-    n++; if (!pk || v > pk[1]) pk = [k, v];
+    n++; first ??= [k, v];
     if (!rec && v >= 70) rec = true;
+    if (rec && v < 70 && lowAt === null) lowAt = k; // en ny känning efter måltiden: stigningen är slut
+    if (lowAt === null && k < cut && (!pk || v > pk[1])) pk = [k, v];
     if (rec && (!lo || v < lo[1])) lo = [k, v];
   }
-  if (n > 3) Object.assign(o, { pk, lo });
+  // Gick kurvan direkt ner (känning eller behandling före första värdet) är toppen värdet vid måltiden
+  if (n > 3) Object.assign(o, { pk: pk || o.b || first, lo });
   return o;
 }
+// Första lågbehandlingen inom 3 h efter en måltid (notes = db.notes), till outcome(t, cut)
+const treatCut = (t, notes) => { let c = Infinity; for (const n of notes) if (n.kind === 'Low treated' && n.t > t && n.t <= t + 3 * 36e5 && n.t < c) c = n.t; return c; };
 // ---------- Efter en behandlad känning ("Low treated"): värdet då, lägsta inom 2 h och när det var tillbaka över 3.9 ----------
 // up = första värdet på minst 70 mg/dL efter det lägsta. Gick det aldrig under 70 finns inget "tillbaka".
 function treated(t) {
@@ -267,7 +275,7 @@ function weekly() {
   for (const m of db.log) {
     if (!(m.t >= now - W && m.t <= now)) continue;
     if (isCorr(m.name)) continue; // korrigeringsdoser är inga måltider
-    const o = outcome(m.t); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
+    const o = outcome(m.t, treatCut(m.t, db.notes)); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
     const k = String(m.name).toLowerCase(), x = meals.get(k) || { name: String(m.name), n: 0, hi: 0, lo: 0, peak: 0 };
     x.n++; x.hi += o.pk[1] > 180 ? 1 : 0; x.lo += o.lo[1] < 70 ? 1 : 0; x.peak += o.pk[1]; meals.set(k, x);
   }
@@ -320,7 +328,7 @@ function monthly(k) {
   for (const m of db.log) {
     if (!(m.t >= from && m.t < to) || isCorr(m.name)) continue;
     const key = String(m.name).toLowerCase(), c = cnt.get(key) || { name: String(m.name), n: 0 }; c.n++; cnt.set(key, c);
-    const o = outcome(m.t); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
+    const o = outcome(m.t, treatCut(m.t, db.notes)); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
     const x = calm.get(key) || { name: c.name, n: 0, peak: 0 }; x.n++; x.peak += o.pk[1]; calm.set(key, x);
   }
   const steady = [...calm.values()].filter(x => x.n >= 3).map(x => ({ ...x, peak: x.peak / x.n })).sort((x, y) => x.peak - y.peak)[0] || null;
@@ -443,7 +451,7 @@ function aiContext() {
   // Lägsta värdet efter toppen: det som spelar roll för en känning. Lägsta inom hela 3 h är ofta bara värdet före stigningen.
   const lowAfter = (from, to) => { let lo = null; for (let k = Math.ceil(from / 6e4) * 6e4; k <= to; k += 6e4) { const v = R.get(k); if (v !== undefined && (!lo || v < lo[1])) lo = [k, v]; } return lo; };
   for (const m of db.log.filter(m => m.t >= now - 14 * 864e5 && m.t <= now)) {
-    const o = outcome(m.t), min = t => Math.round((t - m.t) / 6e4) + ' min', la = o.pk && lowAfter(o.pk[0], m.t + 3 * 36e5);
+    const o = outcome(m.t, treatCut(m.t, db.notes)), min = t => Math.round((t - m.t) / 6e4) + ' min', la = o.pk && lowAfter(o.pk[0], m.t + 3 * 36e5);
     L.push(`${ymd(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
   }
   const notes = db.notes.filter(n => n.t >= now - 14 * 864e5 && n.t <= now);
@@ -931,7 +939,7 @@ function route(req, res) {
   if (u.pathname === '/api/outcomes') {
     const since = +u.searchParams.get('since') || 0;
     const db = readDb(); // måltider och behandlade känningar, nyckel = id
-    return send(res, Object.fromEntries([...db.log.filter(m => m.t >= since).map(m => [m.id, outcome(m.t)]),
+    return send(res, Object.fromEntries([...db.log.filter(m => m.t >= since).map(m => [m.id, outcome(m.t, treatCut(m.t, db.notes))]),
       ...db.notes.filter(n => n.kind === 'Low treated' && n.t >= since).map(n => [n.id, treated(n.t)])]));
   }
   if (u.pathname === '/api/profile') return send(res, profile(Math.min(90, Math.max(1, +u.searchParams.get('days') || 14))));
