@@ -753,6 +753,14 @@ function askUnits(r) {
   return tgSay(`How many units did you take for <b>${he(r.name)}</b>? ${opts.length ? 'Tap one or send' : 'Reply with'} a number, or 0 if none.`,
     opts.length ? { reply_markup: { inline_keyboard: [opts.map(([v, w]) => ({ text: `${v} ${uw(v)} (${w})`, callback_data: `d:${nonce}:${v}` }))] } } : {});
 }
+// Svaret på "How many units?" som ett tal, eller null om texten är något annat (t.ex. en ny måltid). Efter talet får det
+// bara stå enhetsord och insulinnamn.
+const UNITS_TAIL = /^(u|e|ie|iu|units?|enh|enhet|enheter|insulin|fiasp|novorapid|humalog|lyumjev|apidra|actrapid|trurapi|admelog)$/;
+function unitsReply(text) {
+  const tk = String(text).toLowerCase().replace(/(\d),(\d)/g, '$1.$2').replace(/[.!]+$/, '').trim().split(/\s+/), m = (tk[0] || '').match(/^(\d+(?:\.\d+)?)([a-z]*)$/);
+  if (!m || (m[2] && !UNITS_TAIL.test(m[2])) || !tk.slice(1).every(w => UNITS_TAIL.test(w))) return null;
+  return +m[1];
+}
 // Antal enheter som svar på "How many units?", skrivet eller från en knapp. Långt från det vanliga: fråga en gång till.
 async function tgUnits(ins, id) {
   if (!(ins >= 0) || ins > 100) return tgSay('That seems like a lot. Send the number of units again.');
@@ -812,7 +820,9 @@ async function tgHandle(u) {
   // Svar på "How many units?" eller på en dos som behövde bekräftas (gäller i 30 min)
   if (tgPending && Date.now() - tgPending.at < 30 * 6e4) {
     if (tgPending.confirm && /^(yes|ja|j|y|ok)$/i.test(text)) { const p = tgPending; tgPending = null; return tgLogged(p, 'tg' + u.update_id); }
-    if (/^\d+([.,]\d+)?$/.test(text)) return tgUnits(parseFloat(text.replace(',', '.')), 'tg' + u.update_id);
+    // Ett tal, gärna med enhet eller insulinnamn ("5,5 enheter", "5.5e", "6 units", "4 enheter fiasp"). Förut godtogs bara
+    // ett ensamt tal, så "5,5 enheter" efter en favorit gick vidare som ett nytt meddelande och blev en korrigeringsdos.
+    const n = unitsReply(text); if (n !== null) return tgUnits(n, 'tg' + u.update_id);
   }
   const r = await interpret((text.startsWith(FAV) ? text.slice(FAV.length) : text).slice(0, 300), m.date * 1000);
   if (r.type === 'other') return tgSay("I didn't catch a meal or a note there. Try: <i>pizza 7,5 enheter</i>");
