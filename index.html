@@ -129,6 +129,14 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .lgd i.ln{height:3px;width:20px;vertical-align:2px;box-shadow:none;background:linear-gradient(90deg,var(--low) 0 25%,var(--fg) 25% 75%,var(--high) 75%)}
 .facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.75rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
 .lowbars{margin:8px 0 4px}
+/* Meals compared: namnet fäller ut varje tillfälle (en pil som vrids), och listan ligger på en egen ton under raden */
+#cmp .cmpb{display:inline-flex;align-items:center;gap:8px;text-align:left}#cmp .cmpb:hover{text-decoration:underline;text-underline-offset:3px}
+.chev{flex:none;width:7px;height:7px;border:solid var(--mut);border-width:0 2px 2px 0;transform:rotate(-45deg);transition:transform .15s;margin:0 2px}.cmpb[aria-expanded=true] .chev{transform:rotate(45deg)}
+#cmp tr.cmpd td{padding:2px 0 14px;text-align:left;font-weight:400}
+.occ{border-radius:10px;background:var(--sub);padding:4px 14px;font-size:.8125rem}
+.occr{display:grid;grid-template-columns:minmax(120px,1fr) 80px minmax(0,1.3fr) minmax(0,1.7fr);gap:2px 14px;padding:8px 0;border-top:1px solid var(--bd);align-items:baseline}.occr:first-child{border-top:0}
+.occh{color:var(--mut);font-size:.75rem;padding:6px 0}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}
+@media(max-width:600px){#cmp tr.cmpd{display:block;padding:0 0 10px}#cmp tr.cmpd td{display:block;padding:0}#cmp tr.cmpd td::before{content:none}.occh{display:none}.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 #keyd summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:28px}#keyd summary::-webkit-details-marker{display:none}
 #keyd summary::after{content:'';width:7px;height:7px;margin-left:auto;border:solid var(--mut);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .15s}#keyd[open] summary::after{transform:rotate(-135deg)}
@@ -857,12 +865,34 @@ function renderCmp() {
   const em = c => ` style="color:${c};font-weight:600"`;
   // Uttryckliga roller: på smala skärmar blir raderna rutnät (display:grid), och då tappar webbläsaren annars tabellens
   // betydelse för skärmläsare. Rubrikraden döljs bara visuellt där, så att varje cell fortfarande har sin kolumnrubrik.
+  // Namnet är en knapp som fäller ut varje gång måltiden loggats (occList), med en rad under måltiden
   $('cmp').innerHTML = rows.length ? `<table role="table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Meal</th><th role="columnheader">Times</th><th role="columnheader">Avg units</th><th role="columnheader">Avg rise</th><th role="columnheader">Avg peak</th><th role="columnheader">Above 10</th><th role="columnheader">Below 3.9</th></tr></thead><tbody role="rowgroup">`
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
-    + rows.map(({ n, s }) => `<tr role="row"><td role="cell">${esc(n)}</td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`).join('') + '</tbody></table>'
-      + `<p class="mut foot">Meals that started in range, with 3 hours of readings after. Most eaten first. Avg units = the ${esc((db.settings && db.settings.fast) || 'mealtime insulin')} you logged for those times.</p>`
+    + rows.map(({ n, s }) => { const k = n.toLowerCase(), open = cmpOpen.has(k); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${open}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`
+      + (open ? `<tr role="row" class="cmpd"><td role="cell" colspan="7">${occList(n)}</td></tr>` : ''); }).join('') + '</tbody></table>'
+      + `<p class="mut foot">Meals that started in range, with 3 hours of readings after. Most eaten first. Avg units = the ${esc((db.settings && db.settings.fast) || 'mealtime insulin')} you logged for those times. Click a meal to see every time.</p>`
     : '<div class="empty">Meals show up here once they have 3 hours of readings after them.</div>';
 }
+// Varje gång en måltid loggats, nyast först: när, enheter, start → topp och en känning inom 3 h. Även de som inte räknas
+// i snitten (började utanför målområdet, eller följs fortfarande), nedtonade och med orsaken, så att "Times" går att förstå.
+const cmpOpen = new Set();
+function occList(n) {
+  const k = n.toLowerCase(), all = db.log.filter(m => m.name.toLowerCase() === k).sort((a, b) => b.t - a.t);
+  const v = p => `<b style="color:${col(mm(p[1]))}">${f1(mm(p[1]))}</b>`;
+  const row = m => {
+    const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && b[1] >= 70 && b[1] <= 180;
+    const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : b[1] < 70 ? 'Started below 3.9' : b[1] > 180 ? 'Started above 10' : '';
+    return `<div class="occr${counted ? '' : ' nc'}" role="row"><span role="cell" class="occw">${esc(dshort(m.t))} ${hhmm(m.t)}</span><span role="cell">${units(m.ins)}</span>`
+      + `<span role="cell">${b ? v(b) : '–'}${b && pk ? ` ${ARR} ${v(pk)} <span class="mut">${sg(mm(pk[1] - b[1]))}</span>` : ''}</span>`
+      + `<span role="cell">${low ? `<span class="lowv">${lowWord(lo[1])} ${f1(mm(lo[1]))} after ${dur(lo[0] - m.t)}</span>` : counted ? '<span class="mut">No low</span>' : ''}${why ? `<span class="ncw">${why}, not in the averages</span>` : ''}</span></div>`;
+  };
+  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Start → peak</span><span role="columnheader">Low within 3 h</span></div>${all.map(row).join('')}</div>`;
+}
+$('cmp').addEventListener('click', e => {
+  const b = e.target.closest('[data-cmp]'); if (!b) return;
+  const k = decodeURIComponent(b.dataset.cmp); if (cmpOpen.has(k)) cmpOpen.delete(k); else cmpOpen.add(k);
+  renderCmp(); const nb = $('cmp').querySelector(`[data-cmp="${CSS.escape(b.dataset.cmp)}"]`); if (nb) nb.focus(); // fokus kvar på samma rad efter omritningen
+});
 
 // Mönster: tid i målområdet m.m. för vald period. Målen är de internationella riktvärdena för CGM.
 let pdays = 14, prof = null;
