@@ -137,7 +137,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .occr{display:grid;grid-template-columns:minmax(120px,1fr) 80px minmax(0,1.3fr) minmax(0,1.7fr);gap:2px 14px;padding:8px 0;border-top:1px solid var(--bd);align-items:baseline}.occr:first-child{border-top:0}
 .occh{color:var(--mut);font-size:.75rem;padding:6px 0}
 /* Ett tillfälle som följdes av en känning: en svag röd ton över hela raden, så att det är det man ser först */
-.occn{margin:8px 2px 0}.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}
+.occn{margin:8px 2px 0}.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
 @media(max-width:600px){#cmp tr.cmpd{display:block;padding:0 0 10px}#cmp tr.cmpd td{display:block;padding:0}#cmp tr.cmpd td::before{content:none}.occh{display:none}.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 #keyd summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:28px}#keyd summary::-webkit-details-marker{display:none}
@@ -875,7 +875,8 @@ function renderCmp() {
       + `<p class="mut foot">Meals that started in range, with 3 hours of readings after. Most eaten first. Avg units = the ${esc((db.settings && db.settings.fast) || 'mealtime insulin')} you logged for those times. Click a meal to see every time.</p>`
     : '<div class="empty">Meals show up here once they have 3 hours of readings after them.</div>';
 }
-// Varje gång en måltid loggats, nyast först: när, enheter, start → topp och en känning inom 3 h. Även de som inte räknas
+// Varje gång en måltid loggats, nyast först: när, enheter, startvärdet → värdet efter 3 h, och hur det gick (gick högt,
+// gick lågt eller höll sig i mål). Förut visades start → topp, som såg konstigt ut bredvid en känning. Även de som inte räknas
 // i snitten (började utanför målområdet, eller följs fortfarande), nedtonade och med orsaken, så att "Times" går att förstå.
 const cmpOpen = new Set();
 function occList(n) {
@@ -883,13 +884,22 @@ function occList(n) {
   const v = p => `<b style="color:${col(mm(p[1]))}">${f1(mm(p[1]))}</b>`;
   const row = m => {
     const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && b[1] >= 70 && b[1] <= 180;
-    const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : b[1] < 70 ? 'Started below 3.9' : b[1] > 180 ? 'Started above 10' : '';
+    const sl = b && b[1] < 70; // åt under en känning: det står först i resultatet, aldrig "In range"
+    const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : sl ? 'Not' : b[1] > 180 ? 'Started above 10' : '';
+    // Värdet efter 3 h; saknas värden precis där står hur länge efter (t.ex. "2 h 30 min")
+    const end = o.end, endAt = end && end[0] - m.t < 2.75 * 36e5 ? ` <span class="mut">(${dur(end[0] - m.t)})</span>` : '';
+    // Hur det gick: högt (måltidens egen topp över 10), lågt (under 3.9 inom 3 h), båda, eller i mål
+    const high = pk && pk[1] > 180, res = [
+      sl ? `<span class="lowv">Started low · ${f1(mm(b[1]))}</span>` : '',
+      high ? `<span class="hiv">High · ${f1(mm(pk[1]))} after ${dur(pk[0] - m.t)}</span>` : '',
+      low ? `<span class="lowv">${lowWord(lo[1])} ${f1(mm(lo[1]))} after ${dur(lo[0] - m.t)}</span>` : ''].filter(Boolean);
+    const verdict = res.length ? res.join('<span class="mut">, then </span>') : o.done && pk ? '<span class="okv">In range</span>' : '';
     return `<div class="occr${counted ? '' : ' nc'}${low ? ' lw' : ''}" role="row"><span role="cell" class="occw">${esc(dshort(m.t))} ${hhmm(m.t)}</span><span role="cell">${units(m.ins)}</span>`
-      + `<span role="cell">${b ? v(b) : '–'}${b && pk ? ` ${ARR} ${v(pk)} <span class="mut">${sg(mm(pk[1] - b[1]))}</span>` : ''}</span>`
-      + `<span role="cell">${low ? `<span class="lowv">${lowWord(lo[1])} ${f1(mm(lo[1]))} after ${dur(lo[0] - m.t)}</span>` : counted ? '<span class="mut">No low</span>' : ''}${why ? `<span class="ncw">${why}, not in the averages</span>` : ''}</span></div>`;
+      + `<span role="cell">${b ? v(b) : '–'}${b && end ? ` ${ARR} ${v(end)}${endAt}` : ''}</span>`
+      + `<span role="cell">${verdict}${why ? `<span class="ncw">${why === 'Not' ? 'Not in the averages' : why + ', not in the averages'}</span>` : ''}</span></div>`;
   };
-  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Start → peak</span><span role="columnheader">Low within 3 h</span></div>${all.map(row).join('')}</div>`
-    + `<p class="mut fine occn">The peak is the meal's own rise: it is counted until a low or a logged low treatment, so sugar taken against a low does not count as the meal's peak.</p>`;
+  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Start → after 3 h</span><span role="columnheader">Within 3 h</span></div>${all.map(row).join('')}</div>`
+    + `<p class="mut fine occn">High = above 10 from the meal itself (counted until a low or a logged low treatment, so sugar taken against a low does not count). Low = below 3.9.</p>`;
 }
 $('cmp').addEventListener('click', e => {
   const b = e.target.closest('[data-cmp]'); if (!b) return;
