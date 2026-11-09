@@ -129,6 +129,11 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .lgd i.ln{height:3px;width:20px;vertical-align:2px;box-shadow:none;background:linear-gradient(90deg,var(--low) 0 25%,var(--fg) 25% 75%,var(--high) 75%)}
 .facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.75rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
 .lowbars{margin:8px 0 4px}
+/* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
+.cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
+.cmpsel{display:none;align-items:center;gap:8px;font-size:.8125rem;color:var(--mut);margin:4px 0 8px}.cmpsel select{flex:1;max-width:260px}
+@media(max-width:600px){.cmpsel{display:flex}}
 /* Meals compared: namnet fäller ut varje tillfälle (en pil som vrids), och listan ligger på en egen ton under raden */
 #cmp .cmpb{display:inline-flex;align-items:center;gap:8px;text-align:left}#cmp .cmpb:hover{text-decoration:underline;text-underline-offset:3px}
 .chev{flex:none;width:7px;height:7px;border:solid var(--mut);border-width:0 2px 2px 0;transform:rotate(-45deg);transition:transform .15s;margin:0 2px}.cmpb[aria-expanded=true] .chev{transform:rotate(45deg)}
@@ -300,8 +305,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <button role="tab" id="t-act" aria-controls="tab-act" data-tab="act" aria-selected="true">Activity</button>
   <button role="tab" id="t-pat" aria-controls="tab-pat" data-tab="pat" aria-selected="false" tabindex="-1">Patterns</button>
   <button role="tab" id="t-ins" aria-controls="tab-ins" data-tab="ins" aria-selected="false" tabindex="-1">Insights</button>
-  <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
   <button role="tab" id="t-lib" aria-controls="tab-lib" data-tab="lib" aria-selected="false" tabindex="-1">Meals</button>
+  <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
 </div>
 
 <section class="card panel" id="tab-act" role="tabpanel" aria-labelledby="t-act">
@@ -863,17 +868,30 @@ function renderCmp() {
   // Oftast ätna först (förut högsta toppen först, så att avsnittet slutade i en rad dåliga betyg). Kolumnen "Avg units"
   // (snittet av det man själv tog, samma tillfällen som utfallen) lades till på användarens begäran 2026-11-09; tidigare
   // fanns ingen dos här, eftersom en granskning läste dos bredvid utfall som en doseringsguide. Den är bara fakta, inget råd.
-  const rows = names.map(n => ({ n, h: hist(n) })).filter(x => x.h.length).map(({ n, h }) => ({ n, s: summ(h) })).sort((a, b) => b.s.n - a.s.n || a.n.localeCompare(b.n));
+  // Sorteringen väljs med kolumnrubrikerna (på mobilen med listan "Sort by"); lika värden: oftast ätna först, sedan namnet
+  const C = CMP_COLS.find(c => c.k === cmpSort.k) || CMP_COLS[1];
+  const rows = names.map(n => ({ n, h: hist(n) })).filter(x => x.h.length).map(({ n, h }) => ({ n, s: summ(h) }))
+    .sort((a, b) => (C.k === 'meal' ? a.n.localeCompare(b.n) : C.v(a.s) - C.v(b.s)) * cmpSort.dir || b.s.n - a.s.n || a.n.localeCompare(b.n));
   const em = c => ` style="color:${c};font-weight:600"`;
+  const th = c => { const on = c.k === cmpSort.k; return `<th role="columnheader" aria-sort="${on ? (cmpSort.dir < 0 ? 'descending' : 'ascending') : 'none'}"><button class="cmps${on ? ' on' : ''}" data-sort="${c.k}" title="${c.k === 'meal' ? 'Sort by name' : `Sort by ${c.l.toLowerCase()}, ${on && cmpSort.dir < 0 ? 'lowest' : 'highest'} first`}">${c.l}<span class="sarr${on ? (cmpSort.dir < 0 ? ' dn' : ' up') : ''}" aria-hidden="true"></span></button></th>`; };
+  const sortSel = `<label class="cmpsel">Sort by <select id="cmpsel">${CMP_COLS.flatMap(c => c.k === 'meal' ? [['meal:1', 'Name']] : [[c.k + ':-1', c.l + ', highest first'], [c.k + ':1', c.l + ', lowest first']]).map(([v, l]) => `<option value="${v}"${v === cmpSort.k + ':' + cmpSort.dir ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
   // Uttryckliga roller: på smala skärmar blir raderna rutnät (display:grid), och då tappar webbläsaren annars tabellens
   // betydelse för skärmläsare. Rubrikraden döljs bara visuellt där, så att varje cell fortfarande har sin kolumnrubrik.
   // Namnet är en knapp som fäller ut varje gång måltiden loggats (occList), med en rad under måltiden
-  $('cmp').innerHTML = rows.length ? `<table role="table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Meal</th><th role="columnheader">Times</th><th role="columnheader">Avg units</th><th role="columnheader">Avg rise</th><th role="columnheader">Avg peak</th><th role="columnheader">Above 10</th><th role="columnheader">Below 3.9</th></tr></thead><tbody role="rowgroup">`
+  $('cmp').innerHTML = rows.length ? sortSel + `<table role="table"><thead role="rowgroup"><tr role="row">${CMP_COLS.map(th).join('')}</tr></thead><tbody role="rowgroup">`
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
     + rows.map(({ n, s }) => { const k = n.toLowerCase(), open = cmpOpen.has(k); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${open}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`
       + (open ? `<tr role="row" class="cmpd"><td role="cell" colspan="7">${occList(n)}</td></tr>` : ''); }).join('') + '</tbody></table>'
-      + `<p class="mut foot">Meals that started in range, with 3 hours of readings after. Most eaten first. Avg units = the ${esc((db.settings && db.settings.fast) || 'mealtime insulin')} you logged for those times. Click a meal to see every time.</p>`
     : '<div class="empty">Meals show up here once they have 3 hours of readings after them.</div>';
+}
+// Kolumnerna i Meals compared och vad de sorteras på. "Above 10" och "Below 3.9" sorteras på andelen (2 of 4 före 1 of 4).
+const CMP_COLS = [{ k: 'meal', l: 'Meal' }, { k: 'n', l: 'Times', v: s => s.n }, { k: 'ins', l: 'Avg units', v: s => s.ins }, { k: 'rise', l: 'Avg rise', v: s => s.rise },
+  { k: 'peak', l: 'Avg peak', v: s => s.peak }, { k: 'hi', l: 'Above 10', v: s => s.hi / s.n + s.hi * 1e-6 }, { k: 'lo', l: 'Below 3.9', v: s => s.lo / s.n + s.lo * 1e-6 }];
+let cmpSort = { k: 'n', dir: -1 };
+try { const s = JSON.parse(localStorage.getItem('cmpSort')); if (s && CMP_COLS.some(c => c.k === s.k) && (s.dir === 1 || s.dir === -1)) cmpSort = s; } catch {}
+function setCmpSort(k, dir) {
+  cmpSort = { k, dir }; try { localStorage.setItem('cmpSort', JSON.stringify(cmpSort)); } catch {}
+  renderCmp();
 }
 // Varje gång en måltid loggats, nyast först: när, enheter, startvärdet → värdet efter 3 h, och hur det gick (gick högt,
 // gick lågt eller höll sig i mål). Förut visades start → topp, som såg konstigt ut bredvid en känning. Även de som inte räknas
@@ -901,10 +919,14 @@ function occList(n) {
     + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above 10 from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
 }
 $('cmp').addEventListener('click', e => {
+  // En kolumnrubrik: första klicket högst först (namn: A–Ö), nästa klick åt andra hållet. Fokus stannar på rubriken.
+  const sb = e.target.closest('[data-sort]');
+  if (sb) { const k = sb.dataset.sort; setCmpSort(k, k === cmpSort.k ? -cmpSort.dir : k === 'meal' ? 1 : -1); const nb = $('cmp').querySelector(`[data-sort="${k}"]`); if (nb) nb.focus(); return; }
   const b = e.target.closest('[data-cmp]'); if (!b) return;
   const k = decodeURIComponent(b.dataset.cmp); if (cmpOpen.has(k)) cmpOpen.delete(k); else cmpOpen.add(k);
   renderCmp(); const nb = $('cmp').querySelector(`[data-cmp="${CSS.escape(b.dataset.cmp)}"]`); if (nb) nb.focus(); // fokus kvar på samma rad efter omritningen
 });
+$('cmp').addEventListener('change', e => { if (e.target.id !== 'cmpsel') return; const [k, d] = e.target.value.split(':'); setCmpSort(k, +d); $('cmpsel').focus(); });
 
 // Mönster: tid i målområdet m.m. för vald period. Målen är de internationella riktvärdena för CGM.
 let pdays = 14, prof = null;
@@ -980,12 +1002,11 @@ function drawProf() {
   const lowsFact = `<div class="wide"><span>When lows start, last ${dd}</span>` + (lw
     ? `<b style="color:var(--low)">${lw.all ? lw.text : `${dayPart(lw.from)}, ${hm2(lw.from)}–${hm2(lw.from + 120)}`}</b>`
       + `<span class="lwk">${lw.all ? `${lw.n === 1 ? '1 low' : lw.n + ' lows'} in total.` : `<b>${lw.k} of ${lw.n}</b> lows started then.`}</span>`
-      + lowBars() + `<span>Each bar = lows that started in that half hour. A low = at least 15 minutes below 3.9.</span>`
+      + lowBars()
     : `<b>No lows</b><span>No time with 15 minutes or more below 3.9.</span>`) + '</div>';
   // Känningarna som en hel rad (med remsan), högst/lägst som en lugn textrad under profilen i stället för två halvtomma rutor
   $('psum').innerHTML = `<p class="kpi2 prof2"><span>Typical curve highest at <b>${t(hi[0])}</b> (<b style="color:${col(hi[1])}">${f1(hi[1])}</b>)</span><span>and lowest at <b>${t(lo[0])}</b> (<b style="color:${col(lo[1])}">${f1(lo[1])}</b>)</span></p>
-    <div class="facts">${lowsFact}</div>
-    <p class="mut foot">Based on ${prof.days} ${prof.days === 1 ? 'day' : 'days'} of readings.${prof.days < 7 ? ' The pattern gets more reliable after a week or two.' : ''}</p>`;
+    <div class="facts">${lowsFact}</div>`;
 }
 document.querySelectorAll('#prng button').forEach(b => b.onclick = () => {
   pdays = +b.dataset.pd; $('pdh').textContent = `Last ${pdays} days`; document.querySelectorAll('#prng button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); renderSum(); loadProf();
