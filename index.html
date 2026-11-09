@@ -886,20 +886,19 @@ function occList(n) {
     const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && b[1] >= 70 && b[1] <= 180;
     const sl = b && b[1] < 70; // åt under en känning: det står först i resultatet, aldrig "In range"
     const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : sl ? 'Not' : b[1] > 180 ? 'Started above 10' : '';
-    // Värdet efter 3 h; saknas värden precis där står hur länge efter (t.ex. "2 h 30 min")
-    const end = o.end, endAt = end && end[0] - m.t < 2.75 * 36e5 ? ` <span class="mut">(${dur(end[0] - m.t)})</span>` : '';
-    // Hur det gick: högt (måltidens egen topp över 10), lågt (under 3.9 inom 3 h), båda, eller i mål
-    const high = pk && pk[1] > 180, res = [
-      sl ? `<span class="lowv">Started low · ${f1(mm(b[1]))}</span>` : '',
-      high ? `<span class="hiv">High · ${f1(mm(pk[1]))} after ${dur(pk[0] - m.t)}</span>` : '',
-      low ? `<span class="lowv">${lowWord(lo[1])} ${f1(mm(lo[1]))} after ${dur(lo[0] - m.t)}</span>` : ''].filter(Boolean);
-    const verdict = res.length ? res.join('<span class="mut">, then </span>') : o.done && pk ? '<span class="okv">In range</span>' : '';
+    // Startvärdet och sedan det som hände: högt (måltidens egen topp över 10) och/eller lågt (under 3.9), med hur lång
+    // tid det tog. Höll det sig i mål: värdet efter 3 h (saknas värden precis där står när, t.ex. "after 2 h 30 min").
+    const high = pk && pk[1] > 180, end = o.end, after = t => 'after ' + dur(t - m.t), steps = [], res = [];
+    if (sl) res.push('<span class="lowv">Started low</span>');
+    if (high) { steps.push(pk); res.push(`<span class="hiv">High ${after(pk[0])}</span>`); }
+    if (low) { steps.push(lo); res.push(`<span class="lowv">${lowWord(lo[1])} ${after(lo[0])}</span>`); }
+    if (!high && !low && end && o.done) { const at = end[0] - m.t < 2.75 * 36e5 ? after(end[0]) : 'after 3 h'; steps.push(end); res.push(sl ? `<span class="okv">in range</span> <span class="mut">${at}</span>` : `<span class="okv">In range</span> <span class="mut">· ${at}</span>`); }
     return `<div class="occr${counted ? '' : ' nc'}${low ? ' lw' : ''}" role="row"><span role="cell" class="occw">${esc(dshort(m.t))} ${hhmm(m.t)}</span><span role="cell">${units(m.ins)}</span>`
-      + `<span role="cell">${b ? v(b) : '–'}${b && end ? ` ${ARR} ${v(end)}${endAt}` : ''}</span>`
-      + `<span role="cell">${verdict}${why ? `<span class="ncw">${why === 'Not' ? 'Not in the averages' : why + ', not in the averages'}</span>` : ''}</span></div>`;
+      + `<span role="cell">${b ? [b, ...steps].map(v).join(` ${ARR} `) : '–'}</span>`
+      + `<span role="cell">${res.join('<span class="mut">, then </span>')}${why ? `<span class="ncw">${why === 'Not' ? 'Not in the averages' : why + ', not in the averages'}</span>` : ''}</span></div>`;
   };
-  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Start → after 3 h</span><span role="columnheader">Within 3 h</span></div>${all.map(row).join('')}</div>`
-    + `<p class="mut fine occn">High = above 10 from the meal itself (counted until a low or a logged low treatment, so sugar taken against a low does not count). Low = below 3.9.</p>`;
+  return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Glucose</span><span role="columnheader">What happened</span></div>${all.map(row).join('')}</div>`
+    + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above 10 from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
 }
 $('cmp').addEventListener('click', e => {
   const b = e.target.closest('[data-cmp]'); if (!b) return;
