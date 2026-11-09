@@ -129,6 +129,11 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .lgd i.ln{height:3px;width:20px;vertical-align:2px;box-shadow:none;background:linear-gradient(90deg,var(--low) 0 25%,var(--fg) 25% 75%,var(--high) 75%)}
 .facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.75rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
 .lowbars{margin:8px 0 4px}
+/* Symbolerna i grafen. Pekar man på, fokuserar eller har valt en händelse markeras den i sin egen färg (--kc): brickan
+   tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
+.mk.ev .halo{opacity:0;transition:opacity .12s}.mk.ev:hover .halo,.mk.ev.sel .halo{opacity:.55}.mk.ev:focus-visible .halo{opacity:1}
+.mk.ev .pl{transition:fill .12s}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
+.mk.ev:focus-visible circle{stroke-width:2}.mk.ev:hover .ln,.mk.ev.sel .ln{stroke-width:2.5}svg text.pt{fill:var(--fg);font-weight:600}
 /* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
 .cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
@@ -417,6 +422,9 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
     <div class="sec"><h3>Appearance</h3>
       <div class="seg" id="theme" role="group" aria-label="Theme"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div>
       <span class="mut fine">Dark is easier on the eyes at night. System follows your computer or phone.</span>
+      <span class="sm" id="evsl">Meals and notes in the chart</span>
+      <div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="dose" aria-pressed="true">Symbol and dose</button><button data-ev="curve" aria-pressed="false">Symbols on the curve</button></div>
+      <span class="mut fine">Symbols on the curve is the calmest: the name and dose show when you point at or tap a symbol.</span>
     </div>
     <div class="sec"><h3>Your insulin</h3>
       <div class="grid2">
@@ -670,33 +678,37 @@ const yAxis = (Y, ym, x, z) => {
 // Graferna ritas i pixlar. chartScale följer webbläsarens textstorlek (1 = 16 px), coarse = pekskärm.
 const chartScale = () => Math.max(1, parseFloat(getComputedStyle(document.documentElement).fontSize) / 16 || 1);
 const coarse = () => matchMedia('(pointer: coarse)').matches;
+// Symbolerna i grafen: ritade i en 24×24-ruta med rundade linjer, i en färgad rund bricka. fill = brickans färg,
+// ink = symbolens färg (ljus eller mörk så att den syns på brickan i båda teman). Sprutan (Correction) är gul så att den
+// skiljer sig från måltiderna, glaset (lågbehandling) rött, promenaden och andra anteckningar blå.
+let evStyle = 'dose'; try { if (localStorage.getItem('evstyle') === 'curve') evStyle = 'curve'; } catch {}
+const EVK = {
+  meal: { fill: 'var(--acc)', ink: 'var(--onacc)', icon: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>' },
+  corr: { fill: 'var(--high-fill)', ink: '#101418', icon: '<path d="M17.5 2.5l4 4M19.5 4.5l-3 3M18 9 8.6 18.4a1.8 1.8 0 0 1-2.5 0l-.5-.5a1.8 1.8 0 0 1 0-2.5L15 6M9.2 11.8l3 3M11.7 9.3l3 3M5.4 18.6 2.5 21.5M13.5 4.5l6 6"/>' },
+  ex: { fill: 'var(--note)', ink: 'var(--onacc)', icon: '<circle cx="13.5" cy="4" r="1.6" fill="currentColor" stroke="none"/><path d="M12.5 8 10 15l-3 6.5M10 15l3.5 2.5 1 4.5M12.5 8l-4 2.5-1 3M12.5 8l2 3.5 3.5 1"/>' },
+  note: { fill: 'var(--note)', ink: 'var(--onacc)', icon: '<path d="M6 3h9l4 4v14H6Z"/><path d="M9 12h6M9 16h6"/>' },
+  low: { fill: 'var(--lbbg)', ink: 'var(--lbfg)', icon: '<path d="M6 8.5h12l-1.5 11.2a1.8 1.8 0 0 1-1.8 1.6H9.3a1.8 1.8 0 0 1-1.8-1.6Z"/><path d="M12.5 8.5 14 2.5h3M7.2 14.5c1.6-.8 3.2-.8 4.8 0s3.2.8 4.8 0"/>' } };
+const evKind = (m, note) => note ? (m.kind === LOWT ? 'low' : m.kind === 'Exercise' ? 'ex' : 'note') : isCorr(m.name) ? 'corr' : 'meal';
+// Texten i brickan: dosen, för en anteckning längden, för en lågbehandling mängden (t.ex. "20 g"), annars kort text
+const evText = (m, note) => !note ? r1(m.ins) + ' u' : m.dur ? dur(m.dur * 6e4) : m.kind === LOWT ? ((String(m.text || '').match(/\d+(?:[.,]\d+)?\s*g\b/) || [])[0] || 'Low') : cut(m.text || kindLabel(m.kind), 14);
+// En symbol i en rund bricka med diametern d. Ringen (halo) syns när man pekar på, fokuserar eller har valt den.
+const evBadge = (k, x, y, d, inPill) => { const K = EVK[k], sc = d * .6 / 24;
+  return (inPill ? '' : `<circle class="halo" cx="${x}" cy="${y}" r="${(d / 2 + 4).toFixed(1)}" fill="none" stroke="${K.fill}" stroke-width="2"/>`)
+    + `<circle class="bd" cx="${x}" cy="${y}" r="${(d / 2).toFixed(1)}" fill="${K.fill}" stroke="var(--card)" stroke-width="${inPill ? 0 : 2}"/>`
+    + `<g transform="translate(${(x - 12 * sc).toFixed(1)},${(y - 12 * sc).toFixed(1)}) scale(${sc.toFixed(3)})" fill="none" stroke="${K.ink}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:${K.ink}">${K.icon}</g>`; };
 function drawChart() {
   // Ritas i verklig pixelbredd så att texten inte krymper på mobilen
   // z = textstorlek / 16: med större text i webbläsaren växer etiketter, marginaler och etikettrader med (texten är i rem)
-  const z = chartScale(), B = 22 * z, LH = 18 * z;
+  const z = chartScale(), B = 22 * z;
   const w = Math.max(300, Math.round($('chart').clientWidth) || 900), h = Math.max(170, Math.min((w < 600 ? 240 : 300) + Math.round((z - 1) * 80), Math.round(innerHeight * (innerHeight < 560 ? .36 : .42)))), l = 30 * z, r = 8, [t0, t1] = view(), pts = rd.filter(p => p[0] >= t0 && p[0] <= t1);
   const ym = Math.max(14, Math.ceil(Math.max(0, ...pts.map(p => mm(p[1]))) + 1));
   const X = t => l + (t - t0) / (t1 - t0) * (w - l - r);
-  // Etiketter: första av 3 rader där den får plats utan att överlappa, annars en kortare, annars ingen etikett.
-  // Utrymmet ovanför kurvan blir bara så högt som de rader som används (förut alltid 3 rader, även utan etiketter).
-  const lanes = [-1e9, -1e9, -1e9];
-  // "units" utskrivet som i resten av appen; ett ensamt "U" kan läsas som en nolla ("5U" som 50)
-  // Varje markering prövar först en lång etikett, sedan kortare, så att text bara kortas när den inte får plats
-  const items = [...db.log.map(m => ({ m, labs: [cut(m.name, 28) + ', ' + units(m.ins), cut(m.name, 14) + ', ' + units(m.ins), units(m.ins)] })),
-    ...db.notes.map(m => ({ m, note: true, labs: [cut(m.text ? kindLabel(m.kind) + ': ' + m.text : kindLabel(m.kind), 34), ...(m.text ? [cut(m.text, 18)] : []), kindLabel(m.kind)] }))];
-  // Etikettens bredd mäts med samma typsnitt som den ritas i (förut gissad, 6.4 px per tecken, så att etiketter kunde
-  // hamna på y-axeln). Vid högerkanten vänds den åt vänster, men aldrig in över axeln.
-  const cx = drawChart.cx || (drawChart.cx = document.createElement('canvas').getContext('2d'));
-  cx.font = `600 ${11 * z}px ${getComputedStyle(document.body).fontFamily}`;
-  const marks = items.filter(({ m }) => m.t >= t0 && (day === null || m.t < t1)).sort((a, b) => a.m.t - b.m.t).map(({ m, note, labs }) => {
-    const x = +X(m.t).toFixed(1);
-    for (const lab of labs) {
-      const bw = Math.ceil(cx.measureText(lab).width + 16 * z), bx = Math.max(l, x > w - bw - 12 ? x - bw : x), k = lanes.findIndex(e => e + 4 <= bx);
-      if (k >= 0) { lanes[k] = bx + bw; return { m, note, x, lab, bw, bx, y: 2 + k * LH }; }
-    }
-    return { m, note, x };
-  }).sort((a, b) => (a.m.id === selId) - (b.m.id === selId)); // vald markering överst
-  const used = lanes.filter(e => e > -1e9).length, T = used ? used * LH + 8 * z : 16 * z;
+  // Måltider och anteckningar visas som symboler (EVK): evStyle "dose" = en bricka med symbol och dos ovanför punkten,
+  // "curve" = bara symbolen på kurvan. Förut stod namnen i rader ovanför och en streckad linje gick genom hela grafen,
+  // så att långa namn kapades och etiketterna trängdes när mycket hände samtidigt.
+  const marks = [...db.log.map(m => ({ m })), ...db.notes.map(m => ({ m, note: true }))].filter(({ m }) => m.t >= t0 && (day === null || m.t < t1))
+    .sort((a, b) => a.m.t - b.m.t).sort((a, b) => (a.m.id === selId) - (b.m.id === selId)); // vald markering överst
+  const T = (evStyle === 'dose' ? 36 : 18) * z;
   const Y = v => h - B - v / ym * (h - B - T);
   let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
   const span = (t1 - t0) / 36e5; let sp = span > 12 ? 4 : span > 3 ? 2 : 1;
@@ -707,18 +719,35 @@ function drawChart() {
   const segs = []; let prev = -Infinity;
   for (const [t, v] of pts) { const p = [X(t), Y(mm(v))]; if (t - prev > 20 * 6e4) segs.push([p]); else segs[segs.length - 1].push(p); prev = t; }
   s += zoneTrace('zc', segs, Y, l, w - r, 2);
-  const top = T, hit = coarse() ? 44 : 28; // pekskärm: bredare klickyta runt varje markering
-  // Två lager: först alla markeringar (linje, punkt, klickyta; de som går att tabba till), sedan alla etiketter. Då
-  // går ingen linje genom en annan markerings etikett. Etiketten är klickbar men döljs för skärmläsare (den finns i
-  // markeringens aria-label).
-  const color = (m, note) => note ? (m.kind === LOWT ? 'var(--low)' : 'var(--note)') : 'var(--acc)';
-  for (const { m, note, x, lab, y } of marks) {
-    const sel = m.id === selId, q = pts.filter(p => p[0] <= m.t).pop(), c = color(m, note);
+  const hit = coarse() ? 44 : 30, D = (coarse() ? 26 : 22) * z; // klickyta och brickans storlek (större på pekskärm)
+  const cx = drawChart.cx || (drawChart.cx = document.createElement('canvas').getContext('2d'));
+  cx.font = `600 ${12 * z}px ${getComputedStyle(document.body).fontFamily}`;
+  const placed = [], line = a => 'M' + a.map(p => X(p[0]).toFixed(1) + ',' + Y(mm(p[1])).toFixed(1)).join('L');
+  for (const { m, note } of marks) {
+    const k = evKind(m, note), K = EVK[k], sel = m.id === selId, x = +X(m.t).toFixed(1), q = pts.filter(p => p[0] <= m.t).pop();
+    const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : h - B - D / 2 - 2 * z; // utan värde just då: nere vid axeln
     const what = note ? esc(kindLabel(m.kind)) + (m.text ? ': ' + esc(m.text) : '') : `${esc(m.name)}, ${m.ins} units`;
-    s += `<g class="mk${sel ? ' sel' : ''}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${note && m.dur ? `<rect x="${x}" y="0" width="${Math.max(1, Math.min(w - r, X(m.t + m.dur * 6e4)) - x).toFixed(1)}" height="${h - B}" fill="var(--note)" opacity=".1"/>` : ''}<rect x="${x - hit / 2}" y="0" width="${hit}" height="${h - B}" fill="transparent"/><line class="ln" x1="${x}" x2="${x}" y1="${lab ? y + 16 * z : top}" y2="${h - B}" stroke="${c}" stroke-width="1.5" stroke-dasharray="4 3"/>${q && m.t - q[0] < 15 * 6e4 ? `<circle cx="${x}" cy="${Y(mm(q[1])).toFixed(1)}" r="${sel ? 7 : 5}" fill="var(--card)" stroke="${c}" stroke-width="2.5"/>` : ''}</g>`;
+    let g = '';
+    // Längden (en promenad på 30 min): en bred, halvgenomskinlig markering längs kurvan under tiden den pågick
+    if (note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
+    if (evStyle === 'curve') g += `<circle cx="${x}" cy="${py}" r="${hit / 2}" fill="transparent"/>` + evBadge(k, x, py, D);
+    else {
+      // En bricka med symbol och text ovanför punkten; krockar den med en annan flyttas den uppåt, och får den inte plats
+      // ovanför (kurvan nära toppen) hamnar den under punkten
+      const t = evText(m, note), ph = D + 4 * z, pw = Math.ceil(cx.measureText(t).width) + ph + 10 * z, over = (a, b) => a.x < b.x + b.w + 4 && a.x + a.w + 4 > b.x && a.y < b.y + b.h + 3 && a.y + a.h + 3 > b.y;
+      const px = Math.min(Math.max(x - pw / 2, l + 2), w - r - pw); let b = { x: px, y: py - ph - 10 * z, w: pw, h: ph };
+      for (let i = 0; i < 4 && placed.some(o => over(b, o)); i++) b.y -= ph + 4 * z;
+      if (b.y < 2) { b.y = py + 10 * z; for (let i = 0; i < 4 && placed.some(o => over(b, o)); i++) b.y += ph + 4 * z; }
+      // Får brickan ändå inte plats (många händelser på samma minut, smal skärm) visas bara symbolen på kurvan
+      if (b.y < 2 || b.y + ph > h - B - 2 || placed.some(o => over(b, o))) { s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}<circle cx="${x}" cy="${py}" r="${hit / 2}" fill="transparent"/>${evBadge(k, x, py, D * .82)}</g>`; continue; }
+      placed.push(b); const up = b.y < py;
+      g += `<circle cx="${x}" cy="${py}" r="${hit / 2}" fill="transparent"/><line class="ln" x1="${x}" x2="${x}" y1="${up ? b.y + ph : b.y}" y2="${up ? py - 4 * z : py + 4 * z}" stroke="${K.fill}" stroke-width="1.5"/>`
+        + (on ? `<circle cx="${x}" cy="${py}" r="${4 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>` : '')
+        + `<rect class="pl" x="${b.x}" y="${b.y.toFixed(1)}" width="${pw}" height="${ph}" rx="${ph / 2}" fill="var(--sub)" stroke="${K.fill}" stroke-width="1.3"/>`
+        + evBadge(k, b.x + ph / 2, b.y + ph / 2, D * .82, true) + `<text class="pt" x="${b.x + ph + 1 * z}" y="${(b.y + ph / 2 + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(t)}</text>`;
+    }
+    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
   }
-  for (const { m, note, lab, bw, bx, y } of marks) if (lab)
-    s += `<g class="mk mkl${m.id === selId ? ' lsel' : ''}" data-id="${m.id}" aria-hidden="true"><rect x="${bx}" y="${y}" width="${bw}" height="${16 * z}" rx="4" fill="${color(m, note)}"/><text class="ml" x="${bx + 8 * z}" y="${y + 12 * z}">${esc(lab)}</text></g>`;
   // role="group", inte "img": en bild gör innehållet till dekoration, och markeringarna (som går att tabba till) försvann för skärmläsare
   // Avläsningen (hv) ligger sist så att den ritas överst; den visas och flyttas av hover() utan att grafen ritas om
   s += `<g id="hv" style="display:none" pointer-events="none"><line class="hvl" y1="${T}" y2="${h - B}"/><circle class="hvc" r="${4.5 * z}"/><rect class="hvb" rx="6" height="${22 * z}"/><text class="hvt"></text></g>`;
@@ -1874,6 +1903,14 @@ function setTheme(t) {
 }
 setTheme(document.documentElement.dataset.theme || '');
 $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setTheme(b.dataset.th); };
+// Hur måltider och anteckningar visas i grafen: "dose" = symbol och dos ovanför punkten, "curve" = bara symbolen på kurvan
+function setEvStyle(v) {
+  evStyle = v === 'curve' ? 'curve' : 'dose'; try { localStorage.setItem('evstyle', evStyle); } catch {}
+  $('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); });
+  drawChart();
+}
+$('evst').onclick = e => { const b = e.target.closest('button'); if (b) setEvStyle(b.dataset.ev); };
+$('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); });
 // Kortkommandon med en tangent: på som standard, går att stänga av (sparat i webbläsaren)
 const keysOn = () => { try { return localStorage.getItem('keys') !== 'off'; } catch { return true; } };
 const syncKeys = () => { $('keys').checked = keysOn(); $('keyst').textContent = keysOn() ? 'On' : 'Off'; document.documentElement.classList.toggle('nokeys', !keysOn()); };
