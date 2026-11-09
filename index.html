@@ -801,7 +801,7 @@ const hist = name => db.log.filter(m => m.name.toLowerCase() === name.toLowerCas
 const summ = hs => {
   const avg = (a, f) => a.reduce((s, e) => s + f(e), 0) / a.length;
   const H = hs.filter(e => e.o.pk[1] > 180), L = hs.filter(e => e.o.lo[1] < 70);
-  return { n: hs.length, hi: H.length, lo: L.length, peak: avg(hs, e => e.o.pk[1]), rise: avg(hs, e => e.o.pk[1] - e.o.b[1]) };
+  return { n: hs.length, hi: H.length, lo: L.length, peak: avg(hs, e => e.o.pk[1]), rise: avg(hs, e => e.o.pk[1] - e.o.b[1]), ins: avg(hs, e => +e.m.ins || 0) };
 };
 // Dialogen där dosen skrivs: bara skrivfelskontrollen beror på dosen i fältet. Förut visades hur det gått med just den
 // dosen, så att man kunde stega −/+ och läsa av utfallet (i praktiken en doseringsguide, och skärmläsaren läste upp varje
@@ -850,16 +850,17 @@ function pastTimes(m) {
 }
 function renderCmp() {
   const names = [...new Map(db.log.filter(m => !isCorr(m.name)).map(m => [m.name.toLowerCase(), m.name])).values()];
-  // En måltidsrapport, inte en dosrapport: ingen dos-kolumn bredvid utfallen. Oftast ätna först (förut högsta toppen
-  // först, så att avsnittet slutade i en rad dåliga betyg).
+  // Oftast ätna först (förut högsta toppen först, så att avsnittet slutade i en rad dåliga betyg). Kolumnen "Avg units"
+  // (snittet av det man själv tog, samma tillfällen som utfallen) lades till på användarens begäran 2026-11-09; tidigare
+  // fanns ingen dos här, eftersom en granskning läste dos bredvid utfall som en doseringsguide. Den är bara fakta, inget råd.
   const rows = names.map(n => ({ n, h: hist(n) })).filter(x => x.h.length).map(({ n, h }) => ({ n, s: summ(h) })).sort((a, b) => b.s.n - a.s.n || a.n.localeCompare(b.n));
   const em = c => ` style="color:${c};font-weight:600"`;
   // Uttryckliga roller: på smala skärmar blir raderna rutnät (display:grid), och då tappar webbläsaren annars tabellens
   // betydelse för skärmläsare. Rubrikraden döljs bara visuellt där, så att varje cell fortfarande har sin kolumnrubrik.
-  $('cmp').innerHTML = rows.length ? `<table role="table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Meal</th><th role="columnheader">Times</th><th role="columnheader">Avg rise</th><th role="columnheader">Avg peak</th><th role="columnheader">Above 10</th><th role="columnheader">Below 3.9</th></tr></thead><tbody role="rowgroup">`
+  $('cmp').innerHTML = rows.length ? `<table role="table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Meal</th><th role="columnheader">Times</th><th role="columnheader">Avg units</th><th role="columnheader">Avg rise</th><th role="columnheader">Avg peak</th><th role="columnheader">Above 10</th><th role="columnheader">Below 3.9</th></tr></thead><tbody role="rowgroup">`
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
-    + rows.map(({ n, s }) => `<tr role="row"><td role="cell">${esc(n)}</td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`).join('') + '</tbody></table>'
-      + '<p class="mut foot">Meals that started in range, with 3 hours of readings after. Most eaten first.</p>'
+    + rows.map(({ n, s }) => `<tr role="row"><td role="cell">${esc(n)}</td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`).join('') + '</tbody></table>'
+      + `<p class="mut foot">Meals that started in range, with 3 hours of readings after. Most eaten first. Avg units = the ${esc((db.settings && db.settings.fast) || 'mealtime insulin')} you logged for those times.</p>`
     : '<div class="empty">Meals show up here once they have 3 hours of readings after them.</div>';
 }
 
