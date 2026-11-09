@@ -196,7 +196,7 @@ function stats() {
 // hela 3 h, så sockret man tog mot en känning kunde bli "toppen" ("6.2 → 7.5" fast kurvan gick ner till 3.6 först).
 function outcome(t, cut = Infinity) {
   const t0 = Math.floor(t / 6e4) * 6e4, o = { done: t + 3 * 36e5 <= Date.now() };
-  let n = 0, pk, lo, first, lowAt = null;
+  let n = 0, pk, lo, first, end, lowAt = null;
   for (let k = t0 - 15 * 6e4; k <= t0; k += 6e4) if (R.has(k)) o.b = [k, R.get(k)];
   // Åts måltiden under en känning (ofta just för att häva den) räknas en känning först när kurvan har varit tillbaka
   // på minst 3.9; förut fick måltiden skulden för den känning den åts mot ("Very low 2.5 after 2 min").
@@ -208,9 +208,10 @@ function outcome(t, cut = Infinity) {
     if (rec && v < 70 && lowAt === null) lowAt = k; // en ny känning efter måltiden: stigningen är slut
     if (lowAt === null && k < cut && (!pk || v > pk[1])) pk = [k, v];
     if (rec && (!lo || v < lo[1])) lo = [k, v];
+    if (k >= t0 + 2 * 36e5) end = [k, v]; // värdet "efter 3 h": det sista från 2 h och framåt, alltså det närmast 3 h
   }
   // Gick kurvan direkt ner (känning eller behandling före första värdet) är toppen värdet vid måltiden
-  if (n > 3) Object.assign(o, { pk: pk || o.b || first, lo });
+  if (n > 3) Object.assign(o, { pk: pk || o.b || first, lo, ...(end && { end }) });
   return o;
 }
 // Första lågbehandlingen inom 3 h efter en måltid (notes = db.notes), till outcome(t, cut)
