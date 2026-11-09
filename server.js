@@ -728,11 +728,14 @@ function reportTick() {
   if (d.getDay() === 0 && d.getHours() >= 19 && tg.sentW !== day) { tg.sentW = day; saveTg(); tgSay(weekText()); }
   if (d.getDate() === 1 && d.getHours() >= 9 && tg.sentM !== mk) { tg.sentM = mk; saveTg(); tgSay(monthText(mk)); }
 }
-async function tgLogged(r, id, late) {
+// warn: en ovanlig dos eller en möjlig dubblett. Den loggas ändå direkt (användarens val 2026-11-09: boten ska inte fråga),
+// men svaret säger det, med Undo under, så att ett skrivfel (55 i stället för 5,5) är ett tryck att ångra.
+async function tgLogged(r, id, late, warn) {
   const e = addEntry(r, id); if (!e) return;
   tg.last = [...tg.last, e.id].slice(-20); saveTg();
   const isMeal = e.name !== undefined, saved = isMeal && (isCorr(e.name) || readDb().meals.some(m => m.name.toLowerCase() === e.name.toLowerCase()));
   await tgSay((isMeal ? '✅ ' : '📝 ') + describe(e)
+    + (warn ? `\n⚠ ${he(String(warn).replace(/ Is this a second time\?$/, ''))} Tap Undo if it was a mistake.` : '')
     + (late ? '\n<i>Read when the dashboard started, logged at the time you sent it.</i>' : '')
     + (r.via === 'simple' ? '\n<i>(the local AI was off, so the simple reader was used)</i>' : ''), buttons(e.id, isMeal && !saved));
 }
@@ -774,8 +777,7 @@ function unitsReply(text) {
 async function tgUnits(ins, id) {
   if (!(ins >= 0) || ins > 100) return tgSay('That seems like a lot. Send the number of units again.');
   const p = { ...tgPending, ins }, chk = !tgPending.confirm && doseCheck(p.name, ins, readDb(), p.t);
-  if (chk) { tgPending = { ...p, confirm: true, at: Date.now() }; return tgSay(`⚠ ${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
-  tgPending = null; return tgLogged(p, id);
+  tgPending = null; return tgLogged(p, id, false, chk);
 }
 async function tgHandle(u) {
   const q = u.callback_query;
@@ -837,9 +839,11 @@ async function tgHandle(u) {
   if (r.type === 'other') return tgSay("I didn't catch a meal or a note there. Try: <i>pizza 7,5 enheter</i>");
   if (r.type === 'meal' && r.ins == null) return askUnits(r);
   if (r.type === 'meal' && r.ins > 100) return tgSay('That dose seems too high. Send it again with the number of units.');
-  const chk = r.type === 'meal' && (r.guess ? `Did you take ${r.ins} ${r.ins === 1 ? 'unit' : 'units'} for ${r.name}?` : doseCheck(r.name, r.ins, readDb(), r.t));
-  if (chk) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`${r.guess ? '' : '⚠ '}${he(chk)} Reply <b>yes</b> to log it, or send the right number of units.`); }
-  tgPending = null; return tgLogged(r, 'tg' + u.update_id, Date.now() - m.date * 1000 > 10 * 6e4); // >10 min gammalt: datorn var av
+  // En gissad dos (ett tal utan enhet, "2 skivor bröd") frågas fortfarande om, så att boten aldrig sparar en gissning.
+  // En ovanlig dos eller en möjlig dubblett loggas direkt med en varning och Undo.
+  if (r.type === 'meal' && r.guess) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`${he(`Did you take ${r.ins} ${r.ins === 1 ? 'unit' : 'units'} for ${r.name}?`)} Reply <b>yes</b> to log it, or send the right number of units.`); }
+  const chk = r.type === 'meal' && doseCheck(r.name, r.ins, readDb(), r.t);
+  tgPending = null; return tgLogged(r, 'tg' + u.update_id, Date.now() - m.date * 1000 > 10 * 6e4, chk); // >10 min gammalt: datorn var av
 }
 async function tgLoop() {
   for (;;) {
