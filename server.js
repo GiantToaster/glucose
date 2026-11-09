@@ -545,7 +545,7 @@ function interpretLocal(text, ref, names) {
   for (let i = 0; i < tk.length; i++) {
     const w = tk[i], nx = tk[i + 1] || ''; let m;
     if ((m = w.match(/^(?:kl\.?)?([01]?\d|2[0-3])[:.]([0-5]\d)$/))) { clock = [+m[1], +m[2]]; continue; }
-    if ((m = w.match(/^(\d+(?:\.\d+)?)(u|e|ie|iu|units?|enheter|enh)$/))) { ins = +m[1]; continue; }
+    if ((m = w.match(/^(\d+(?:\.\d+)?)(u|e|ie|iu|units?|enheter|enhet|enh)$/))) { ins = +m[1]; continue; } // "4e", "4u", "4units", "4enhet"
     // "20 min sen" är en tid sedan; "45 min" utan "sen" är en längd (t.ex. en promenad)
     if ((m = w.match(/^(\d+(?:\.\d+)?)(min|m|h|tim)$/))) { const n = /^(h|tim)$/.test(m[2]) ? m[1] * 60 : +m[1]; if (agoAt(i + 1)) { ago = n; i++; } else dur = n; continue; }
     if (/^\d+(?:\.\d+)?(km|k)$/.test(w)) { words.push(w); continue; } // "5km" är en sträcka
