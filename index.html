@@ -133,7 +133,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
    tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
 .mk.ev .halo{opacity:0;transition:opacity .12s}.mk.ev:hover .halo,.mk.ev.sel .halo{opacity:.55}.mk.ev:focus-visible .halo{opacity:1}
 .mk.ev .pl{fill:color-mix(in srgb,var(--kc) 10%,var(--card));stroke:color-mix(in srgb,var(--kc) 45%,transparent);stroke-width:1;transition:fill .12s}.mk.ev .bd{fill:color-mix(in srgb,var(--kc) 16%,var(--card));stroke:color-mix(in srgb,var(--kc) 55%,transparent);stroke-width:1}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
-.mk.ev:focus-visible circle{stroke-width:2}.mk.ev:hover .ln,.mk.ev.sel .ln{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
+.mk.ev:focus-visible circle{stroke-width:2}svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
 /* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
 .cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
@@ -755,9 +755,12 @@ function drawChart() {
     });
   }
   // En grupp per händelse: en måltids matbricka och dosbricka (tracks) hör ihop, så att en pekning på någon av dem
-  // markerar båda och linjen ser likadan ut. Linjerna ritas först i gruppen, så att de går bakom brickorna.
+  // markerar båda och linjen ser likadan ut. Linjerna ligger i ett eget lager under alla brickor, så att en linje som går
+  // ner till raden Other passerar bakom en annan händelses bricka i stället för genom dess text. Pekar man på en
+  // händelse blir dess linje tjockare (klassen hot sätts av lnHot nedan, eftersom linjen inte ligger i gruppen).
   const evs = new Map(); for (const it of items) { const a = evs.get(it.m.id); a ? a.push(it) : evs.set(it.m.id, [it]); }
   const hy = cs ? 8 * z : 3 * z; // klickytan är högre än brickan (större på pekskärm)
+  let lns = '', evg = '';
   for (const its of [...evs.values()].sort((a, b) => (a[0].m.id === selId) - (b[0].m.id === selId))) { // vald händelse överst
     const it0 = its.find(i => !i.sub) || its[0], { m, note } = it0, K = EVK[it0.k], sel = m.id === selId, q = pts.filter(p => p[0] <= m.t).pop();
     const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : null, x = it0.x;
@@ -767,7 +770,7 @@ function drawChart() {
     if (note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
     // En tunn linje från punkten på kurvan ner till varje bricka (streckad i tracks, där den går genom flera rader)
     const yb = (pb + 2 * z).toFixed(1);
-    g += `<path class="ln" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${(i.left + H / 2).toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
+    lns += `<path class="ln${sel ? ' sel' : ''}" data-id="${m.id}" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${(i.left + H / 2).toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
     if (on) g += `<circle cx="${x}" cy="${py}" r="${3.5 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>`;
     for (const it of its) {
       const k = it.k, bx = it.left + H / 2, by = it.top + H / 2;
@@ -777,8 +780,9 @@ function drawChart() {
           + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
         : evBadge(k, bx, by, H - 2 * z)) + '</g>';
     }
-    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" data-t="${m.t}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
+    evg += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" data-t="${m.t}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
   }
+  s += `<g pointer-events="none" aria-hidden="true">${lns}</g>` + evg;
   // role="group", inte "img": en bild gör innehållet till dekoration, och markeringarna (som går att tabba till) försvann för skärmläsare
   // Avläsningen (hv) ligger sist så att den ritas överst; den visas och flyttas av hover() utan att grafen ritas om
   s += `<g id="hv" style="display:none" pointer-events="none"><line class="hvl" y1="${T}" y2="${pb}"/><circle class="hvc" r="${4.5 * z}"/><rect class="hvb" rx="6" height="${22 * z}"/><text class="hvt"></text></g>`;
@@ -820,6 +824,12 @@ const evT = e => {
 };
 try { if (localStorage.getItem('hvused')) { hover.used = true; $('hvhint').hidden = true; } } catch {}
 $('chart').addEventListener('pointermove', e => hover(evT(e)));
+// Linjen till den händelse man pekar på eller har fokus på blir tjockare (linjerna ligger i ett eget lager, se drawChart)
+const lnHot = (e, on) => { const g = e.target.closest && e.target.closest('.mk.ev[data-id]'), l = g && $('chart').querySelector(`.ln[data-id="${CSS.escape(g.dataset.id)}"]`); if (l) l.classList.toggle('hot', on); };
+$('chart').addEventListener('pointerover', e => lnHot(e, true));
+$('chart').addEventListener('pointerout', e => lnHot(e, false));
+$('chart').addEventListener('focusin', e => lnHot(e, true));
+$('chart').addEventListener('focusout', e => lnHot(e, false));
 $('chart').addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') hover(evT(e)); });
 $('chart').addEventListener('pointerleave', () => hover(null));
 $('chart').addEventListener('pointercancel', () => hover(null)); // t.ex. när fingret börjar scrolla sidan
