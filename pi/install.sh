@@ -19,6 +19,9 @@ TZ_NAME="${TZ_NAME:-Europe/Stockholm}"
 # The local AI on another computer, e.g. OLLAMA_URL=http://MY-PC.local:11434 (that computer runs Ollama with
 # OLLAMA_HOST=0.0.0.0). Empty = no AI; free text then uses the simple reader.
 OLLAMA_URL="${OLLAMA_URL:-}"
+# The dashboard's own name on the home network (published by the bg-alias service below). Other .local names of this
+# Pi (e.g. its hostname) are sent on to it, so the dashboard has one address. BG_NAME=0 turns both off.
+SITE_NAME=""; [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ] && SITE_NAME=bg.local
 
 [ -f "$DIR/server.js" ] || { echo "server.js not found in $DIR"; exit 1; }
 
@@ -50,7 +53,7 @@ After=network-online.target
 User=$RUN_AS
 WorkingDirectory=$DIR
 ExecStart=$(command -v node) server.js
-Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}
+Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}${SITE_NAME:+ SITE_NAME=$SITE_NAME}
 Restart=always
 RestartSec=10
 
@@ -62,5 +65,28 @@ systemctl enable glucose-dashboard >/dev/null
 systemctl restart glucose-dashboard
 sleep 3
 systemctl --no-pager --lines=8 status glucose-dashboard || true
+
+# Ett eget namn i hemnätverket: http://bg.local:3000 (Pi:ns eget namn fungerar också). BG_NAME=0 hoppar över det.
+if [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ]; then
+  echo "== Name bg.local"
+  apt-get install -y -qq avahi-utils >/dev/null
+  install -m 755 "$DIR/pi/bg-alias.sh" /usr/local/sbin/bg-alias
+  cat > /etc/systemd/system/bg-alias.service <<'EOF'
+[Unit]
+Description=bg.local name for the glucose dashboard
+After=network-online.target avahi-daemon.service
+Wants=network-online.target
+Requires=avahi-daemon.service
+
+[Service]
+ExecStart=/usr/local/sbin/bg-alias
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload && systemctl enable --now bg-alias >/dev/null && systemctl restart bg-alias
+fi
 echo
 echo "Done. Log:  journalctl -u glucose-dashboard -f"
