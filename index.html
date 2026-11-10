@@ -754,23 +754,30 @@ function drawChart() {
       right = left + wd; Object.assign(it, { left, wd, full, top: lt + rw * rh });
     });
   }
-  for (const it of items.sort((a, b) => (a.m.id === selId) - (b.m.id === selId))) { // vald händelse överst
-    const { m, note, k } = it, K = EVK[k], sel = m.id === selId, q = pts.filter(p => p[0] <= m.t).pop();
-    const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : null, bx = it.left + H / 2, by = it.top + H / 2;
+  // En grupp per händelse: en måltids matbricka och dosbricka (tracks) hör ihop, så att en pekning på någon av dem
+  // markerar båda och linjen ser likadan ut. Linjerna ritas först i gruppen, så att de går bakom brickorna.
+  const evs = new Map(); for (const it of items) { const a = evs.get(it.m.id); a ? a.push(it) : evs.set(it.m.id, [it]); }
+  const hy = cs ? 8 * z : 3 * z; // klickytan är högre än brickan (större på pekskärm)
+  for (const its of [...evs.values()].sort((a, b) => (a[0].m.id === selId) - (b[0].m.id === selId))) { // vald händelse överst
+    const it0 = its.find(i => !i.sub) || its[0], { m, note } = it0, K = EVK[it0.k], sel = m.id === selId, q = pts.filter(p => p[0] <= m.t).pop();
+    const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : null, x = it0.x;
     const what = note ? esc(kindLabel(m.kind)) + (m.text ? ': ' + esc(m.text) : '') : `${esc(m.name)}, ${m.ins} units`;
     let g = '';
     // Längden (en promenad på 30 min): en bred, halvgenomskinlig markering längs kurvan under tiden den pågick
-    if (!it.sub && note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
-    // En tunn linje från punkten på kurvan ner till brickan (streckad i tracks, där den går genom flera rader)
-    g += `<path class="ln" d="M${it.x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${(pb + 2 * z).toFixed(1)} L${bx.toFixed(1)},${it.top.toFixed(1)}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
-    if (on && !it.sub) g += `<circle cx="${it.x}" cy="${py}" r="${3.5 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>`;
-    const hy = cs ? 8 * z : 3 * z; // klickytan är högre än brickan (större på pekskärm)
-    g += `<rect x="${it.left.toFixed(1)}" y="${(it.top - hy).toFixed(1)}" width="${it.wd.toFixed(1)}" height="${(H + 2 * hy).toFixed(1)}" fill="transparent"/>`;
-    g += it.full
-      ? `<rect class="pl" x="${it.left.toFixed(1)}" y="${it.top.toFixed(1)}" width="${it.wd.toFixed(1)}" height="${H}" rx="${H / 2}"/>`
-        + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
-      : evBadge(k, bx, by, H - 2 * z);
-    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" ${it.sub ? 'aria-hidden="true"' : `tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details"`}>${g}</g>`;
+    if (note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
+    // En tunn linje från punkten på kurvan ner till varje bricka (streckad i tracks, där den går genom flera rader)
+    const yb = (pb + 2 * z).toFixed(1);
+    g += `<path class="ln" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${(i.left + H / 2).toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
+    if (on) g += `<circle cx="${x}" cy="${py}" r="${3.5 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>`;
+    for (const it of its) {
+      const k = it.k, bx = it.left + H / 2, by = it.top + H / 2;
+      g += `<rect x="${it.left.toFixed(1)}" y="${(it.top - hy).toFixed(1)}" width="${it.wd.toFixed(1)}" height="${(H + 2 * hy).toFixed(1)}" fill="transparent"/>`;
+      g += `<g style="--kc:${EVK[k].fill}">` + (it.full
+        ? `<rect class="pl" x="${it.left.toFixed(1)}" y="${it.top.toFixed(1)}" width="${it.wd.toFixed(1)}" height="${H}" rx="${H / 2}"/>`
+          + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
+        : evBadge(k, bx, by, H - 2 * z)) + '</g>';
+    }
+    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
   }
   // role="group", inte "img": en bild gör innehållet till dekoration, och markeringarna (som går att tabba till) försvann för skärmläsare
   // Avläsningen (hv) ligger sist så att den ritas överst; den visas och flyttas av hover() utan att grafen ritas om
