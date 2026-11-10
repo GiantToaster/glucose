@@ -747,7 +747,7 @@ function drawChart() {
     list.forEach((it, i) => {
       const nx = list[i + 1]; let left = Math.max(l, it.x - H / 2), room = (nx ? nx.x - H / 2 - 4 * z : w - r) - left, wd = chipW(it.label);
       if (wd > room && it.short) { it.label = it.short; wd = chipW(it.label); }
-      if (left < right + 4 * z || wd > room) wd = H;
+      if (left < right + 4 * z || wd > room || it.k === 'ex') wd = H; // aktivitet: bara symbolen (texten står i detaljvyn)
       const full = wd > H;
       if (left < right + 4 * z) left = right + 4 * z;
       if (left + wd > w - r) left = w - r - wd;
