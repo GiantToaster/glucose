@@ -897,8 +897,17 @@ const body = (req, res, fn) => {
 // Bara localhost som värdnamn när servern lyssnar lokalt. Stoppar "DNS rebinding", där en främmande webbsida
 // får sitt eget domännamn att peka på 127.0.0.1 och sedan kan läsa dina värden.
 const LOCAL = /^(127\.|localhost$|::1$)/.test(HOST), okHost = h => !LOCAL || LOCALHOST.test(h || '');
+// SITE_NAME=bg.local: dashboarden har ett eget namn. Andra .local-namn på samma dator (t.ex. Pi:ns eget, raspberrypi.local)
+// skickas vidare dit, så att den bara nås på ett namn. IP-adressen och localhost fungerar som förut.
+const SITE = (process.env.SITE_NAME || '').toLowerCase();
+const otherName = h => { const n = String(h || '').toLowerCase().replace(/:\d+$/, ''); return SITE && n.endsWith('.local') && n !== SITE; };
 const server = http.createServer((req, res) => {
   if (!okHost(req.headers.host)) return send(res, { error: 'forbidden host' }, 403);
+  if (otherName(req.headers.host)) {
+    const to = `http://${SITE}${PORT == 80 ? '' : ':' + PORT}${req.method === 'GET' ? req.url : '/'}`;
+    if (req.method === 'GET') { res.writeHead(302, { location: to, 'cache-control': 'no-store' }); return res.end(); }
+    return send(res, { error: `Open the dashboard at ${to}` }, 421);
+  }
   try { route(req, res); } catch (e) { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); }
 });
 // Körs dashboarden redan (t.ex. startad vid inloggningen)? Då avslutas den här, i stället för att båda läser Telegram.

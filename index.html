@@ -9,10 +9,10 @@
 <style>
 /* Statusfärgerna bär text (glukosvärden, tabellsiffror, etiketter) och klarar 4.5:1 mot --card och --sub i båda teman.
    --high-fill är den klara gula för ytor utan text (staplar). --field är kanten på inmatningsfält (minst 3:1). */
-:root{color-scheme:light dark;--bg:#f5f6f7;--card:#fff;--sub:#f0f2f4;--fg:#101418;--mut:#5d6870;--bd:#e2e5e8;--field:#7d878f;--ok:#08745f;--low:#c42b2b;--high:#8f6000;--high-fill:#d99a00;--acc:#5b4cf0;--note:#1f6bc2;--onacc:#fff;--sh:0 1px 2px rgba(16,20,24,.05);--dlgbd:transparent;--dlgsh:0 24px 64px rgba(0,0,0,.35);--lbbg:var(--low);--lbfg:#fff;--tbg:#101418;--tfg:#f5f6f7}
+:root{color-scheme:light dark;--bg:#f5f6f7;--card:#fff;--sub:#f0f2f4;--fg:#101418;--mut:#5d6870;--bd:#e2e5e8;--field:#7d878f;--ok:#08745f;--low:#c42b2b;--high:#8f6000;--high-fill:#d99a00;--acc:#5b4cf0;--note:#1f6bc2;--onacc:#fff;--sh:0 1px 2px rgba(16,20,24,.05);--dlgbd:transparent;--dlgsh:0 24px 64px rgba(0,0,0,.35);--lbbg:var(--low);--lbfg:#fff;--tbg:#101418;--tfg:#f5f6f7;--meal:#2f9a4c;--ins:#b0336f}
 /* Tema: följer systemet, eller det man valt under Settings (data-theme på <html>) */
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#8b7fff;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5}}
-:root[data-theme=dark]{color-scheme:dark;--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#8b7fff;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5}:root[data-theme=light]{color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#8b7fff;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f}}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#8b7fff;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f}:root[data-theme=light]{color-scheme:light}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0 auto;max-width:1080px;padding:0 16px 32px;background:var(--bg);color:var(--fg);font:.875rem/1.5 "Segoe UI Variable Text","Segoe UI",-apple-system,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
 /* Namn kan vara långa ord utan mellanslag (inklistrat, dikterat). De får brytas i stället för att trycka ut sidan. */
@@ -112,7 +112,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* ✕ dämpad och ramlös; namnet är en knapp utan knappens utseende som öppnar detaljvyn */
 .acts .rx{border-color:transparent;background:none;color:var(--mut)}.acts .rx:hover{color:var(--low);background:var(--sub)}
 .lk{all:unset;cursor:pointer;display:block;min-width:0;overflow-wrap:anywhere}.lk:hover b,.lk:hover{text-decoration:underline;text-underline-offset:3px}.lk:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
-.li .tm span{white-space:nowrap}@media(min-width:641px){.li .n2{grid-column:2/4}}.li .lk{padding:2px 0}
+.li .tm span{white-space:nowrap}.li .lk{padding:2px 0}
 .legend{margin:0 0 8px}.nw{white-space:nowrap}.prog{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:.75rem;color:var(--mut)}.pbar{flex:none;width:40px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}.pbar i{display:block;height:100%;background:var(--acc)}
 .more{display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--bd)}
 /* Pekskärm: ingen ✕ på varje rad (lätt att råka trycka på); tryck på raden öppnar detaljvyn med Remove */
@@ -132,8 +132,8 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* Symbolerna i grafen. Pekar man på, fokuserar eller har valt en händelse markeras den i sin egen färg (--kc): brickan
    tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
 .mk.ev .halo{opacity:0;transition:opacity .12s}.mk.ev:hover .halo,.mk.ev.sel .halo{opacity:.55}.mk.ev:focus-visible .halo{opacity:1}
-.mk.ev .pl{transition:fill .12s}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
-.mk.ev:focus-visible circle{stroke-width:2}.mk.ev:hover .ln,.mk.ev.sel .ln{stroke-width:2.5}svg text.pt{fill:var(--fg);font-weight:600}
+.mk.ev .pl{fill:color-mix(in srgb,var(--kc) 10%,var(--card));stroke:color-mix(in srgb,var(--kc) 45%,transparent);stroke-width:1;transition:fill .12s}.mk.ev .bd{fill:color-mix(in srgb,var(--kc) 16%,var(--card));stroke:color-mix(in srgb,var(--kc) 55%,transparent);stroke-width:1}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
+.mk.ev:focus-visible circle{stroke-width:2}.mk.ev:hover .ln,.mk.ev.sel .ln{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
 /* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
 .cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
@@ -423,8 +423,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="seg" id="theme" role="group" aria-label="Theme"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div>
       <span class="mut fine">Dark is easier on the eyes at night. System follows your computer or phone.</span>
       <span class="sm" id="evsl">Meals and notes in the chart</span>
-      <div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="dose" aria-pressed="true">Symbol and dose</button><button data-ev="curve" aria-pressed="false">Symbols on the curve</button></div>
-      <span class="mut fine">Symbols on the curve is the calmest: the name and dose show when you point at or tap a symbol.</span>
+      <div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="lane" aria-pressed="true">One row</button><button data-ev="tracks" aria-pressed="false">Food, insulin, other</button></div>
+      <span class="mut fine">One row keeps the chart short. Food, insulin, other puts each on its own row, so all insulin of the day is in one line.</span>
     </div>
     <div class="sec"><h3>Your insulin</h3>
       <div class="grid2">
@@ -678,38 +678,42 @@ const yAxis = (Y, ym, x, z) => {
 // Graferna ritas i pixlar. chartScale följer webbläsarens textstorlek (1 = 16 px), coarse = pekskärm.
 const chartScale = () => Math.max(1, parseFloat(getComputedStyle(document.documentElement).fontSize) / 16 || 1);
 const coarse = () => matchMedia('(pointer: coarse)').matches;
-// Symbolerna i grafen: ritade i en 24×24-ruta med rundade linjer, i en färgad rund bricka. fill = brickans färg,
-// ink = symbolens färg (ljus eller mörk så att den syns på brickan i båda teman). Sprutan (Correction) är gul så att den
-// skiljer sig från måltiderna, glaset (lågbehandling) rött, promenaden och andra anteckningar blå.
-let evStyle = 'dose'; try { if (localStorage.getItem('evstyle') === 'curve') evStyle = 'curve'; } catch {}
+// Symbolerna i grafen, från ikonbibliotek: maten Material Symbols (Google, Apache 2.0), sprutan Lucide (ISC), promenaden
+// Font Awesome Free (CC BY 4.0). Glaset (lågbehandling) och anteckningen är egna. vb = symbolens viewBox, solid = fylld form
+// (annars linjer). Maten är grön, sprutan (insulin) rosa så att den inte förväxlas med det gula fältet för högt värde,
+// glaset rött, promenaden och anteckningar blå. Symbolen ritas i sin färg på en svagt tonad bakgrund.
+let evStyle = 'lane'; try { if (localStorage.getItem('evstyle') === 'tracks') evStyle = 'tracks'; } catch {}
 const EVK = {
-  meal: { fill: 'var(--acc)', ink: 'var(--onacc)', icon: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>' },
-  corr: { fill: 'var(--high-fill)', ink: '#101418', icon: '<path d="M17.5 2.5l4 4M19.5 4.5l-3 3M18 9 8.6 18.4a1.8 1.8 0 0 1-2.5 0l-.5-.5a1.8 1.8 0 0 1 0-2.5L15 6M9.2 11.8l3 3M11.7 9.3l3 3M5.4 18.6 2.5 21.5M13.5 4.5l6 6"/>' },
-  ex: { fill: 'var(--note)', ink: 'var(--onacc)', icon: '<circle cx="13.5" cy="4" r="1.6" fill="currentColor" stroke="none"/><path d="M12.5 8 10 15l-3 6.5M10 15l3.5 2.5 1 4.5M12.5 8l-4 2.5-1 3M12.5 8l2 3.5 3.5 1"/>' },
-  note: { fill: 'var(--note)', ink: 'var(--onacc)', icon: '<path d="M6 3h9l4 4v14H6Z"/><path d="M9 12h6M9 16h6"/>' },
-  low: { fill: 'var(--lbbg)', ink: 'var(--lbfg)', icon: '<path d="M6 8.5h12l-1.5 11.2a1.8 1.8 0 0 1-1.8 1.6H9.3a1.8 1.8 0 0 1-1.8-1.6Z"/><path d="M12.5 8.5 14 2.5h3M7.2 14.5c1.6-.8 3.2-.8 4.8 0s3.2.8 4.8 0"/>' } };
+  meal: { fill: 'var(--meal)', vb: '0 -960 960 960', solid: true, icon: '<path d="M285-600v-250q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v250h65v-250q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v249.73q0 58.27-36.5 99.77Q397-459 345-448v338q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q285-97.25 285-110v-338q-52-11-88.5-52.5T160-600.27V-850q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v250h65Zm415 200h-85q-12.75 0-21.37-8.63Q585-417.25 585-430v-275q0-69 42.5-122t98.5-53q14 0 24 10.13T760-846v736q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63Q700-97.25 700-110v-290Z"/>' },
+  corr: { fill: 'var(--ins)', icon: '<path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/>' },
+  ex: { fill: 'var(--note)', vb: '0 0 320 512', solid: true, icon: '<path d="M160 48a48 48 0 1 1 96 0 48 48 0 1 1-96 0zM126.5 199.3c-1 .4-1.9.8-2.9 1.2l-8 3.5c-16.4 7.3-29 21.2-34.7 38.2l-2.6 7.8c-5.6 16.8-23.7 25.8-40.5 20.2s-25.8-23.7-20.2-40.5l2.6-7.8c11.4-34.1 36.6-61.9 69.4-76.5l8-3.5c20.8-9.2 43.3-14 66.1-14 44.6 0 84.8 26.8 101.9 67.9L281 232.7l21.4 10.7c15.8 7.9 22.2 27.1 14.3 42.9s-27.1 22.2-42.9 14.3L247 287.3c-10.3-5.2-18.4-13.8-22.8-24.5l-9.6-23-19.3 65.5 49.5 54c5.4 5.9 9.2 13 11.2 20.8l23 92.1c4.3 17.1-6.1 34.5-23.3 38.8s-34.5-6.1-38.8-23.3l-22-88.1-70.7-77.1c-14.8-16.1-20.3-38.6-14.7-59.7l16.9-63.5zM68.7 398l25-62.4c2.1 3 4.5 5.8 7 8.6l40.7 44.4-14.5 36.2c-2.4 6-6 11.5-10.6 16.1L54.6 502.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L68.7 398z"/>' },
+  note: { fill: 'var(--note)', icon: '<path d="M6 3h9l4 4v14H6Z"/><path d="M9 12h6M9 16h6"/>' },
+  low: { fill: 'var(--lbbg)', icon: '<path d="M6 8.5h12l-1.5 11.2a1.8 1.8 0 0 1-1.8 1.6H9.3a1.8 1.8 0 0 1-1.8-1.6Z"/><path d="M12.5 8.5 14 2.5h3M7.2 14.5c1.6-.8 3.2-.8 4.8 0s3.2.8 4.8 0"/>' } };
 const evKind = (m, note) => note ? (m.kind === LOWT ? 'low' : m.kind === 'Exercise' ? 'ex' : 'note') : isCorr(m.name) ? 'corr' : 'meal';
 // Texten i brickan: dosen, för en anteckning längden, för en lågbehandling mängden (t.ex. "20 g"), annars kort text
 const evText = (m, note) => !note ? r1(m.ins) + ' u' : m.dur ? dur(m.dur * 6e4) : m.kind === LOWT ? ((String(m.text || '').match(/\d+(?:[.,]\d+)?\s*g\b/) || [])[0] || 'Low') : cut(m.text || kindLabel(m.kind), 14);
-// En symbol i en rund bricka med diametern d. Ringen (halo) syns när man pekar på, fokuserar eller har valt den.
-const evBadge = (k, x, y, d, inPill) => { const K = EVK[k], sc = d * .6 / 24;
-  return (inPill ? '' : `<circle class="halo" cx="${x}" cy="${y}" r="${(d / 2 + 4).toFixed(1)}" fill="none" stroke="${K.fill}" stroke-width="2"/>`)
-    + `<circle class="bd" cx="${x}" cy="${y}" r="${(d / 2).toFixed(1)}" fill="${K.fill}" stroke="var(--card)" stroke-width="${inPill ? 0 : 2}"/>`
-    + `<g transform="translate(${(x - 12 * sc).toFixed(1)},${(y - 12 * sc).toFixed(1)}) scale(${sc.toFixed(3)})" fill="none" stroke="${K.ink}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:${K.ink}">${K.icon}</g>`; };
+// Symbolen (s px stor, centrerad i x, y) i sin färg
+const evIcon = (K, x, y, s) => `<svg x="${(x - s / 2).toFixed(1)}" y="${(y - s / 2).toFixed(1)}" width="${s.toFixed(1)}" height="${s.toFixed(1)}" viewBox="${K.vb || '0 0 24 24'}" overflow="visible" style="color:${K.fill}" ${K.solid ? `fill="${K.fill}"` : `fill="none" stroke="${K.fill}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`}>${K.icon}</svg>`;
+// I en bricka med text: bara symbolen. Ensam: symbolen på en tonad rund platta med diametern d; ringen (halo) syns när
+// man pekar på, fokuserar eller har valt den.
+const evBadge = (k, x, y, d, inPill) => { const K = EVK[k];
+  if (inPill) return evIcon(K, x, y, d * .8);
+  return `<circle class="halo" cx="${x}" cy="${y}" r="${(d / 2 + 4).toFixed(1)}" fill="none" stroke="${K.fill}" stroke-width="2"/>`
+    + `<circle class="bd" cx="${x}" cy="${y}" r="${(d / 2).toFixed(1)}"/>` + evIcon(K, x, y, d * .62); };
 function drawChart() {
   // Ritas i verklig pixelbredd så att texten inte krymper på mobilen
   // z = textstorlek / 16: med större text i webbläsaren växer etiketter, marginaler och etikettrader med (texten är i rem)
-  const z = chartScale(), B = 22 * z;
-  const w = Math.max(300, Math.round($('chart').clientWidth) || 900), h = Math.max(170, Math.min((w < 600 ? 240 : 300) + Math.round((z - 1) * 80), Math.round(innerHeight * (innerHeight < 560 ? .36 : .42)))), l = 30 * z, r = 8, [t0, t1] = view(), pts = rd.filter(p => p[0] >= t0 && p[0] <= t1);
+  const z = chartScale(), B = 22 * z, cs = coarse(), tracks = evStyle === 'tracks';
+  // Händelserna står under grafen, så att kurvan syns hela vägen: "lane" = ett spår, "tracks" = mat, insulin och övrigt
+  // på var sin rad. Förut låg symbolerna på kurvan och täckte den där det hände mest.
+  const H = (cs ? 28 : 24) * z, rh = H + 6 * z, laneH = 10 * z + (tracks ? 3 * rh - 6 * z : H) + 4 * z;
+  const w = Math.max(300, Math.round($('chart').clientWidth) || 900), h0 = Math.max(170, Math.min((w < 600 ? 240 : 300) + Math.round((z - 1) * 80), Math.round(innerHeight * (innerHeight < 560 ? .36 : .42)))) - (innerHeight < 560 ? Math.round(laneH / 2) : 0);
+  const h = h0 + laneH, l = (tracks ? 58 : 30) * z, r = 8, [t0, t1] = view(), pts = rd.filter(p => p[0] >= t0 && p[0] <= t1);
   const ym = Math.max(14, Math.ceil(Math.max(0, ...pts.map(p => mm(p[1]))) + 1));
   const X = t => l + (t - t0) / (t1 - t0) * (w - l - r);
-  // Måltider och anteckningar visas som symboler (EVK): evStyle "dose" = en bricka med symbol och dos ovanför punkten,
-  // "curve" = bara symbolen på kurvan. Förut stod namnen i rader ovanför och en streckad linje gick genom hela grafen,
-  // så att långa namn kapades och etiketterna trängdes när mycket hände samtidigt.
-  const marks = [...db.log.map(m => ({ m })), ...db.notes.map(m => ({ m, note: true }))].filter(({ m }) => m.t >= t0 && (day === null || m.t < t1))
-    .sort((a, b) => a.m.t - b.m.t).sort((a, b) => (a.m.id === selId) - (b.m.id === selId)); // vald markering överst
-  const T = (evStyle === 'dose' ? 36 : 18) * z;
-  const Y = v => h - B - v / ym * (h - B - T);
+  const marks = [...db.log.map(m => ({ m })), ...db.notes.map(m => ({ m, note: true }))].filter(({ m }) => m.t >= t0 && (day === null || m.t < t1)).sort((a, b) => a.m.t - b.m.t);
+  const T = 10 * z, pb = h - B - laneH, lt = pb + 10 * z; // grafens topp och botten, spårets överkant
+  const Y = v => pb - v / ym * (pb - T);
   let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
   const span = (t1 - t0) / 36e5; let sp = span > 12 ? 4 : span > 3 ? 2 : 1;
   while ((w - l - r) / (span / sp) < 46 * z) sp *= 2; // glesare tider när etiketterna inte får plats bredvid varandra
@@ -719,39 +723,59 @@ function drawChart() {
   const segs = []; let prev = -Infinity;
   for (const [t, v] of pts) { const p = [X(t), Y(mm(v))]; if (t - prev > 20 * 6e4) segs.push([p]); else segs[segs.length - 1].push(p); prev = t; }
   s += zoneTrace('zc', segs, Y, l, w - r, 2);
-  const hit = coarse() ? 44 : 30, D = (coarse() ? 26 : 22) * z; // klickyta och brickans storlek (större på pekskärm)
   const cx = drawChart.cx || (drawChart.cx = document.createElement('canvas').getContext('2d'));
   cx.font = `600 ${12 * z}px ${getComputedStyle(document.body).fontFamily}`;
-  const placed = [], line = a => 'M' + a.map(p => X(p[0]).toFixed(1) + ',' + Y(mm(p[1])).toFixed(1)).join('L');
+  const line = a => 'M' + a.map(p => X(p[0]).toFixed(1) + ',' + Y(mm(p[1])).toFixed(1)).join('L');
+  if (tracks) ['Food', 'Insulin', 'Other'].forEach((n, i) => { const y = (lt + i * rh + H / 2).toFixed(1); s += `<line class="lane" x1="${l}" x2="${w - r}" y1="${y}" y2="${y}"/><text class="lanel" x="${l - 8 * z}" y="${(+y + 4 * z).toFixed(1)}" text-anchor="end">${n}</text>`; });
+  // En bricka per händelse och rad. tracks: en måltid står under Food och dess dos under Insulin (samma händelse, sub = den andra)
+  const items = [];
   for (const { m, note } of marks) {
-    const k = evKind(m, note), K = EVK[k], sel = m.id === selId, x = +X(m.t).toFixed(1), q = pts.filter(p => p[0] <= m.t).pop();
-    const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : h - B - D / 2 - 2 * z; // utan värde just då: nere vid axeln
+    const k = evKind(m, note), x = +X(m.t).toFixed(1);
+    if (!tracks) items.push({ m, note, k, x, row: 0, label: note ? evText(m, note) : k === 'corr' ? r1(m.ins) + ' u' : `${cut(m.name, 16)} ${r1(m.ins)} u`, short: !note && k === 'meal' ? r1(m.ins) + ' u' : '' });
+    else if (note) items.push({ m, note, k, x, row: 2, label: evText(m, note) });
+    else {
+      if (k === 'meal') items.push({ m, k, x, row: 0, label: cut(m.name, 18), short: cut(m.name, 8) });
+      if (m.ins > 0) items.push({ m, k: 'corr', x, row: 1, label: r1(m.ins) + ' u', sub: k === 'meal' });
+    }
+  }
+  // Placering i varje rad: hel bricka (symbol + text) om den inte når nästa händelse, annars en kortare text (dosen,
+  // eller ett kortat namn), annars bara symbolen, och krockar
+  // symbolerna knuffas de åt höger. Symbolen står vid händelsens tid, texten till höger om den.
+  const chipW = t => Math.ceil(cx.measureText(t).width) + H + 10 * z;
+  for (let rw = 0; rw < (tracks ? 3 : 1); rw++) {
+    const list = items.filter(i => i.row === rw).sort((a, b) => a.x - b.x); let right = -Infinity;
+    list.forEach((it, i) => {
+      const nx = list[i + 1]; let left = Math.max(l, it.x - H / 2), room = (nx ? nx.x - H / 2 - 4 * z : w - r) - left, wd = chipW(it.label);
+      if (wd > room && it.short) { it.label = it.short; wd = chipW(it.label); }
+      if (left < right + 4 * z || wd > room) wd = H;
+      const full = wd > H;
+      if (left < right + 4 * z) left = right + 4 * z;
+      if (left + wd > w - r) left = w - r - wd;
+      right = left + wd; Object.assign(it, { left, wd, full, top: lt + rw * rh });
+    });
+  }
+  for (const it of items.sort((a, b) => (a.m.id === selId) - (b.m.id === selId))) { // vald händelse överst
+    const { m, note, k } = it, K = EVK[k], sel = m.id === selId, q = pts.filter(p => p[0] <= m.t).pop();
+    const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : null, bx = it.left + H / 2, by = it.top + H / 2;
     const what = note ? esc(kindLabel(m.kind)) + (m.text ? ': ' + esc(m.text) : '') : `${esc(m.name)}, ${m.ins} units`;
     let g = '';
     // Längden (en promenad på 30 min): en bred, halvgenomskinlig markering längs kurvan under tiden den pågick
-    if (note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
-    if (evStyle === 'curve') g += `<circle cx="${x}" cy="${py}" r="${hit / 2}" fill="transparent"/>` + evBadge(k, x, py, D);
-    else {
-      // En bricka med symbol och text ovanför punkten; krockar den med en annan flyttas den uppåt, och får den inte plats
-      // ovanför (kurvan nära toppen) hamnar den under punkten
-      const t = evText(m, note), ph = D + 4 * z, pw = Math.ceil(cx.measureText(t).width) + ph + 10 * z, over = (a, b) => a.x < b.x + b.w + 4 && a.x + a.w + 4 > b.x && a.y < b.y + b.h + 3 && a.y + a.h + 3 > b.y;
-      const px = Math.min(Math.max(x - pw / 2, l + 2), w - r - pw); let b = { x: px, y: py - ph - 10 * z, w: pw, h: ph };
-      for (let i = 0; i < 4 && placed.some(o => over(b, o)); i++) b.y -= ph + 4 * z;
-      if (b.y < 2) { b.y = py + 10 * z; for (let i = 0; i < 4 && placed.some(o => over(b, o)); i++) b.y += ph + 4 * z; }
-      // Får brickan ändå inte plats (många händelser på samma minut, smal skärm) visas bara symbolen på kurvan
-      if (b.y < 2 || b.y + ph > h - B - 2 || placed.some(o => over(b, o))) { s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}<circle cx="${x}" cy="${py}" r="${hit / 2}" fill="transparent"/>${evBadge(k, x, py, D * .82)}</g>`; continue; }
-      placed.push(b); const up = b.y < py;
-      g += `<circle cx="${x}" cy="${py}" r="${hit / 2}" fill="transparent"/><line class="ln" x1="${x}" x2="${x}" y1="${up ? b.y + ph : b.y}" y2="${up ? py - 4 * z : py + 4 * z}" stroke="${K.fill}" stroke-width="1.5"/>`
-        + (on ? `<circle cx="${x}" cy="${py}" r="${4 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>` : '')
-        + `<rect class="pl" x="${b.x}" y="${b.y.toFixed(1)}" width="${pw}" height="${ph}" rx="${ph / 2}" fill="var(--sub)" stroke="${K.fill}" stroke-width="1.3"/>`
-        + evBadge(k, b.x + ph / 2, b.y + ph / 2, D * .82, true) + `<text class="pt" x="${b.x + ph + 1 * z}" y="${(b.y + ph / 2 + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(t)}</text>`;
-    }
-    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
+    if (!it.sub && note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
+    // En tunn linje från punkten på kurvan ner till brickan (streckad i tracks, där den går genom flera rader)
+    g += `<path class="ln" d="M${it.x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${(pb + 2 * z).toFixed(1)} L${bx.toFixed(1)},${it.top.toFixed(1)}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
+    if (on && !it.sub) g += `<circle cx="${it.x}" cy="${py}" r="${3.5 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>`;
+    const hy = cs ? 8 * z : 3 * z; // klickytan är högre än brickan (större på pekskärm)
+    g += `<rect x="${it.left.toFixed(1)}" y="${(it.top - hy).toFixed(1)}" width="${it.wd.toFixed(1)}" height="${(H + 2 * hy).toFixed(1)}" fill="transparent"/>`;
+    g += it.full
+      ? `<rect class="pl" x="${it.left.toFixed(1)}" y="${it.top.toFixed(1)}" width="${it.wd.toFixed(1)}" height="${H}" rx="${H / 2}"/>`
+        + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
+      : evBadge(k, bx, by, H - 2 * z);
+    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" ${it.sub ? 'aria-hidden="true"' : `tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details"`}>${g}</g>`;
   }
   // role="group", inte "img": en bild gör innehållet till dekoration, och markeringarna (som går att tabba till) försvann för skärmläsare
   // Avläsningen (hv) ligger sist så att den ritas överst; den visas och flyttas av hover() utan att grafen ritas om
-  s += `<g id="hv" style="display:none" pointer-events="none"><line class="hvl" y1="${T}" y2="${h - B}"/><circle class="hvc" r="${4.5 * z}"/><rect class="hvb" rx="6" height="${22 * z}"/><text class="hvt"></text></g>`;
-  cg = { X, Y, z, l, r, w, h, T, B, t0, t1, pts };
+  s += `<g id="hv" style="display:none" pointer-events="none"><line class="hvl" y1="${T}" y2="${pb}"/><circle class="hvc" r="${4.5 * z}"/><rect class="hvb" rx="6" height="${22 * z}"/><text class="hvt"></text></g>`;
+  cg = { X, Y, z, l, r, w, h, T, B, t0, t1, pts, pb };
   setHTML($('chart'), `<svg id="chsvg" viewBox="0 0 ${w} ${h}" role="group" tabindex="0" aria-label="Glucose chart with meals and notes. Use the left and right arrow keys to read values.">${s}</svg>`);
   if (hvT !== null) hover(hvT); // en pågående avläsning följer med när grafen ritas om (varje minut)
 }
@@ -782,7 +806,8 @@ function hover(t, say) {
 const evT = e => {
   const sv = $('chsvg'); if (!sv || !cg) return null;
   const bb = sv.getBoundingClientRect(), x = (e.clientX - bb.left) * cg.w / bb.width;
-  return x < cg.l || x > cg.w - cg.r ? null : cg.t0 + (x - cg.l) / (cg.w - cg.l - cg.r) * (cg.t1 - cg.t0);
+  const y = (e.clientY - bb.top) * cg.h / bb.height;
+  return x < cg.l || x > cg.w - cg.r || y > cg.pb + 4 ? null : cg.t0 + (x - cg.l) / (cg.w - cg.l - cg.r) * (cg.t1 - cg.t0);
 };
 try { if (localStorage.getItem('hvused')) { hover.used = true; $('hvhint').hidden = true; } } catch {}
 $('chart').addEventListener('pointermove', e => hover(evT(e)));
@@ -813,7 +838,7 @@ function renderLog() {
     const lt = n && n.kind === LOWT && out[n.id], up = lt && lt.up;
     const ltRes = !lt || !lt.b ? '' : `<span class="oc"><span style="color:${col(mm(lt.b[1]))}">${f1(mm(lt.b[1]))}</span></span> `
       + `<span class="ocn">${up ? `when treated, back above 3.9 after ${dur(up[0] - n.t)}` : lt.lo && lt.lo[1] >= 70 ? 'when treated, stayed above 3.9' : lt.done ? 'not back above 3.9 within 3 h' : 'when treated, waiting to be back above 3.9'}</span>`;
-    if (n) return `<div class="li" data-row="${n.id}">${tm(n.t, n.dur)}<div class="n2"><button class="lk" data-open="${n.id}"><span class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</span><span class="sr">: </span>${esc(n.text || '')}<span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="res">${ltRes}</div><div class="acts"><button class="rx" data-nid="${n.id}" title="Remove" aria-label="Remove note ${esc(kindLabel(n.kind))}${n.text ? ' ' + esc(n.text) : ''}">✕</button></div></div>`;
+    if (n) return `<div class="li" data-row="${n.id}">${tm(n.t, n.dur)}<div><button class="lk" data-open="${n.id}"><span class="sr">${esc(kindLabel(n.kind))}: </span><b>${esc(n.text || kindLabel(n.kind))}</b><span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="ins" aria-hidden="true">${n.text ? `<b class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</b>` : ''}</div><div class="res">${ltRes}</div><div class="acts"><button class="rx" data-nid="${n.id}" title="Remove" aria-label="Remove note ${esc(kindLabel(n.kind))}${n.text ? ' ' + esc(n.text) : ''}">✕</button></div></div>`;
     // Utfallet: start → topp, och en känning inom 3 h när det blev en. Förut syntes bara toppen, så en måltid som
     // slutade på 2.7 såg ut som en av de bästa. "→" läses som "to" av skärmläsare, inte "rightwards arrow".
     // Correction (insulin utan mat): start → lägsta, eftersom det är sänkningen som spelar roll, inte en topp.
@@ -1180,7 +1205,7 @@ function removeWithUndo(list, item, kb = kbFocus()) {
 }
 $('chart').onclick = e => {
   const g = e.target.closest('.mk'); selId = g && g.dataset.id !== selId ? g.dataset.id : null;
-  drawChart(); showDet(); const k = $('chart').querySelector('.mk.sel'); if (k) k.focus();
+  drawChart(); showDet(); const k = $('chart').querySelector('.mk.sel[tabindex]'); if (k) k.focus();
   if (k) $('srlive').textContent = 'Details shown below the chart.';
 };
 $('chart').onkeydown = e => {
@@ -1903,9 +1928,9 @@ function setTheme(t) {
 }
 setTheme(document.documentElement.dataset.theme || '');
 $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setTheme(b.dataset.th); };
-// Hur måltider och anteckningar visas i grafen: "dose" = symbol och dos ovanför punkten, "curve" = bara symbolen på kurvan
+// Hur måltider och anteckningar visas under grafen: "lane" = ett spår, "tracks" = mat, insulin och övrigt på var sin rad
 function setEvStyle(v) {
-  evStyle = v === 'curve' ? 'curve' : 'dose'; try { localStorage.setItem('evstyle', evStyle); } catch {}
+  evStyle = v === 'tracks' ? 'tracks' : 'lane'; try { localStorage.setItem('evstyle', evStyle); } catch {}
   $('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); });
   drawChart();
 }

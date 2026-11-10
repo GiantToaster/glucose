@@ -8,7 +8,8 @@ Telegram fungerar var du än är, eftersom servern själv frågar Telegram efter
 
 Från datorn eller mobilen i hemnätet (eller i Pi:ns eget Wi-Fi):
 
-- **http://raspberrypi.local:3000**
+- **http://bg.local:3000** (dashboardens eget namn, från tjänsten `bg-alias`). Pi:ns eget namn
+  (raspberrypi.local:3000) skickas vidare hit (`SITE_NAME=bg.local` i tjänsten), så att dashboarden bara har en adress.
 - eller **http://PI-IP-ADRESS:3000** om namnet inte fungerar (t.ex. på vissa Android-telefoner)
 
 Lägg gärna till den på mobilens hemskärm. Dashboarden har inget eget lösenord: alla enheter i ditt nätverk kan
