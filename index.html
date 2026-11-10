@@ -189,9 +189,38 @@ dialog{border:1px solid var(--dlgbd);border-radius:16px;background:var(--card);c
 #dset{max-height:calc(90dvh - 24px);overflow:auto}
 @media(max-height:560px){#dset{margin-top:12px}#dmeal{max-height:96dvh;overflow:auto;margin-top:2dvh}#mlist{position:static;max-height:150px;box-shadow:none}}
 dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
+/* Raspberry Pi: bred dialog med ett kort per avsnitt i pistatus */
+#dpi{width:min(880px,calc(100vw - 24px));max-height:calc(90dvh - 24px);overflow:auto}
+@media(max-width:600px){#dpi{width:100%;max-height:92dvh}}
+.pih{display:flex;gap:6px;align-items:center}.pih button:not(.icon){padding:6px 12px;font-size:.8125rem}
+.pigrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:12px;align-items:start}
+.pis{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.pis h3{margin:0 0 3px;font-size:.875rem}.pis.app{border-color:color-mix(in srgb,var(--ok) 35%,var(--bd))}
+.pir{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:10px;font-size:.8125rem;align-items:baseline}
+.pir>span:last-child{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.pir.pil{grid-template-columns:minmax(0,1fr);gap:2px}.pil ul{margin:0;padding:0;list-style:none;font:.71875rem/1.5 ui-monospace,Consolas,monospace;color:var(--mut)}.pil li{overflow-wrap:anywhere}
+.pd{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--ok)}.pd[data-s=warn]{background:var(--high-fill)}.pd[data-s=crit]{background:var(--low)}
+.pisum{--c:var(--ok);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 9%,var(--card));border-radius:12px;padding:10px 14px;font-size:.875rem}
+#pibody{display:grid;gap:12px}.pisum[data-l=warn]{--c:var(--high-fill)}.pisum[data-l=crit]{--c:var(--low)}.pisum ul{margin:6px 0 0;padding-left:18px;font-size:.8125rem}.pisum b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:1px}
+.ipm{all:unset;cursor:pointer;color:var(--mut);border-bottom:1px dashed var(--field)}.ipm:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:2px}
+#pibtn{position:relative}#pibtn[data-lvl=warn]::after,#pibtn[data-lvl=crit]::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--high-fill);box-shadow:0 0 0 2px var(--bg)}#pibtn[data-lvl=crit]::after{background:var(--low)}
 .dl{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}.dhd{display:flex;justify-content:space-between;align-items:center}.dhd h2{font-size:1.375rem}
 .dft{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}.dft button{padding:9px 16px}
 .sec{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:.9375rem}
+/* Spökkurvorna i måltidens detaljvy och reglaget som slår av och på dem */
+.ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:.9375rem;font-weight:600;color:var(--fg)}
+.ghsw{display:inline-flex;align-items:center;gap:8px;padding:4px 6px;border-color:transparent;background:none;color:var(--mut);font-size:.8125rem;font-weight:500}
+.ghsw i{position:relative;width:34px;height:20px;border-radius:999px;border:1px solid var(--field);background:var(--sub);flex:none;transition:background .15s}
+.ghsw i::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--mut);transition:transform .15s}
+.ghsw[aria-checked=true] i{background:var(--acc);border-color:var(--acc)}.ghsw[aria-checked=true] i::after{transform:translateX(14px);background:var(--onacc)}
+.ghc svg{display:block;max-width:100%;height:auto}.ghc.mut{padding:24px 0}
+.gh .ghv{stroke:var(--mut);opacity:.5;stroke-width:1.5;fill:none}.gh:hover .ghv{stroke:var(--meal);opacity:1;stroke-width:2.5}
+.ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.75rem;color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
+.ghlg i.l1{border-top:3px solid var(--fg)}.ghlg i.l2{opacity:.6}.ghlg i.l3{border-top:2px dashed var(--fg);opacity:.75}
+/* Året under Insights: en ruta per dag */
+.yrw{overflow-x:auto;padding-bottom:4px}.yrw svg{display:block}
+.yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:.8125rem;color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
 .dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:.9375rem;font-weight:600;color:var(--fg)}
 .dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
 .dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:.75rem}
@@ -263,6 +292,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <header class="top">
   <div class="brand"><svg class="logo" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect class="lgband" x="0" y="7" width="20" height="6" rx="1.5" opacity=".28"/><path d="M1.5 9.5c3 0 3.2 6 6.2 6S10.6 3.5 14 3.5s3.4 5.8 4.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><h1>Glucose</h1></div>
   <div class="hr"><span class="pill" id="status"><i></i><span>Connecting…</span></span>
+    <button class="icon" id="pibtn" aria-label="Raspberry Pi status" title="Raspberry Pi status"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01M6 18h.01"/></svg></button>
     <button class="icon" id="gear" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </header>
@@ -341,12 +371,13 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
   <h2 class="sr">Insights</h2>
   <div class="insbar">
-    <div class="seg" id="iseg" role="group" aria-label="Period"><button data-v="week" class="on" aria-pressed="true">This week</button><button data-v="month" aria-pressed="false">Month</button></div>
+    <div class="seg" id="iseg" role="group" aria-label="Period"><button data-v="week" class="on" aria-pressed="true">This week</button><button data-v="month" aria-pressed="false">Month</button><button data-v="year" aria-pressed="false">Year</button></div>
     <span class="mut fine" id="wksub">Last 7 days, compared with the 7 before</span>
     <div class="nav" id="monav" hidden><button id="mprev" aria-label="Previous month">‹</button><span class="mlab" id="mlab" aria-live="polite"></span><button id="mnext" aria-label="Next month">›</button></div>
   </div>
   <div id="wk"></div>
   <div id="mo" hidden></div>
+  <div id="yr" hidden></div>
 </section>
 
 <section class="card panel" id="tab-ask" role="tabpanel" aria-labelledby="t-ask" hidden>
@@ -416,6 +447,13 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </form>
 </dialog>
 
+<dialog id="dpi" aria-labelledby="dpih">
+  <div class="dl">
+    <div class="dhd"><div><h2 id="dpih" tabindex="-1">Raspberry Pi</h2><span class="mut fine" id="pisub"></span></div><div class="pih"><button type="button" id="pirf">Refresh</button><button class="icon" data-close aria-label="Close">✕</button></div></div>
+    <div id="pibody" aria-live="polite"></div>
+    <p class="mut fine">From <b>pistatus</b> on the Pi, the same report as in the terminal, plus the dashboard's own health. Public IP addresses are hidden until you click them.</p>
+  </div>
+</dialog>
 <dialog id="dset" aria-labelledby="dseth">
   <div class="dl">
     <div class="dhd"><h2 id="dseth" tabindex="-1">Settings</h2><button class="icon" data-close aria-label="Close">✕</button></div>
@@ -929,6 +967,54 @@ function doseCheck(name, ins) {
 const disarm = () => { delete $('mlog').dataset.armed; $('mlog').textContent = editLog ? 'Save changes' : 'Log meal'; };
 // Måltidens detaljvy: de andra gångerna med samma måltid i tidsordning, nyast först, var och en med start, topp och
 // lägsta. Utan dos: dos bredvid topp och lägsta blir en uppslagstabell för doser, och appen ger inga dosråd.
+// Spökkurvor: den här gången (tjock) ovanpå de andra gångerna med samma måltid (tunna, grå), alla startade vid måltiden,
+// och det typiska förloppet (medianen, streckad) när det finns minst tre andra. Samma gånger som tabellen under, som kurvor:
+// historik, inga råd. Reglaget slår av och på dem (sparat i webbläsaren). Kurvorna hämtas en gång (/api/curves); en måltid
+// som pågår hämtas igen när den är över en minut gammal.
+let ghostOn = true; try { ghostOn = localStorage.getItem('ghost') !== '0'; } catch {}
+const curv = {}; let curvBusy = false;
+function ghostHTML(m) {
+  const k = m.name.toLowerCase(), hs = db.log.filter(x => x.name.toLowerCase() === k && out[x.id] && (out[x.id].done || x.id === m.id)).slice(0, 9);
+  if (!hs.some(x => x.id !== m.id)) return '';
+  const head = `<div class="ghh"><h4 id="ghl">This time and earlier times</h4><button type="button" class="ghsw" id="ghsw" role="switch" aria-checked="${ghostOn}" aria-labelledby="ghl ghst"><span id="ghst">${ghostOn ? 'Curves on' : 'Curves off'}</span><i aria-hidden="true"></i></button></div>`;
+  if (!ghostOn) return `<div class="ghost">${head}</div>`;
+  const now = Date.now(), need = hs.filter(x => !curv[x.id] || (!out[x.id].done && now - curv[x.id].at > 6e4));
+  if (need.length && !curvBusy) {
+    curvBusy = true;
+    api('/api/curves?ids=' + need.map(x => encodeURIComponent(x.id)).join(','))
+      .then(o => need.forEach(x => curv[x.id] = { at: Date.now(), pts: o[x.id] || [] }))
+      .catch(() => need.forEach(x => curv[x.id] = { at: Date.now(), pts: [] })) // inte fråga om och om igen när servern inte svarar
+      .finally(() => { curvBusy = false; if (selId === m.id) showDet(); });
+  }
+  const me = curv[m.id], others = hs.filter(x => x.id !== m.id && curv[x.id] && curv[x.id].pts.length > 3);
+  if (!me || !others.length || me.pts.length < 2) return `<div class="ghost">${head}<div class="ghc mut fine">${need.length ? 'Drawing the curves…' : 'Not enough readings after this meal to draw the curves.'}</div></div>`;
+  const z = chartScale(), w = Math.round(Math.min(760, Math.max(280, $('mdet').clientWidth || 600))), h = Math.round(190 * z), l = 30 * z, r = 12 * z, T = 10 * z, B = 20 * z;
+  const vals = [me, ...others.map(x => curv[x.id])].flatMap(c => c.pts.map(p => mm(p[1])));
+  const ym = Math.max(14, Math.ceil(Math.max(...vals) + 1)), X = t => l + Math.max(0, Math.min(180, t)) / 180 * (w - l - r), Y = v => T + (1 - Math.min(v, ym) / ym) * (h - T - B);
+  // En linje genom punkterna, med ett avbrott där det saknas värden i mer än 20 min (äldre värden kommer var 15:e minut)
+  const path = ps => { let d = '', pt = null; for (const [t, v] of ps) { if (t < -4 || t > 181) continue; d += (pt === null || t - pt > 20 ? 'M' : 'L') + X(t).toFixed(1) + ',' + Y(mm(v)).toFixed(1); pt = t; } return d; };
+  let sv = `<rect x="${l}" y="${Y(10).toFixed(1)}" width="${(w - l - r).toFixed(1)}" height="${(Y(3.9) - Y(10)).toFixed(1)}" style="fill:color-mix(in srgb,var(--ok) 9%,transparent)"/>`;
+  for (const v of [3.9, 10]) sv += `<text x="${l - 5 * z}" y="${(Y(v) + 4 * z).toFixed(1)}" text-anchor="end" style="fill:var(--ok);font-weight:600">${v}</text>`;
+  for (const t of [0, 60, 120, 180]) sv += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${h - B}" stroke="var(--bd)"${t ? ' stroke-dasharray="2 4"' : ''}/><text x="${X(t)}" y="${h - 5 * z}" text-anchor="${t ? t === 180 ? 'end' : 'middle' : 'start'}">${t ? t / 60 + ' h' : 'Meal'}</text>`;
+  for (const x of others) {
+    const ps = curv[x.id].pts, pk = ps.filter(p => p[0] >= 0).reduce((a, p) => p[1] > a[1] ? p : a, [0, 0]);
+    sv += `<g class="gh"><path class="ghv" d="${path(ps)}"/><path d="${path(ps)}" fill="none" stroke="transparent" stroke-width="${10 * z}"/><title>${dshort(x.t)} ${hhmm(x.t)}: peak ${f1(mm(pk[1]))} after ${dur(pk[0] * 6e4)}</title></g>`;
+  }
+  // Det typiska förloppet: medianen var 6:e minut av de andra gångerna, där minst tre har ett värde
+  let med = '';
+  if (others.length >= 3) {
+    const at = (ps, t) => { let b = null; for (const p of ps) if (Math.abs(p[0] - t) <= 8 && (!b || Math.abs(p[0] - t) < Math.abs(b[0] - t))) b = p; return b && b[1]; }, mp = [];
+    for (let t = 0; t <= 180; t += 6) { const vs = others.map(x => at(curv[x.id].pts, t)).filter(v => v != null).sort((a, b) => a - b); if (vs.length >= 3) mp.push([t, vs.length % 2 ? vs[vs.length >> 1] : (vs[vs.length / 2 - 1] + vs[vs.length / 2]) / 2]); }
+    if (mp.length > 3) { med = path(mp); sv += `<path d="${med}" fill="none" stroke="var(--fg)" stroke-width="1.6" stroke-dasharray="5 4" opacity=".7"/>`; }
+  }
+  const mine = me.pts.filter(p => p[0] >= -4), e = mine[mine.length - 1];
+  sv += `<path d="${path(mine)}" fill="none" stroke="var(--fg)" stroke-width="${2.6 * z}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (e && e[0] >= 0) sv += `<circle cx="${X(e[0]).toFixed(1)}" cy="${Y(mm(e[1])).toFixed(1)}" r="${4.5 * z}" style="fill:${col(mm(e[1]))}" stroke="var(--card)" stroke-width="2"/>`;
+  const live = !out[m.id].done, say = `Glucose for 3 hours after ${m.name}: this time${live ? ' so far' : ''} and ${others.length} earlier ${others.length === 1 ? 'time' : 'times'}. The same numbers are in the table below.`;
+  return `<div class="ghost">${head}<div class="ghc"><svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
+    + `<div class="ghlg" aria-hidden="true"><span><i class="l1"></i>This time${live ? ' (so far)' : ''}</span><span><i class="l2"></i>Earlier times (${others.length})</span>${med ? '<span><i class="l3"></i>Typical</span>' : ''}<span>Point at a grey line to see when</span></div></div>`;
+}
+$('mdet').addEventListener('click', e => { if (!e.target.closest('#ghsw')) return; ghostOn = !ghostOn; try { localStorage.setItem('ghost', ghostOn ? '1' : '0'); } catch {} showDet(); });
 // Den måltid som visas står med i tabellen, markerad, så att man ser den bredvid de andra gångerna (pågår den fortfarande:
 // "so far"). Tabellen visas bara när det finns andra gånger att jämföra med.
 function pastTimes(m) {
@@ -1202,6 +1288,7 @@ function showDet() {
       ${pk ? tile(live ? 'Peak so far' : 'Peak within 3 h', f1(mm(pk[1])), 'after ' + dur(pk[0] - m.t) + (b ? ` · ${sg(mm(pk[1] - b[1]))}` : ''), col(mm(pk[1]))) : tile('Peak', '–', 'not enough data yet')}
       ${lo && (!b || lo[1] < b[1]) ? tile(live ? 'Lowest so far' : 'Lowest within 3 h', f1(mm(lo[1])), (lo[1] < 70 ? lowWord(lo[1]) + ', ' : '') + 'after ' + dur(lo[0] - m.t), col(mm(lo[1]))) : ''}
     </div>
+    ${isCorr(m.name) ? '' : ghostHTML(m)}
     ${pastTimes(m)}
     <div class="da">${back}${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : '<button id="dkeep" title="Add to your saved meals with this dose">Save to Meals</button>'}<button id="dedit">Edit</button><button id="ddel">Remove meal</button></div></div>`);
   if ($('dkeep')) $('dkeep').onclick = () => keepMeal(m);
@@ -1618,8 +1705,8 @@ for (const k in INSULINS) {
 // Insights: veckan och månaden visas på samma sätt. Fyra nyckeltal med jämförelse mot perioden före, en stapel per dag,
 // sedan två spalter med det som stack ut, och en lugn rad längst ner. Förut var det två långa listor efter varandra,
 // med chatten under; chatten har nu en egen flik. Bara uträknade fakta, ingen AI.
-let wk = null, mo = null, moKey = null, iview = 'week';
-try { if (localStorage.getItem('insv') === 'month') iview = 'month'; } catch {}
+let wk = null, mo = null, moKey = null, yr = null, iview = 'week';
+try { const v = localStorage.getItem('insv'); if (v === 'month' || v === 'year') iview = v; } catch {}
 const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
@@ -1654,11 +1741,12 @@ const barSay = (days, what) => { const had = days.filter(d => d[1] != null); ret
 
 const loadWeek = () => api('/api/weekly').then(w => { wk = w; renderWeek(); }).catch(() => {});
 const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(() => {});
-function loadIns() { if (iview === 'month') loadMonth(moKey); else loadWeek(); }
+const loadYear = () => api('/api/year').then(x => { yr = x; renderYear(); }).catch(() => {});
+function loadIns() { if (iview === 'month') loadMonth(moKey); else if (iview === 'year') loadYear(); else loadWeek(); }
 function setView(v) {
   iview = v; try { localStorage.setItem('insv', v); } catch {}
   document.querySelectorAll('#iseg button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-pressed', b.dataset.v === v); });
-  $('wk').hidden = $('wksub').hidden = v !== 'week'; $('mo').hidden = v !== 'month'; $('monav').hidden = v !== 'month' || !(mo && mo.months && mo.months.length);
+  $('wk').hidden = $('wksub').hidden = v !== 'week'; $('mo').hidden = v !== 'month'; $('yr').hidden = v !== 'year'; $('monav').hidden = v !== 'month' || !(mo && mo.months && mo.months.length);
   loadIns();
 }
 document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => setView(b.dataset.v));
@@ -1689,6 +1777,35 @@ $('wk').onclick = e => {
   $('prng').querySelector('[data-pd="7"]').click(); showTab('pat'); $('t-pat').focus({ preventScroll: true });
   $('psum').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'center' });
 };
+
+// Året: en ruta per dag (kolumn = vecka, måndag överst), färgad efter tid i mål. Samma gräns som dagsstaplarna: grönt från
+// 70 % (mörkare ju mer), ockra under, grått utan tillräckligt med värden. Från veckan med första värdet, högst ett år bakåt.
+// Rutorna har en <title> (pekaren), och sammanfattningen står i aria-label och under rutnätet.
+const yrFill = v => v == null ? 'var(--sub)' : v < 70 ? 'color-mix(in srgb,var(--high-fill) 55%,var(--card))' : v < 80 ? 'color-mix(in srgb,var(--ok) 38%,var(--card))' : v < 90 ? 'color-mix(in srgb,var(--ok) 68%,var(--card))' : 'var(--ok)';
+function renderYear() {
+  const el = $('yr'); if (!yr || iview !== 'year') return;
+  const D = yr.days || [], have = D.filter(d => d[1] != null);
+  if (have.length < 3) { el.innerHTML = '<div class="empty">The year fills in day by day. It shows up once there are a few days with readings.</div>'; return; }
+  const z = chartScale(), weeks = Math.ceil(D.length / 7), l = 30 * z, top = 18 * z, avail = Math.max(280, el.clientWidth || 700) - l - 4;
+  const c = Math.max(10, Math.min(20 * z, Math.floor(avail / weeks) - 3)), g = Math.max(2, Math.round(c / 5)), W = Math.ceil(l + weeks * (c + g)), H = Math.ceil(top + 7 * (c + g));
+  const today = new Date().toDateString();
+  let sv = '', lastM = -1;
+  ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'].forEach((n, i) => { if (n) sv += `<text x="${l - 6 * z}" y="${(top + i * (c + g) + c * .78).toFixed(1)}" text-anchor="end">${n}</text>`; });
+  D.forEach(([t, v, lows], i) => {
+    const d = new Date(t), x = l + Math.floor(i / 7) * (c + g), y = top + (i % 7) * (c + g);
+    if (i % 7 === 0 && d.getMonth() !== lastM && (d.getDate() <= 7 || i === 0)) { lastM = d.getMonth(); sv += `<text x="${x.toFixed(1)}" y="${(top - 6 * z).toFixed(1)}">${d.toLocaleDateString('en-GB', { month: 'short' })}</text>`; }
+    const td = d.toDateString() === today;
+    sv += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${c}" height="${c}" rx="${Math.min(3, c / 4)}" style="fill:${yrFill(v)}"${td ? ' stroke="var(--fg)" stroke-width="1.5"' : ''}><title>${dDate(t)}: ${v == null ? (td ? 'today, not enough readings yet' : 'not enough readings') : `${v} % in range${lows ? ', ' + lowsN(lows) : ''}`}</title></rect>`;
+  });
+  const good = have.filter(d => d[1] >= 70).length, avg = have.reduce((a, d) => a + d[1], 0) / have.length, byM = new Map();
+  for (const [t, v] of have) { const k = new Date(t).getFullYear() * 12 + new Date(t).getMonth(), m = byM.get(k) || { t, s: 0, n: 0 }; m.s += v; m.n++; byM.set(k, m); }
+  const best = [...byM.values()].filter(m => m.n >= 15).sort((a, b) => b.s / b.n - a.s / a.n)[0];
+  const since = D[0][0] > Date.now() - 360 * 864e5 ? `Each day since ${new Date(yr.first).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}` : 'Each day, last 12 months';
+  const say = `Time in range per day. ${good} of ${have.length} days with readings were at 70 % or more.`;
+  el.innerHTML = `<h3 class="grp">${since}</h3><div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
+    + `<div class="yrlg" aria-hidden="true"><span><i style="background:${yrFill(60)}"></i>Under 70 %</span><span><i style="background:${yrFill(75)}"></i>70–79 %</span><span><i style="background:${yrFill(85)}"></i>80–89 %</span><span><i style="background:${yrFill(95)}"></i>90 % or more</span><span><i style="background:${yrFill(null)}"></i>Not enough readings</span></div>`
+    + `<div class="yrst"><span>Average <b>${Math.round(avg)} %</b> in range</span><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
+}
 
 // Höjdpunkterna i månaden, i den här ordningen: samma i listan och på bilden
 function moFacts(x) {
@@ -1966,6 +2083,40 @@ $('keys').onchange = () => { try { localStorage.setItem('keys', $('keys').checke
 syncKeys();
 // Hoppa förbi huvudkortet och grafens markeringar till flikarna (den valda fliken får fokus)
 $('skip').onclick = e => { e.preventDefault(); const t = document.querySelector('.tabs [aria-selected=true]'); t.focus(); t.scrollIntoView({ block: 'start', behavior: calm() ? 'auto' : 'smooth' }); };
+// Raspberry Pi: rapporten från pistatus på Pi:n och dashboardens egen hälsa (/api/pi). Pricken på knappen visar
+// varningar (gul) eller problem (röd), utan att man behöver öppna sidan. Publika IP-adresser döljs tills man klickar,
+// så att de inte kommer med på en skärmbild.
+const PUBIP = /\b(?!(?:10|127)\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254\.)\d{1,3}(?:\.\d{1,3}){3}\b/g;
+const piV = v => esc(v).replace(PUBIP, ip => `<button type="button" class="ipm" data-ip="${ip}" title="Public IP address. Click to show it">hidden IP</button>`);
+const piN = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+let piLast = null;
+function renderPi(p) {
+  piLast = p;
+  const app = p.app || { rows: [], warn: [] }, crit = p.crit || [], warn = [...(p.warn || []), ...app.warn.map(x => 'dashboard: ' + x)];
+  const lvl = crit.length ? 'crit' : warn.length ? 'warn' : 'ok';
+  $('pibtn').dataset.lvl = lvl; $('pibtn').setAttribute('aria-label', 'Raspberry Pi status' + (lvl === 'ok' ? '' : ': ' + [crit.length && piN(crit.length, 'problem'), warn.length && piN(warn.length, 'warning')].filter(Boolean).join(', ')));
+  if (!$('dpi').open) return;
+  const model = ((p.sections || []).find(x => x.h === 'System') || { rows: [] }).rows.find(r => r.k === 'Model');
+  $('pisub').textContent = [p.host, model && model.v, 'updated ' + hhmm(p.at)].filter(Boolean).join(' · ');
+  const row = r => r.list
+    ? `<div class="pir pil"><span class="mut">${esc(r.k)}</span><ul>${r.list.map(x => `<li>${piV(x)}</li>`).join('')}</ul></div>`
+    : `<div class="pir"><span class="mut">${esc(r.k)}</span><span>${r.s ? `<i class="pd" data-s="${r.s}" aria-hidden="true"></i>` : ''}${piV(r.v)}${r.s === 'warn' ? '<span class="sr"> (warning)</span>' : r.s === 'crit' ? '<span class="sr"> (problem)</span>' : ''}</span></div>`;
+  const card = (h, rows, cls = '') => `<section class="pis${cls}"><h3>${esc(h)}</h3>${rows.map(row).join('')}</section>`;
+  const msgs = [...crit, ...warn];
+  setHTML($('pibody'), `<div class="pisum" data-l="${lvl}"><b>${lvl === 'ok' ? 'Everything looks fine' : [crit.length && piN(crit.length, 'problem'), warn.length && piN(warn.length, 'warning')].filter(Boolean).join(', ')}</b>${msgs.length ? `<ul>${msgs.map(x => `<li>${piV(x)}</li>`).join('')}</ul>` : ''}</div>
+    <div class="pigrid">${card('Glucose dashboard', app.rows, ' app')}${p.missing ? card('Raspberry Pi', [{ k: 'pistatus', v: 'Not installed on this computer, so only the dashboard is shown.' }]) : p.error ? card('Raspberry Pi', [{ k: 'pistatus', v: 'Could not run: ' + p.error, s: 'warn' }]) : (p.sections || []).map(x => card(x.h, x.rows)).join('')}</div>`);
+}
+async function loadPi(fresh) {
+  const b = $('pirf'); b.disabled = true; b.textContent = 'Checking…';
+  if ($('dpi').open && !piLast) setHTML($('pibody'), '<p class="mut">Running pistatus on the Pi. It takes a few seconds.</p>');
+  try { renderPi(await api('/api/pi' + (fresh ? '?fresh=1' : ''))); }
+  catch { if ($('dpi').open) setHTML($('pibody'), '<p class="mut">The dashboard server did not answer. Try again in a moment.</p>'); }
+  finally { b.disabled = false; b.textContent = 'Refresh'; }
+}
+$('pibtn').onclick = () => { $('dpi').showModal(); $('dpih').focus(); if (piLast) renderPi(piLast); loadPi(false); };
+$('pirf').onclick = () => loadPi(true);
+$('pibody').addEventListener('click', e => { const b = e.target.closest('.ipm'); if (b) b.replaceWith(document.createTextNode(b.dataset.ip)); });
+setTimeout(() => loadPi(false), 4000); // pricken på knappen
 $('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); };
 document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
@@ -2041,7 +2192,7 @@ $('imfile').onchange = async () => {
 nowTime();
 try { const k = localStorage.getItem('tab'); if (k && $('tab-' + k)) showTab(k); } catch {}
 api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { renderMeals(); renderLib(); renderInsulin(); syncNav(); refresh(); loadProf(); });
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); } }, 150); });
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); renderYear(); } }, 150); });
 setInterval(refresh, 6e4);
 </script>
 </body>

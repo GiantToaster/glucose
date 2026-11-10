@@ -286,6 +286,15 @@ function weekly() {
     meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes, days: perDay(d0.getTime(), now).map(([t, v]) => [t, v]) };
 }
 
+// ---------- Året: tid i mål per dag ----------
+// Från måndagen i veckan med första mätvärdet, men högst ett år bakåt. Per dag: [dagens början, procent i mål eller null
+// (under halva dygnet har värden), antal känningar]. Samma uträkning som veckans och månadens staplar (perDay).
+function yearly() {
+  const now = Date.now(); if (!S.length) return { days: [] };
+  const d0 = new Date(Math.max(S[0][0], now - 364 * 864e5)); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
+  return { first: S[0][0], days: perDay(d0.getTime(), now).map(([t, v, q]) => [t, v, q ? q.lows.length : 0]) };
+}
+
 // ---------- Månaden i siffror ("Month in review") ----------
 // Bara uträknade fakta om en kalendermånad, inga råd: tid i mål mot månaden före, bästa dagen, längsta tiden i följd i mål,
 // flest dagar i rad utan känning, mest loggade rätter och en typisk dag (median per halvtimme). Visas under Insights, kan
@@ -957,6 +966,59 @@ const startupScript = () => {
     `cd /d "${q(__dirname)}"`, ...['PORT', 'HOST', 'LLU_VERSION', 'OLLAMA_URL', 'OLLAMA_MODEL', 'OLLAMA_AUTOSTART'].filter(k => process.env[k]).map(k => `set "${k}=${q(process.env[k])}"`),
     `start "Glucose dashboard" /min "${q(process.execPath)}" server.js`, ''].join('\r\n');
 };
+// ---------- Pi-status: sidan "Raspberry Pi" ----------
+// Kör användarens eget skript pistatus (/usr/local/bin/pistatus, samma rapport som i terminalen) och delar upp texten i
+// avsnitt och rader. Rapporten tar några sekunder (den kontrollerar nätverket och DNS), så svaret sparas en minut.
+// Dashboardens egen hälsa (mätvärden, LibreLinkUp, Telegram, data) räknas här, så att den finns även utan pistatus.
+// pistatus: "== Rubrik ==", rader "  Etikett (26 tecken) värde", underrader med 4 blanksteg, och överst
+// "Status: …" med "  ! problem" och "  * varning". Skriptet färgar bara i en terminal, så det körs via script(1) i en
+// låtsasterminal: färgen på en rad (grön 32, gul 33, röd 31) blir radens läge (s: ok, warn, crit) på sidan.
+const PISTATUS = process.env.PISTATUS || '/usr/local/bin/pistatus';
+let piCache = null, piBusy = null;
+function parsePistatus(txt) {
+  const out = { host: '', crit: [], warn: [], sections: [] }; let sec = null, sub = null;
+  for (const raw of txt.split('\n')) {
+    const c = (raw.match(/\x1b\[3([123])m/) || [])[1], line = raw.replace(/\x1b\[[0-9;]*m/g, '').replace(/\s+$/, ''); if (!line) continue;
+    const st = c && { 1: 'crit', 3: 'warn', 2: 'ok' }[c];
+    let m;
+    if (!out.host && !sec && (m = line.match(/^(\S+) - \d{4}-\d\d-\d\d \d\d:\d\d$/))) { out.host = m[1]; continue; }
+    if (!sec && /^Status:/.test(line)) continue;
+    if (!sec && (m = line.match(/^ {2}([!*]) (.+)$/))) { (m[1] === '!' ? out.crit : out.warn).push(m[2]); continue; }
+    if ((m = line.match(/^== (.+) ==$/))) { sec = { h: m[1], rows: [] }; sub = null; out.sections.push(sec); continue; }
+    if (!sec) continue;
+    if (/^ {4}/.test(line)) { if (!sub) { sub = { k: '', list: [] }; sec.rows.push(sub); } sub.list.push(line.trim()); continue; }
+    const k = line.slice(2, 28).trim(), v = line.slice(28).trim();
+    if (!v && /:$/.test(k)) { sub = { k: k.slice(0, -1), list: [] }; sec.rows.push(sub); continue; }
+    sub = null; sec.rows.push({ k, v, ...(st && { s: st }) });
+  }
+  return out;
+}
+function dirSize(d) { let n = 0; try { for (const f of fs.readdirSync(d, { withFileTypes: true })) n += f.isFile() ? fs.statSync(path.join(d, f.name)).size : 0; } catch {} return n; }
+function appHealth() {
+  const now = Date.now(), lt = S.length ? S[S.length - 1][0] : 0, age = lt ? now - lt : null, rows = [], warn = [];
+  const ago = ms => ms < 6e4 ? 'just now' : ms < 36e5 ? Math.round(ms / 6e4) + ' min ago' : ms < 864e5 ? Math.round(ms / 36e5) + ' h ago' : Math.round(ms / 864e5) + ' days ago';
+  rows.push({ k: 'Latest reading', v: lt ? `${ago(age)} (${hm(lt)})` : 'none yet', s: lt && age < 15 * 6e4 ? 'ok' : 'warn' });
+  if (!lt || age > STALE) warn.push(lt ? `no new readings for ${ago(age).replace(' ago', '')}` : 'no readings yet');
+  rows.push({ k: 'Readings stored', v: `${R.size.toLocaleString('en-GB')}${S.length ? ` since ${ymd(S[0][0])}` : ''}` });
+  rows.push({ k: 'LibreLinkUp', v: DEMO ? 'demo mode' : status === 'ok' ? 'connected' : status === 'login' ? 'logged out' : status, s: DEMO || status === 'ok' ? 'ok' : 'warn' });
+  if (!DEMO && status !== 'ok' && status !== 'starting') warn.push('LibreLinkUp: ' + (status === 'login' ? 'logged out' : status));
+  rows.push({ k: 'Telegram', v: tg.token && tg.chat ? `@${tg.bot}, linked` : tg.token ? `@${tg.bot}, not linked yet` : 'off' });
+  const db = readDb();
+  rows.push({ k: 'Logged', v: `${db.log.length} meals and doses, ${db.notes.length} notes` });
+  rows.push({ k: 'Data folder', v: hb(dirSize(DIR)) });
+  rows.push({ k: 'Dashboard running', v: `since ${ymd(bootAt)} ${hm(bootAt)}, Node ${process.version}, ${hb(process.memoryUsage().rss)} RAM` });
+  return { rows, warn };
+}
+const hb = b => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+function piStatus(force) {
+  if (!force && piCache && Date.now() - piCache.at < 6e4) return Promise.resolve(piCache);
+  return piBusy ||= new Promise(done => {
+    if (!fs.existsSync(PISTATUS)) return done({ at: Date.now(), missing: true });
+    cp.execFile('script', ['-qec', PISTATUS, '/dev/null'], { timeout: 30e3, maxBuffer: 1 << 20, env: { ...process.env, TERM: 'dumb' } }, (err, stdout) =>
+      done(stdout ? { at: Date.now(), ...parsePistatus(String(stdout)) } : { at: Date.now(), error: err ? err.message.split('\n')[0] : 'no output' }));
+  }).then(r => { piBusy = null; piCache = r; return r; });
+}
+
 function route(req, res) {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/icon.svg') return file(res, 'icon.svg', 'image/svg+xml');
@@ -964,6 +1026,7 @@ function route(req, res) {
   if (u.pathname === '/api/now') pageSeen(u.searchParams.get('c'));
   if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev() });
   if (u.pathname === '/api/stats') return send(res, stats());
+  if (u.pathname === '/api/pi') { piStatus(u.searchParams.has('fresh')).then(p => send(res, { ...p, app: appHealth() })); return; }
   if (u.pathname === '/api/readings') {
     const q = u.searchParams, from = +q.get('from') || Date.now() - (+q.get('hours') || 24) * 36e5, to = +q.get('to') || Infinity;
     return send(res, range(from, to + 1)); // to är inklusive
@@ -1050,6 +1113,14 @@ function route(req, res) {
   });
   if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report });
   if (u.pathname === '/api/weekly') return send(res, weekly());
+  if (u.pathname === '/api/year') return send(res, yearly());
+  // Kurvan efter en måltid (spökkurvorna i detaljvyn): [minuter efter måltiden, mg/dL] från 4 min före till 3 h efter,
+  // högst ett värde var 3:e minut (luckor och kvartsvärden från LibreLinkUp blir kvar som de är). ?ids=a,b,c (högst 20).
+  if (u.pathname === '/api/curves') {
+    const ids = new Set(String(u.searchParams.get('ids') || '').split(',').filter(Boolean).slice(0, 20)), o = {};
+    for (const m of readDb().log) if (ids.has(m.id)) { let lt = -Infinity; o[m.id] = range(m.t - 4 * 6e4, m.t + 3 * 36e5 + 1).filter(([t]) => t - lt >= 3 * 6e4 && (lt = t, true)).map(([t, v]) => [Math.round((t - m.t) / 6e4), v]); }
+    return send(res, o);
+  }
   if (u.pathname === '/api/month') {
     const list = monthList(), q = u.searchParams.get('m'), k = list.includes(q) ? q : defaultMonth(list);
     return send(res, { months: list, demo: !!DEMO, ...(k && monthly(k)) });
