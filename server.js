@@ -658,7 +658,7 @@ function removeEntry(id) {
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
 // fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
 // knapparna fanns har fått dem en gång.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false };
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0 };
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
 const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
@@ -727,6 +727,26 @@ function reportTick() {
   const d = new Date(), day = ymd(d), mk = mkey(mstart(mkey(d)) - 1);
   if (d.getDay() === 0 && d.getHours() >= 19 && tg.sentW !== day) { tg.sentW = day; saveTg(); tgSay(weekText()); }
   if (d.getDate() === 1 && d.getHours() >= 9 && tg.sentM !== mk) { tg.sentM = mk; saveTg(); tgSay(monthText(mk)); }
+}
+// Varning när mätvärdena slutar komma (utloggad, LibreLinkUp svarar inte, sensorbyte, telefonen utom räckhåll): ett
+// meddelande när det senaste värdet är mer än 30 min gammalt och ett när värdena kommer igen. En gång per avbrott:
+// staleT är tiden för det senaste värdet när varningen gick (sparad, så att en omstart inte skickar den igen).
+// Bara klockslag, inga glukosvärden. Mellan 23 och 07 kommer meddelandet tyst, utan ljud.
+const STALE = 30 * 6e4, bootAt = Date.now();
+function staleTick() {
+  if (DEMO || !tg.token || !tg.chat) return;
+  const now = Date.now(), lt = S.length ? S[S.length - 1][0] : 0, h = new Date(now).getHours(), quiet = { disable_notification: h >= 23 || h < 7 };
+  if (tg.staleT) {
+    if (lt > tg.staleT && now - lt < 10 * 6e4) { const from = tg.staleT; tg.staleT = 0; saveTg(); tgSay(`✅ Readings are coming in again. No readings from ${whenTxt(from)} to ${hm(lt)}.`, quiet); }
+    return;
+  }
+  if (now - Math.max(lt, bootAt) < STALE) return;
+  const why = !token && !creds ? 'The dashboard is logged out of LibreLinkUp. Open it and log in again.'
+    : status !== 'ok' ? `The last try to fetch readings failed: ${he(status)}`
+    : 'LibreLinkUp answers but has no new readings. Maybe a sensor change, or the phone is out of reach of the sensor.';
+  tg.staleT = lt || bootAt; saveTg();
+  tgSay(`⚠️ <b>No new readings since ${lt ? whenTxt(lt) : hm(bootAt) + ', when the dashboard started'}.</b>
+${why}`, quiet);
 }
 // warn: en ovanlig dos eller en möjlig dubblett. Den loggas ändå direkt (användarens val 2026-11-09: boten ska inte fråga),
 // men svaret säger det, med Undo under, så att ett skrivfel (55 i stället för 5,5) är ett tryck att ångra.
@@ -921,7 +941,7 @@ server.listen(PORT, HOST, () => {
   if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
   // Hämtningar startar först när porten är vår
   tick(); setInterval(tick, 6e4); tgLoop(); startOllama();
-  setInterval(reportTick, 6e4); setTimeout(reportTick, 5e3);
+  setInterval(reportTick, 6e4); setTimeout(reportTick, 5e3); setInterval(staleTick, 6e4);
   // Kommandomenyn i Telegram (/week och /month kom till senare; en bot som kopplades in förut får dem här)
   if (tg.token) tgApi('setMyCommands', { commands: COMMANDS }).catch(() => {});
   // En bot som kopplades in innan favoritknapparna fanns får dem en gång, utan att man behöver skriva /fav
