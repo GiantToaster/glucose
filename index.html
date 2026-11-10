@@ -777,7 +777,7 @@ function drawChart() {
           + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
         : evBadge(k, bx, by, H - 2 * z)) + '</g>';
     }
-    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
+    s += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" data-t="${m.t}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
   }
   // role="group", inte "img": en bild gör innehållet till dekoration, och markeringarna (som går att tabba till) försvann för skärmläsare
   // Avläsningen (hv) ligger sist så att den ritas överst; den visas och flyttas av hover() utan att grafen ritas om
@@ -810,8 +810,10 @@ function hover(t, say) {
   tx.innerHTML = `${hhmm(p[0])}  <tspan style="fill:${col(v)}">${f1(v)}</tspan> mmol/L`;
   if (say) $('hvsr').textContent = `${hhmm(p[0])}, ${f1(v)} mmol/L, ${zone(v)[0].toLowerCase()}`;
 }
+// Över en händelse (brickan under kurvan) visas värdet vid händelsens tid
 const evT = e => {
   const sv = $('chsvg'); if (!sv || !cg) return null;
+  const ev = e.target.closest && e.target.closest('.mk.ev[data-t]'); if (ev) return +ev.dataset.t;
   const bb = sv.getBoundingClientRect(), x = (e.clientX - bb.left) * cg.w / bb.width;
   const y = (e.clientY - bb.top) * cg.h / bb.height;
   return x < cg.l || x > cg.w - cg.r || y > cg.pb + 4 ? null : cg.t0 + (x - cg.l) / (cg.w - cg.l - cg.r) * (cg.t1 - cg.t0);
@@ -821,7 +823,8 @@ $('chart').addEventListener('pointermove', e => hover(evT(e)));
 $('chart').addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') hover(evT(e)); });
 $('chart').addEventListener('pointerleave', () => hover(null));
 $('chart').addEventListener('pointercancel', () => hover(null)); // t.ex. när fingret börjar scrolla sidan
-$('chart').addEventListener('focusout', e => { if (e.target.id === 'chsvg' && !setHTML.busy) hover(null); });
+$('chart').addEventListener('focusout', e => { if ((e.target.id === 'chsvg' || e.target.matches('.mk.ev')) && !setHTML.busy) hover(null); });
+$('chart').addEventListener('focusin', e => { const ev = e.target.closest('.mk.ev[data-t]'); if (ev) hover(+ev.dataset.t); });
 
 const sg = v => (v < 0 ? '−' : '+') + f1(Math.abs(v));
 const ARR = '<span class="ar" aria-hidden="true">→</span><span class="sr">to</span>'; // "→" läses som "to" av skärmläsare
