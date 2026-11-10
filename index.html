@@ -779,13 +779,21 @@ function drawChart() {
   // eller ett kortat namn), annars bara symbolen, och krockar
   // symbolerna knuffas de åt höger. Symbolen står vid händelsens tid, texten till höger om den.
   const chipW = t => Math.ceil(cx.measureText(t).width) + H + 10 * z;
-  // Kortar texten (med …) tills brickan är högst mw bred; blir inget kvar står bara symbolen
-  const fit = (t, mw) => { if (chipW(t) <= mw) return t; let a = t; while (a.length > 1 && chipW(a.trimEnd() + '…') > mw) a = a.slice(0, -1); return a.length > 1 ? a.trimEnd() + '…' : ''; };
+  // Matbrickan ovanför en dos (tracks) är exakt lika bred som dosbrickan: texten kortas tills den får plats, med … när minst
+  // två bokstäver ryms, annars bara de bokstäver som ryms (så att man alltid ser början av namnet). Lite mindre luft till
+  // höger än i andra brickor, så att fler bokstäver får plats.
+  const textW = t => Math.ceil(cx.measureText(t).width) + H + 4 * z;
+  const fit = (t, mw) => {
+    if (textW(t) <= mw) return t;
+    for (let n = t.length - 1; n >= 2; n--) { const a = t.slice(0, n).trimEnd() + '…'; if (textW(a) <= mw) return a; }
+    for (let n = Math.min(3, t.length); n >= 1; n--) { const a = t.slice(0, n).trimEnd(); if (textW(a) <= mw) return a; }
+    return '';
+  };
   for (let rw = 0; rw < (tracks ? 3 : 1); rw++) {
     const list = items.filter(i => i.row === rw).sort((a, b) => a.x - b.x); let right = -Infinity;
     list.forEach((it, i) => {
       const nx = list[i + 1]; let left = Math.max(l, it.x - H / 2), room = (nx ? nx.x - H / 2 - 4 * z : w - r) - left, wd = chipW(it.label);
-      if (it.cap) { const mw = chipW(r1(it.m.ins) + ' u'); it.label = fit(it.label, mw); it.short = fit(it.short, mw); wd = chipW(it.label); } // matbrickan högst lika bred som dosbrickan under
+      if (it.cap) { const mw = chipW(r1(it.m.ins) + ' u'); it.label = fit(cleanName(it.m.name), mw); it.short = ''; wd = it.label ? mw : H; } // lika bred som dosbrickan under
       if (wd > room && it.short) { it.label = it.short; wd = chipW(it.label); }
       if (left < right + 4 * z || wd > room || it.k === 'ex' || !it.label) wd = H; // aktivitet: bara symbolen (texten står i detaljvyn)
       const full = wd > H;
