@@ -194,7 +194,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .sec{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:.9375rem}
 .dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:.9375rem;font-weight:600;color:var(--fg)}
 .dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
-.dhist th:first-child,.dhist td:first-child{text-align:left}.dhist p{margin:6px 0 0;font-size:.75rem}
+.dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:.75rem}
 .lowv{color:var(--low)}#mwarn:empty,#mhint:empty{display:none}#mhint{margin:0;font-size:.8125rem}#mwarn{font-size:.8125rem}#mwarn>div+div{margin-top:4px}
 .warn{padding:10px 14px;border-radius:10px;border:1px solid var(--high);background:color-mix(in srgb,var(--high) 12%,transparent)}.warn.low{border-color:var(--low);background:color-mix(in srgb,var(--low) 12%,transparent)}
 .login{max-width:440px;margin:12px auto}.login .dl{padding:4px}.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer}.chk input{width:16px;height:16px;margin:0}
@@ -919,12 +919,15 @@ function doseCheck(name, ins) {
 const disarm = () => { delete $('mlog').dataset.armed; $('mlog').textContent = editLog ? 'Save changes' : 'Log meal'; };
 // Måltidens detaljvy: de andra gångerna med samma måltid i tidsordning, nyast först, var och en med start, topp och
 // lägsta. Utan dos: dos bredvid topp och lägsta blir en uppslagstabell för doser, och appen ger inga dosråd.
+// Den måltid som visas står med i tabellen, markerad, så att man ser den bredvid de andra gångerna (pågår den fortfarande:
+// "so far"). Tabellen visas bara när det finns andra gånger att jämföra med.
 function pastTimes(m) {
-  const k = m.name.toLowerCase(), hs = db.log.filter(x => x.id !== m.id && x.name.toLowerCase() === k && (out[x.id] || {}).done).slice(0, 8);
-  if (!hs.length) return '';
+  const k = m.name.toLowerCase(), hs = db.log.filter(x => x.name.toLowerCase() === k && out[x.id] && (out[x.id].done || x.id === m.id)).slice(0, 9);
+  if (!hs.some(x => x.id !== m.id)) return '';
   const v = p => p ? `<td style="color:${col(mm(p[1]))}">${f1(mm(p[1]))}</td>` : '<td>–</td>';
-  const rows = hs.map(x => { const o = out[x.id]; return `<tr><td>${dshort(x.t)} ${hhmm(x.t)}</td>${v(o.b)}${v(o.pk)}${v(o.lo)}</tr>`; }).join('');
-  return `<div class="dhist"><h4>Other times with ${esc(m.name)}</h4><table><caption class="sr">Other times with ${esc(m.name)}: glucose at the start, the peak and the lowest within 3 hours</caption><thead><tr><th>When</th><th>Start</th><th>Peak</th><th>Lowest</th></tr></thead><tbody>${rows}</tbody></table>`
+  const rows = hs.map(x => { const o = out[x.id], me = x.id === m.id;
+    return `<tr${me ? ' class="cur"' : ''}><td>${dshort(x.t)} ${hhmm(x.t)}${me ? ` <span class="mut">${o.done ? 'this one' : 'so far'}</span>` : ''}</td>${v(o.b)}${v(o.pk)}${v(o.lo)}</tr>`; }).join('');
+  return `<div class="dhist"><h4>Times with ${esc(m.name)}</h4><table><caption class="sr">Times with ${esc(m.name)}, this one marked: glucose at the start, the peak and the lowest within 3 hours</caption><thead><tr><th>When</th><th>Start</th><th>Peak</th><th>Lowest</th></tr></thead><tbody>${rows}</tbody></table>`
     + `<p class="mut">Most recent first. Peak and lowest are within 3 hours after eating.</p></div>`;
 }
 function renderCmp() {
