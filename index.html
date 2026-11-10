@@ -207,12 +207,8 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .dl{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}.dhd{display:flex;justify-content:space-between;align-items:center}.dhd h2{font-size:1.375rem}
 .dft{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}.dft button{padding:9px 16px}
 .sec{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:.9375rem}
-/* Spökkurvorna i måltidens detaljvy och reglaget som slår av och på dem */
+/* Spökkurvorna i måltidens detaljvy */
 .ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:.9375rem;font-weight:600;color:var(--fg)}
-.ghsw{display:inline-flex;align-items:center;gap:8px;padding:4px 6px;border-color:transparent;background:none;color:var(--mut);font-size:.8125rem;font-weight:500}
-.ghsw i{position:relative;width:34px;height:20px;border-radius:999px;border:1px solid var(--field);background:var(--sub);flex:none;transition:background .15s}
-.ghsw i::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--mut);transition:transform .15s}
-.ghsw[aria-checked=true] i{background:var(--acc);border-color:var(--acc)}.ghsw[aria-checked=true] i::after{transform:translateX(14px);background:var(--onacc)}
 .ghc svg{display:block;max-width:100%;height:auto}.ghc.mut{padding:24px 0}
 .gh .ghv{stroke:var(--mut);opacity:.5;stroke-width:1.5;fill:none}.gh:hover .ghv{stroke:var(--meal);opacity:1;stroke-width:2.5}
 .ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.75rem;color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
@@ -979,15 +975,13 @@ const disarm = () => { delete $('mlog').dataset.armed; $('mlog').textContent = e
 // lägsta. Utan dos: dos bredvid topp och lägsta blir en uppslagstabell för doser, och appen ger inga dosråd.
 // Spökkurvor: den här gången (tjock) ovanpå de andra gångerna med samma måltid (tunna, grå), alla startade vid måltiden,
 // och det typiska förloppet (medianen, streckad) när det finns minst tre andra. Samma gånger som tabellen under, som kurvor:
-// historik, inga råd. Reglaget slår av och på dem (sparat i webbläsaren). Kurvorna hämtas en gång (/api/curves); en måltid
-// som pågår hämtas igen när den är över en minut gammal.
-let ghostOn = true; try { ghostOn = localStorage.getItem('ghost') !== '0'; } catch {}
+// historik, inga råd. Kurvorna hämtas en gång (/api/curves); en måltid som pågår hämtas igen när den är över en minut gammal.
+// (Ett reglage för att slå av dem togs bort 2026-11-10: de står i detaljvyn, som man själv öppnar.)
 const curv = {}; let curvBusy = false;
 function ghostHTML(m) {
   const k = m.name.toLowerCase(), hs = db.log.filter(x => x.name.toLowerCase() === k && out[x.id] && (out[x.id].done || x.id === m.id)).slice(0, 9);
   if (!hs.some(x => x.id !== m.id)) return '';
-  const head = `<div class="ghh"><h4 id="ghl">This time and earlier times</h4><button type="button" class="ghsw" id="ghsw" role="switch" aria-checked="${ghostOn}" aria-labelledby="ghl ghst"><span id="ghst">${ghostOn ? 'Curves on' : 'Curves off'}</span><i aria-hidden="true"></i></button></div>`;
-  if (!ghostOn) return `<div class="ghost">${head}</div>`;
+  const head = '<div class="ghh"><h4>This time and earlier times</h4></div>';
   const now = Date.now(), need = hs.filter(x => !curv[x.id] || (!out[x.id].done && now - curv[x.id].at > 6e4));
   if (need.length && !curvBusy) {
     curvBusy = true;
@@ -1024,7 +1018,6 @@ function ghostHTML(m) {
   return `<div class="ghost">${head}<div class="ghc"><svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
     + `<div class="ghlg" aria-hidden="true"><span><i class="l1"></i>This time${live ? ' (so far)' : ''}</span><span><i class="l2"></i>Earlier times (${others.length})</span>${med ? '<span><i class="l3"></i>Typical</span>' : ''}<span>Point at a grey line to see when</span></div></div>`;
 }
-$('mdet').addEventListener('click', e => { if (!e.target.closest('#ghsw')) return; ghostOn = !ghostOn; try { localStorage.setItem('ghost', ghostOn ? '1' : '0'); } catch {} showDet(); });
 // Den måltid som visas står med i tabellen, markerad, så att man ser den bredvid de andra gångerna (pågår den fortfarande:
 // "so far"). Tabellen visas bara när det finns andra gånger att jämföra med.
 function pastTimes(m) {
