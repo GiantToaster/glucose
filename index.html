@@ -478,6 +478,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <span class="mut sm" id="tgtxt"></span>
       <form class="tw" id="tgset" hidden><input id="tgtok" type="password" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token"><button id="tgsave">Connect</button></form>
       <div class="ph m0" id="tgon" hidden><span class="mut fine" id="tgwho"></span><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
+      <div class="stack" id="tgstw" hidden><label class="chk"><input id="tgst" type="checkbox" aria-describedby="tgstq"> Tell me when readings stop coming in</label>
+        <span class="mut fine" id="tgstq">One message when there has been no new reading for 30 minutes, and one when they are back. Only times, never readings. Silent between 23:00 and 07:00. Turn it off for a sensor change if you like.</span></div>
       <div class="stack" id="tgrepw" hidden><label class="chk"><input id="tgrep" type="checkbox" aria-describedby="tgrepq"> Send me a weekly and monthly summary</label>
         <span class="mut fine" id="tgrepq">Sundays at 19:00 and on the 1st of each month at 09:00: time in range, lows and average, never individual readings. It goes through Telegram. You can also ask for one any time with /week or /month.</span></div>
       <span class="fine warnq" id="tgoffq" aria-live="polite"></span>
@@ -807,11 +809,15 @@ function drawChart() {
       const nx = list[i + 1]; let left = Math.max(l, it.x - H / 2), room = (nx ? nx.x - H / 2 - 4 * z : w - r) - left, wd = chipW(it.label);
       if (it.cap) { const mw = chipW(r1(it.m.ins) + ' u'); it.label = fit(cleanName(it.m.name), mw); it.short = ''; wd = it.label ? mw : H; } // lika bred som dosbrickan under
       if (wd > room && it.short) { it.label = it.short; wd = chipW(it.label); }
+      // Sista händelsen nära högerkanten: får texten inte plats till höger om symbolen står den till vänster om den (flip),
+      // så att t.ex. dosen syns i stället för bara symbolen. Symbolen står kvar vid händelsens tid.
+      let flip = false;
+      if (!nx && wd > room && wd > H && it.k !== 'ex' && it.label) { const fl = it.x + H / 2 - wd; if (fl >= Math.max(l, right + 4 * z)) { flip = true; left = fl; room = wd; } }
       if (left < right + 4 * z || wd > room || it.k === 'ex' || !it.label) wd = H; // aktivitet: bara symbolen (texten står i detaljvyn)
       const full = wd > H;
       if (left < right + 4 * z) left = right + 4 * z;
       if (left + wd > w - r) left = w - r - wd;
-      right = left + wd; Object.assign(it, { left, wd, full, top: lt + rw * rh });
+      right = left + wd; Object.assign(it, { left, wd, full, flip, bx: flip ? left + wd - H / 2 : left + H / 2, top: lt + rw * rh });
     });
   }
   // En grupp per händelse: en måltids matbricka och dosbricka (tracks) hör ihop, så att en pekning på någon av dem
@@ -830,14 +836,14 @@ function drawChart() {
     if (note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
     // En tunn linje från punkten på kurvan ner till varje bricka (streckad i tracks, där den går genom flera rader)
     const yb = (pb + 2 * z).toFixed(1);
-    lns += `<path class="ln${sel ? ' sel' : ''}" data-id="${m.id}" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${(i.left + H / 2).toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
+    lns += `<path class="ln${sel ? ' sel' : ''}" data-id="${m.id}" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${i.bx.toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
     if (on) g += `<circle cx="${x}" cy="${py}" r="${3.5 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>`;
     for (const it of its) {
-      const k = it.k, bx = it.left + H / 2, by = it.top + H / 2;
+      const k = it.k, bx = it.bx, by = it.top + H / 2;
       g += `<rect x="${it.left.toFixed(1)}" y="${(it.top - hy).toFixed(1)}" width="${it.wd.toFixed(1)}" height="${(H + 2 * hy).toFixed(1)}" fill="transparent"/>`;
       g += `<g style="--kc:${EVK[k].fill}">` + (it.cap && it.label !== it.m.name ? `<title>${esc(it.m.name)}</title>` : '') + (it.full
         ? `<rect class="pl" x="${it.left.toFixed(1)}" y="${it.top.toFixed(1)}" width="${it.wd.toFixed(1)}" height="${H}" rx="${H / 2}"/>`
-          + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
+          + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.flip ? it.left + 9 * z : it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
         : evBadge(k, bx, by, H - 2 * z)) + '</g>';
     }
     evg += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" data-t="${m.t}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
@@ -2058,7 +2064,7 @@ async function loadTg() {
     : `Write to ${bot} what you ate, e.g. <i>pizza 7.5 units</i>, or a dose without food, <i>1.5 units no food</i>. Only what you write goes through Telegram, never your glucose readings${s.report ? ', apart from the summaries you turned on below' : ''}.`)
     + (s.error ? `<br><span class="err">${esc(s.error)}</span>` : '');
   $('tgwho').textContent = s.chat ? 'Linked to ' + (s.who || 'your Telegram') : 'Waiting for the message…';
-  $('tgrepw').hidden = !(s.on && s.chat); $('tgrep').checked = !!s.report;
+  $('tgrepw').hidden = $('tgstw').hidden = !(s.on && s.chat); $('tgrep').checked = !!s.report; $('tgst').checked = s.stale !== false;
   clearTimeout(tgPoll); if (s.on && !s.chat && $('dset').open) tgPoll = setTimeout(loadTg, 3000);
 }
 $('tgsave').onclick = async () => {
@@ -2073,6 +2079,11 @@ $('tgrep').onchange = async e => {
   const on = e.target.checked, r = await api('/api/telegram/report', { method: 'POST', body: JSON.stringify({ on }) }).catch(() => ({ error: 'No contact with the server.' }));
   if (r.error) { e.target.checked = !on; toast(esc(r.error)); return; }
   toast(on ? 'Summaries on. The next one comes on Sunday evening.' : 'Summaries off.'); loadTg();
+};
+$('tgst').onchange = async e => {
+  const on = e.target.checked, r = await api('/api/telegram/stale', { method: 'POST', body: JSON.stringify({ on }) }).catch(() => ({ error: 'No contact with the server.' }));
+  if (r.error) { e.target.checked = !on; toast(esc(r.error)); return; }
+  toast(on ? 'You will get a message when readings stop.' : 'No messages when readings stop.');
 };
 $('tgset').onsubmit = e => e.preventDefault(); // ett formulär (lösenordsfält hör hemma i ett); Enter trycker på Connect
 twoStep($('tgoff'), 'tgoffq', 'Messages to the bot will no longer be logged.', 'Yes, disconnect', async () => {

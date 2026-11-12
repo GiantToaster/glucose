@@ -23,7 +23,7 @@
 // Login refused (version/Account-Id)? Set LLU_VERSION to the latest LibreLinkUp app version (default 4.16.0).
 // Data is stored in the data/ folder. LibreLinkUp only returns about 12 h of history, so history builds up while the server runs.
 
-const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
+const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto'), os = require('os');
 const { LLU_EMAIL, LLU_PASSWORD, DEMO, PORT = 3000, HOST = '127.0.0.1', LLU_VERSION = '4.16.0', OLLAMA_URL = 'http://127.0.0.1:11434', OLLAMA_MODEL, OLLAMA_AUTOSTART, TELEGRAM_API = 'https://api.telegram.org' } = process.env;
 // Skyddsnät: ett missat fel i ett asynkront anrop ska skrivas ut, inte stänga av servern
 process.on('unhandledRejection', e => console.error('Unhandled:', e));
@@ -673,7 +673,7 @@ function removeEntry(id) {
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
 // fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
 // knapparna fanns har fått dem en gång.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0 };
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true };
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
 const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
@@ -750,6 +750,7 @@ function reportTick() {
 const STALE = 30 * 6e4, bootAt = Date.now();
 function staleTick() {
   if (DEMO || !tg.token || !tg.chat) return;
+  if (tg.stale === false) { if (tg.staleT) { tg.staleT = 0; saveTg(); } return; } // avstängd under Settings
   const now = Date.now(), lt = S.length ? S[S.length - 1][0] : 0, h = new Date(now).getHours(), quiet = { disable_notification: h >= 23 || h < 7 };
   if (tg.staleT) {
     if (lt > tg.staleT && now - lt < 10 * 6e4) { const from = tg.staleT; tg.staleT = 0; saveTg(); tgSay(`✅ Readings are coming in again. No readings from ${whenTxt(from)} to ${hm(lt)}.`, quiet); }
@@ -936,7 +937,24 @@ const LOCAL = /^(127\.|localhost$|::1$)/.test(HOST), okHost = h => !LOCAL || LOC
 // skickas vidare dit, så att den bara nås på ett namn. IP-adressen och localhost fungerar som förut.
 const SITE = (process.env.SITE_NAME || '').toLowerCase();
 const otherName = h => { const n = String(h || '').toLowerCase().replace(/:\d+$/, ''); return SITE && n.endsWith('.local') && n !== SITE; };
+// LAN_IFACE=eth0 (flera med komma): bara klienter på det nätets adresser, och datorn själv via 127.0.0.1, får svar.
+// På en Pi som också är WiFi-accesspunkt (wlan0) nådde enheter på det nätet annars dashboarden utan inloggning.
+// Att bara lyssna på eth0-adressen räcker inte: Linux tar emot paket till den adressen även när de kommer in via wlan0.
+// Saknar nätverkskortet adress (t.ex. kabeln urdragen) släpps alla in, så att man inte låser sig ute av misstag.
+const LAN = (process.env.LAN_IFACE || '').split(',').map(x => x.trim()).filter(Boolean);
+const ipInt = ip => ip.split('.').reduce((n, x) => ((n << 8) | +x) >>> 0, 0);
+function fromLan(addr) {
+  if (!LAN.length) return true;
+  const ip = String(addr || '').replace(/^::ffff:/, '');
+  if (ip === '::1' || ip.startsWith('127.')) return true;
+  const nets = LAN.flatMap(n => (os.networkInterfaces()[n] || []).filter(i => i.family === 'IPv4'));
+  if (!nets.length) return true;
+  if (!/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return false;
+  const a = ipInt(ip);
+  return nets.some(i => ((a & ipInt(i.netmask)) >>> 0) === ((ipInt(i.address) & ipInt(i.netmask)) >>> 0));
+}
 const server = http.createServer((req, res) => {
+  if (!fromLan(req.socket.remoteAddress)) { res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('The glucose dashboard only answers on the home network.'); }
   if (!okHost(req.headers.host)) return send(res, { error: 'forbidden host' }, 403);
   if (otherName(req.headers.host)) {
     const to = `http://${SITE}${PORT == 80 ? '' : ':' + PORT}${req.method === 'GET' ? req.url : '/'}`;
@@ -952,7 +970,7 @@ server.on('error', e => {
 });
 server.listen(PORT, HOST, () => {
   console.log(`Dashboard: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}${DEMO ? ' (demo mode)' : creds ? '' : token ? ` (saved login: ${user})` : ' (open it and log in)'}`);
-  if (!LOCAL) console.log('Warning: HOST is not 127.0.0.1, so anyone on your network can open the dashboard and see your data.');
+  if (!LOCAL) console.log(LAN.length ? 'Answers only clients on ' + LAN.join(', ') + ' (LAN_IFACE). Anyone on that network can open the dashboard and see your data.' : 'Warning: HOST is not 127.0.0.1, so anyone on your network can open the dashboard and see your data.');
   if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
   // Hämtningar startar först när porten är vår
   tick(); setInterval(tick, 6e4); tgLoop(); startOllama();
@@ -1113,11 +1131,15 @@ function route(req, res) {
     });
   }
   // Rapporterna på/av. Vid påslag räknas dagens söndag/1:a som redan skickad, så att inget skickas direkt.
+  if (u.pathname === '/api/telegram/stale' && req.method === 'POST') return body(req, res, ({ on }) => {
+    if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
+    tg.stale = !!on; saveTg(); send(res, { ok: 1, stale: tg.stale });
+  });
   if (u.pathname === '/api/telegram/report' && req.method === 'POST') return body(req, res, ({ on }) => {
     if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
     tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
   });
-  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report });
+  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false });
   if (u.pathname === '/api/weekly') return send(res, weekly());
   if (u.pathname === '/api/year') return send(res, yearly());
   // Kurvan efter en måltid (spökkurvorna i detaljvyn): [minuter efter måltiden, mg/dL] från 4 min före till 3 h efter,
