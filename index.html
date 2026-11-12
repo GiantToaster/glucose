@@ -9,10 +9,10 @@
 <style>
 /* Statusfärgerna bär text (glukosvärden, tabellsiffror, etiketter) och klarar 4.5:1 mot --card och --sub i båda teman.
    --high-fill är den klara gula för ytor utan text (staplar). --field är kanten på inmatningsfält (minst 3:1). */
-:root{color-scheme:light dark;--bg:#f5f6f7;--card:#fff;--sub:#f0f2f4;--fg:#101418;--mut:#5d6870;--bd:#e2e5e8;--field:#7d878f;--ok:#08745f;--low:#c42b2b;--high:#8f6000;--high-fill:#d99a00;--acc:#101418;--note:#1f6bc2;--onacc:#fff;--sh:0 1px 2px rgba(16,20,24,.05);--dlgbd:transparent;--dlgsh:0 24px 64px rgba(0,0,0,.35);--lbbg:var(--low);--lbfg:#fff;--tbg:#101418;--tfg:#f5f6f7;--meal:#2f9a4c;--ins:#b0336f}
+:root{color-scheme:light dark;--bg:#f5f6f7;--card:#fff;--sub:#f0f2f4;--fg:#101418;--mut:#5d6870;--bd:#e2e5e8;--field:#7d878f;--ok:#08745f;--low:#c42b2b;--high:#8f6000;--high-fill:#d99a00;--acc:#101418;--note:#1f6bc2;--onacc:#fff;--sh:0 1px 2px rgba(16,20,24,.05);--dlgbd:transparent;--dlgsh:0 24px 64px rgba(0,0,0,.35);--lbbg:var(--low);--lbfg:#fff;--tbg:#101418;--tfg:#f5f6f7;--meal:#2f9a4c;--ins:#b0336f;--sys:#4a6380}
 /* Tema: följer systemet, eller det man valt under Settings (data-theme på <html>) */
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f}}
-:root[data-theme=dark]{color-scheme:dark;--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f}:root[data-theme=light]{color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f;--sys:#8ea6c2}}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f;--sys:#8ea6c2}:root[data-theme=light]{color-scheme:light}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0 auto;max-width:1080px;padding:0 16px 32px;background:var(--bg);color:var(--fg);font:.875rem/1.5 "Segoe UI Variable Text","Segoe UI",-apple-system,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
 /* Namn kan vara långa ord utan mellanslag (inklistrat, dikterat). De får brytas i stället för att trycka ut sidan. */
@@ -86,7 +86,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* Avläsningen: lodrät linje, punkt i zonfärgen och en etikett med klockslag och värde. pan-y: fingret kan dra i sidled
    över grafen för att läsa av, medan ett lodrätt drag fortfarande scrollar sidan. */
 #chsvg{touch-action:pan-y}#chsvg:focus-visible{outline-offset:4px;border-radius:6px}
-.hvl{stroke:var(--mut);stroke-width:1}.hvc{stroke:var(--card);stroke-width:2}.hvb{fill:var(--card);stroke:var(--field);stroke-width:1}svg text.hvt{fill:var(--fg);font-weight:600;white-space:pre}svg text{fill:var(--mut);font-size:.6875rem}svg .ml{fill:var(--onacc);font-weight:600}.mk{cursor:pointer}.mk:hover .ln,.mk.sel .ln{stroke-width:2.5;stroke-dasharray:none}.mk:focus{outline:none}.mk:focus-visible .ln{stroke-width:3.5;stroke-dasharray:none}.mk:focus-visible circle{stroke-width:4}.mkl.lsel rect{stroke:var(--fg);stroke-width:1.5}#dtitle:focus,#dmealh:focus,#dlowh:focus,#dseth:focus{outline:none}
+.hvl{stroke:var(--mut);stroke-width:1}.hvc{stroke:var(--card);stroke-width:2}.hvb{fill:var(--card);stroke:var(--field);stroke-width:1}svg text.hvt{fill:var(--fg);font-weight:600;white-space:pre}svg text{fill:var(--mut);font-size:.6875rem}svg .ml{fill:var(--onacc);font-weight:600}.mk{cursor:pointer}.mk:hover .ln,.mk.sel .ln{stroke-width:2.5;stroke-dasharray:none}.mk:focus{outline:none}.mk:focus-visible .ln{stroke-width:3.5;stroke-dasharray:none}.mk:focus-visible circle{stroke-width:4}.mkl.lsel rect{stroke:var(--fg);stroke-width:1.5}#dtitle:focus,#dmealh:focus,#dlowh:focus,#dseth:focus,#dpih:focus{outline:none}
 /* Detaljvyn: ingen egen ram inne i grafkortet (kort i kort), bara en avdelare. Färgen (måltid, anteckning, känning) sitter i en punkt vid rubriken. */
 .det{margin-top:14px;padding-top:14px;border-top:1px solid var(--bd);--dc:var(--acc)}.det.note{--dc:var(--note)}.det.note.lt{--dc:var(--low)}
 .det .dh h3::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--dc);margin-right:8px;vertical-align:1px}.dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.dh h3{margin:0;font-size:1.375rem;color:var(--fg)}
@@ -107,7 +107,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .lowres{display:block;margin-top:2px;color:var(--low);font-weight:600;font-size:.8125rem}.lowres b{font-weight:700}
 /* Utfallet efter en måltid: siffrorna med pil och en kort grå etikett */
 .oc{font-size:.9375rem;font-weight:500;color:var(--fg);white-space:nowrap}.oc b{font-weight:700}.oc .ar{color:var(--mut);margin:0 3px}
-.ocn{font-size:.75rem;color:var(--mut);display:inline-block;white-space:nowrap}
+.ocn{font-size:.75rem;color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:600px){.ocn{white-space:normal}}
 .acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:.75rem}
 /* ✕ dämpad och ramlös; namnet är en knapp utan knappens utseende som öppnar detaljvyn */
 .acts .rx{border-color:transparent;background:none;color:var(--mut)}.acts .rx:hover{color:var(--low);background:var(--sub)}
@@ -133,7 +133,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
    tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
 .mk.ev .halo{opacity:0;transition:opacity .12s}.mk.ev:hover .halo,.mk.ev.sel .halo{opacity:.55}.mk.ev:focus-visible .halo{opacity:1}
 .mk.ev .pl{fill:color-mix(in srgb,var(--kc) 10%,var(--card));stroke:color-mix(in srgb,var(--kc) 45%,transparent);stroke-width:1;transition:fill .12s}.mk.ev .bd{fill:color-mix(in srgb,var(--kc) 16%,var(--card));stroke:color-mix(in srgb,var(--kc) 55%,transparent);stroke-width:1}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
-.mk.ev:focus-visible circle{stroke-width:2}svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
+.mk.ev:focus-visible circle{stroke-width:2}svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg .gap{fill:var(--sub);opacity:.7}svg text.gapt,svg text.nodata{fill:var(--fg);font-weight:600}svg text.nodata{font-size:.875rem}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
 /* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
 .cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
@@ -198,17 +198,17 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .pis h3{margin:0 0 3px;font-size:.875rem}.pis.app{border-color:color-mix(in srgb,var(--ok) 35%,var(--bd))}
 .pir{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:10px;font-size:.8125rem;align-items:baseline}
 .pir>span:last-child{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.pir.pil{grid-template-columns:minmax(0,1fr);gap:2px}.pil ul{margin:0;padding:0;list-style:none;font:.71875rem/1.5 ui-monospace,Consolas,monospace;color:var(--mut)}.pil li{overflow-wrap:anywhere}
-.pd{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--ok)}.pd[data-s=warn]{background:var(--high-fill)}.pd[data-s=crit]{background:var(--low)}
+.pir.pil{grid-template-columns:minmax(0,1fr);gap:2px}.pil ul{margin:0;padding:0;list-style:none;font:.75rem/1.5 ui-monospace,Consolas,monospace;color:var(--mut)}.pil li{overflow-wrap:anywhere}
+.pd{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--ok)}.pd[data-s=warn]{background:var(--sys)}.pd[data-s=crit]{background:var(--low)}
 .pisum{--c:var(--ok);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 9%,var(--card));border-radius:12px;padding:10px 14px;font-size:.875rem}
-#pibody{display:grid;gap:12px}.pisum[data-l=warn]{--c:var(--high-fill)}.pisum[data-l=crit]{--c:var(--low)}.pisum ul{margin:6px 0 0;padding-left:18px;font-size:.8125rem}.pisum b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:1px}
+#pibody{display:grid;gap:12px}.pisum[data-l=warn]{--c:var(--sys)}.pisum li{text-wrap:pretty}.pisum[data-l=crit]{--c:var(--low)}.pisum ul{margin:6px 0 0;padding-left:18px;font-size:.8125rem}.pisum b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:1px}
 .ipm{all:unset;cursor:pointer;color:var(--mut);border-bottom:1px dashed var(--field)}.ipm:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:2px}
-#pibtn{position:relative}#pibtn[data-lvl=warn]::after,#pibtn[data-lvl=crit]::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--high-fill);box-shadow:0 0 0 2px var(--bg)}#pibtn[data-lvl=crit]::after{background:var(--low)}
+#pibtn{position:relative}#pibtn[data-lvl=warn]::after,#pibtn[data-lvl=crit]::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--sys);box-shadow:0 0 0 2px var(--bg)}#pibtn[data-lvl=crit]::after{background:var(--low)}
 .dl{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}.dhd{display:flex;justify-content:space-between;align-items:center}.dhd h2{font-size:1.375rem}
 .dft{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}.dft button{padding:9px 16px}
 .sec{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:.9375rem}
 /* Spökkurvorna i måltidens detaljvy */
-.ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:.9375rem;font-weight:600;color:var(--fg)}
+.ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:1rem;font-weight:600;color:var(--fg)}
 .ghc svg{display:block;max-width:100%;height:auto}.ghc.mut{padding:24px 0}
 .gh .ghv{stroke:var(--mut);opacity:.5;stroke-width:1.5;fill:none}.gh:hover .ghv{stroke:var(--meal);opacity:1;stroke-width:2.5}
 .ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.75rem;color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
@@ -217,12 +217,12 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .yrw{overflow-x:auto;padding-bottom:4px}.yrw svg{display:block}
 .yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
 .yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:.8125rem;color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
-.dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:.9375rem;font-weight:600;color:var(--fg)}
+.dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--fg)}
 .dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
 .dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:.75rem}
 .lowv{color:var(--low)}#mwarn:empty,#mhint:empty{display:none}#mhint{margin:0;font-size:.8125rem}#mwarn{font-size:.8125rem}#mwarn>div+div{margin-top:4px}
 .warn{padding:10px 14px;border-radius:10px;border:1px solid var(--high);background:color-mix(in srgb,var(--high) 12%,transparent)}.warn.low{border-color:var(--low);background:color-mix(in srgb,var(--low) 12%,transparent)}
-.login{max-width:440px;margin:12px auto}.login .dl{padding:4px}.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer}.chk input{width:16px;height:16px;margin:0}
+.login{max-width:440px;margin:12px auto}.login .dl{padding:4px}.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:24px}.chk input{width:16px;height:16px;margin:0}
 #toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;bottom:24px;transform:translateY(16px);opacity:0;pointer-events:none;background:var(--tbg);color:var(--tfg);padding:10px 16px;border-radius:10px;font-size:.8125rem;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .2s,transform .2s,visibility 0s .2s;visibility:hidden;max-width:calc(100vw - 32px);z-index:20}#toast.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
 #toast button{margin-left:12px;padding:2px 10px;font-size:.75rem;background:none;color:inherit;border-color:currentColor}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
 footer{font-size:.75rem;color:var(--mut);margin-top:24px;text-align:center}
@@ -249,7 +249,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;align-items:start}.igc{min-width:0}@media(max-width:760px){.igrid{grid-template-columns:minmax(0,1fr)}}
+.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;align-items:start}.igrid.ihl{grid-template-columns:minmax(0,1fr)}.ihl .wkg{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:0 32px}.igc{min-width:0}@media(max-width:760px){.igrid{grid-template-columns:minmax(0,1fr)}}
 .ipad{padding:10px 0;border-top:1px solid var(--bd)}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
 @media(max-width:440px){.tabs button{padding-inline:9px}}
@@ -445,7 +445,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <dialog id="dpi" aria-labelledby="dpih">
   <div class="dl">
     <div class="dhd"><div><h2 id="dpih" tabindex="-1">Raspberry Pi</h2><span class="mut fine" id="pisub"></span></div><div class="pih"><button type="button" id="pirf">Refresh</button><button class="icon" data-close aria-label="Close">✕</button></div></div>
-    <div id="pibody" aria-live="polite"></div>
+    <div id="pibody"></div><div id="pisr" class="sr" aria-live="polite"></div>
     <p class="mut fine">From <b>pistatus</b> on the Pi, the same report as in the terminal, plus the dashboard's own health. Public IP addresses are hidden until you click them.</p>
   </div>
 </dialog>
@@ -587,7 +587,7 @@ const dayPart = m => { const h = ((m + 60) / 60) % 24; return h < 6 ? 'At night'
 function lowWhen(starts) {
   const n = starts.length; if (!n) return null;
   const mins = starts.map(t => { const d = new Date(t); return d.getHours() * 60 + d.getMinutes(); }).sort((a, b) => a - b);
-  if (n <= 3) return { n, all: true, text: 'Started at ' + mins.map(hm2).join(n === 2 ? ' and ' : ', ') };
+  if (n <= 3) return { n, all: true, text: 'Started ' + [...starts].sort((a, b) => a - b).map(t => `${new Date(t).toLocaleDateString('en-GB', { weekday: 'short' })} ${hhmm(t)}`).join(n === 2 ? ' and ' : ', ') };
   let best = [0, 0]; for (const s of mins.map(m => Math.floor(m / 30) * 30)) { const k = mins.filter(m => ((m - s + 1440) % 1440) < 120).length; if (k > best[1]) best = [s, k]; }
   return { n, k: best[1], from: best[0], text: `${best[1]} of ${n} started between ${hm2(best[0])} and ${hm2(best[0] + 120)}` };
 }
@@ -679,8 +679,11 @@ async function refresh() {
       $('nowbox').classList.remove('old'); $('cur').textContent = '–'; $('cur').style.color = ''; $('arrow').textContent = ''; $('state').hidden = true; $('hero').className = 'card hero'; lowMode(false);
       $('age').textContent = 'no current reading'; $('nowbox').setAttribute('aria-label', 'No current glucose reading'); document.title = 'Glucose';
     }
+    // Har under halva dygnet värden (t.ex. efter ett sensorbyte) står täckningen i stället för en procent som bygger på
+    // några få värden ("0 % in range" efter en uppvärmning). Samma gräns som dagsstaplarna.
     const d = s['24h'];
-    $('tir24').innerHTML = d ? `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>` : '';
+    $('tir24').innerHTML = !d ? '' : d.cov < 50 ? `<span class="mut">Readings cover <b style="color:var(--fg)">${d.cov.toFixed(0)} %</b> of the last 24 h, too few for time in range</span>`
+      : `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>`;
     drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); mealWarn();
     if (!$('tab-ins').hidden && iview === 'week') loadWeek();
   } catch { setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; }
@@ -751,11 +754,24 @@ function drawChart() {
   const span = (t1 - t0) / 36e5; let sp = span > 12 ? 4 : span > 3 ? 2 : 1;
   while ((w - l - r) / (span / sp) < 46 * z) sp *= 2; // glesare tider när etiketterna inte får plats bredvid varandra
   // Klockslag nära vänsterkanten börjar vid axeln i stället för att centreras ovanpå y-axelns "0"
-  for (let k = Math.ceil(t0 / 36e5) * 36e5; k < t1; k += sp * 36e5) { const x = X(k), near = x - l < 20 * z; s += `<text x="${near ? Math.max(x, l + 2) : x}" y="${h - 6 * z}" text-anchor="${near ? 'start' : 'middle'}">${hhmm(k)}</text>`; }
+  for (let k = Math.ceil(t0 / 36e5) * 36e5; k < t1; k += sp * 36e5) { const x = X(k), near = x - l < 20 * z; if (near && X(k + sp * 36e5) - Math.max(x, l + 2) < 60 * z) continue; s += `<text x="${near ? Math.max(x, l + 2) : x}" y="${h - 6 * z}" text-anchor="${near ? 'start' : 'middle'}">${hhmm(k)}</text>`; }
   // Kurvan bryts vid luckor över 20 min (t.ex. sensorbyte), i stället för en rak linje som ser ut som mätvärden
   const segs = []; let prev = -Infinity;
   for (const [t, v] of pts) { const p = [X(t), Y(mm(v))]; if (t - prev > 20 * 6e4) segs.push([p]); else segs[segs.length - 1].push(p); prev = t; }
   s += zoneTrace('zc', segs, Y, l, w - r, 2);
+  // Luckor över 30 min (sensorbyte, telefonen utom räckhåll) får ett svagt fält och "No readings" med tiden, så att en
+  // tom del inte ser ut som ett fel. Utan värden alls i vyn står det mitt i grafen.
+  if (pts.length < 2) s += `<text class="nodata" x="${((l + w - r) / 2).toFixed(1)}" y="${((T + pb) / 2).toFixed(1)}" text-anchor="middle">${day === null ? `No readings in the last ${hrs} h` : 'No readings this day'}</text>`;
+  else {
+    const tEnd = Math.min(t1, Date.now()), gaps = []; let gp = t0;
+    for (const [t] of pts) { if (t - gp > 30 * 6e4) gaps.push([gp, t]); gp = t; }
+    if (tEnd - gp > 30 * 6e4) gaps.push([gp, tEnd]);
+    for (const [a, b] of gaps) {
+      const xa = X(a), xb = X(b), gw = xb - xa, lab = `${hhmm(a)}–${hhmm(b)}`;
+      s += `<rect class="gap" x="${xa.toFixed(1)}" y="${T}" width="${gw.toFixed(1)}" height="${(pb - T).toFixed(1)}"/>`;
+      if (gw >= 84 * z) s += `<text class="gapt" x="${((xa + xb) / 2).toFixed(1)}" y="${(T + 16 * z).toFixed(1)}" text-anchor="middle">No readings</text><text x="${((xa + xb) / 2).toFixed(1)}" y="${(T + 30 * z).toFixed(1)}" text-anchor="middle">${lab}</text>`;
+    }
+  }
   const cx = drawChart.cx || (drawChart.cx = document.createElement('canvas').getContext('2d'));
   cx.font = `600 ${12 * z}px ${getComputedStyle(document.body).fontFamily}`;
   const line = a => 'M' + a.map(p => X(p[0]).toFixed(1) + ',' + Y(mm(p[1])).toFixed(1)).join('L');
@@ -819,7 +835,7 @@ function drawChart() {
     for (const it of its) {
       const k = it.k, bx = it.left + H / 2, by = it.top + H / 2;
       g += `<rect x="${it.left.toFixed(1)}" y="${(it.top - hy).toFixed(1)}" width="${it.wd.toFixed(1)}" height="${(H + 2 * hy).toFixed(1)}" fill="transparent"/>`;
-      g += `<g style="--kc:${EVK[k].fill}">` + (it.full
+      g += `<g style="--kc:${EVK[k].fill}">` + (it.cap && it.label !== it.m.name ? `<title>${esc(it.m.name)}</title>` : '') + (it.full
         ? `<rect class="pl" x="${it.left.toFixed(1)}" y="${it.top.toFixed(1)}" width="${it.wd.toFixed(1)}" height="${H}" rx="${H / 2}"/>`
           + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
         : evBadge(k, bx, by, H - 2 * z)) + '</g>';
@@ -886,7 +902,7 @@ const ARR = '<span class="ar" aria-hidden="true">→</span><span class="sr">to</
 function renderLog() {
   const ins24 = db.log.filter(m => m.t > Date.now() - 864e5).reduce((a, m) => a + m.ins, 0), lm = db.log[0];
   const ago = lm && Math.max(0, Math.round((Date.now() - lm.t) / 6e4)), agoTxt = ago < 1 ? 'just now' : dur(ago * 6e4) + ' ago';
-  $('lastmeal').innerHTML = lm && ago < 1440 ? `<span class="mut">${isCorr(lm.name) ? 'Last dose' : 'Last meal'}</span> <b>${esc(lm.name)}</b>, <span class="nw"><b class="u">${units(lm.ins)}</b> <span class="mut">· ${agoTxt}</span></span>` : '';
+  $('lastmeal').innerHTML = lm && ago < 1440 ? `<span class="mut">${isCorr(lm.name) ? 'Last dose' : 'Last meal'}</span> <b>${esc(lm.name)}</b>, <b class="u nw">${units(lm.ins)}</b> <span class="mut nw">· ${agoTxt}</span>` : '';
   $('ins24').innerHTML = `Mealtime insulin, last 24 h: <b style="color:var(--fg)">${units(ins24)}</b>`;
   const tm = (t, dur) => `<div class="tm"><b>${hhmm(t)}${dur ? '–' + hhmm(t + dur * 6e4) : ''}</b><span>${dshort(t)}</span></div>`;
   // Filtret: namn, typ eller text innehåller det man skrivit ("pizza", "low", "walk")
@@ -1016,7 +1032,7 @@ function ghostHTML(m) {
   if (e && e[0] >= 0) sv += `<circle cx="${X(e[0]).toFixed(1)}" cy="${Y(mm(e[1])).toFixed(1)}" r="${4.5 * z}" style="fill:${col(mm(e[1]))}" stroke="var(--card)" stroke-width="2"/>`;
   const live = !out[m.id].done, say = `Glucose for 3 hours after ${m.name}: this time${live ? ' so far' : ''} and ${others.length} earlier ${others.length === 1 ? 'time' : 'times'}. The same numbers are in the table below.`;
   return `<div class="ghost">${head}<div class="ghc"><svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
-    + `<div class="ghlg" aria-hidden="true"><span><i class="l1"></i>This time${live ? ' (so far)' : ''}</span><span><i class="l2"></i>Earlier times (${others.length})</span>${med ? '<span><i class="l3"></i>Typical</span>' : ''}<span>Point at a grey line to see when</span></div></div>`;
+    + `<div class="ghlg" aria-hidden="true"><span><i class="l1"></i>This time${live ? ' (so far)' : ''}</span><span><i class="l2"></i>Earlier times (${others.length})</span>${med ? '<span><i class="l3"></i>Typical</span>' : ''}<span>${coarse() ? 'The times are in the table below' : 'Point at a grey line to see when'}</span></div></div>`;
 }
 // Den måltid som visas står med i tabellen, markerad, så att man ser den bredvid de andra gångerna (pågår den fortfarande:
 // "so far"). Tabellen visas bara när det finns andra gånger att jämföra med.
@@ -1289,7 +1305,7 @@ function showDet() {
       ${tile('Insulin taken', m.ins, (m.ins === 1 ? 'unit' : 'units') + (m.type ? ' ' + esc(m.type) : ''))}
       ${tile(isCorr(m.name) ? 'Glucose when taken' : 'Glucose at meal', b ? f1(mm(b[1])) : '–', b ? 'mmol/L' : 'no reading', b && col(mm(b[1])))}
       ${pk ? tile(live ? 'Peak so far' : 'Peak within 3 h', f1(mm(pk[1])), 'after ' + dur(pk[0] - m.t) + (b ? ` · ${sg(mm(pk[1] - b[1]))}` : ''), col(mm(pk[1]))) : tile('Peak', '–', 'not enough data yet')}
-      ${lo && (!b || lo[1] < b[1]) ? tile(live ? 'Lowest so far' : 'Lowest within 3 h', f1(mm(lo[1])), (lo[1] < 70 ? lowWord(lo[1]) + ', ' : '') + 'after ' + dur(lo[0] - m.t), col(mm(lo[1]))) : ''}
+      ${lo && (lo[1] < 70 || ((!b || lo[1] <= b[1] - 5) && lo[0] - m.t >= 10 * 6e4)) ? tile(live ? 'Lowest so far' : 'Lowest within 3 h', f1(mm(lo[1])), (lo[1] < 70 ? lowWord(lo[1]) + ', ' : '') + 'after ' + dur(lo[0] - m.t), col(mm(lo[1]))) : ''}
     </div>
     ${isCorr(m.name) ? '' : ghostHTML(m)}
     ${pastTimes(m)}
@@ -1353,7 +1369,14 @@ $('msearch').onkeydown = e => {
     const m = libMeal(typed()); if (m) { pick(m.id); $('mi2').focus(); } else if (typed()) pickFree();
   }
 };
-$('mlist').onmousedown = e => { e.preventDefault(); const o = e.target.closest('.opt'); if (o && o.dataset.id) pick(o.dataset.id); else if (o && o.dataset.corr) pickCorr(); else if (o && o.dataset.free) pickFree(); };
+// mousedown behåller bara fokus i sökfältet (annars stängs listan innan klicket når fram); valet görs vid click, så att
+// det också fungerar med röststyrning och switch-styrning, som skickar ett click utan mousedown. Väljer man med musen
+// hamnar fokus i dosfältet, så att man kan skriva enheterna direkt (inte på pekskärm, där tangentbordet skulle öppnas).
+$('mlist').onmousedown = e => e.preventDefault();
+$('mlist').onclick = e => {
+  const o = e.target.closest('.opt'); if (!o) return;
+  if (o.dataset.id) { pick(o.dataset.id); if (!coarse()) { $('mi2').focus(); $('mi2').select(); } } else if (o.dataset.corr) pickCorr(); else if (o.dataset.free) pickFree();
+};
 const pickCorr = () => { selMeal = null; $('msearch').value = 'Correction'; ddOpen = false; act = -1; $('mhint').className = 'mut'; $('mhint').textContent = 'Insulin without food. It counts in the insulin total but is not compared with meals.'; renderMeals(); $('mi2').focus(); };
 $('lib').onclick = e => {
   const d = e.target.dataset;
@@ -1722,20 +1745,22 @@ const igroup = (title, rows) => rows.length ? `<div class="igc"><h3 class="grp">
 function ikpis(c, p, pl, lowsCur, lowsPrev) {
   const was = (v, f) => p ? `${pl}: ${f(v)}` : '';
   return `<div class="kpis k4">${ikpi('In range', c.tir.toFixed(0) + ' %', p ? was(p.tir, v => v.toFixed(0) + ' %') : 'goal over&nbsp;70&nbsp;%', c.tir >= 70 ? 'var(--ok)' : 'var(--high)')}
-    ${ikpi('Lows', lowsCur, lowsPrev != null ? `${pl}: ${lowsPrev}` : '15 min or more below 3.9', lowsCur ? 'var(--low)' : '')}
+    ${ikpi('Lows', lowsCur, lowsPrev != null ? `${pl}: ${lowsPrev}` : '15 min or more below 3.9', c.low >= 4 ? 'var(--low)' : '')}
     ${ikpi('Average', f1(mm(c.avg)), p ? was(p.avg, v => f1(mm(v))) : 'mmol/L', col(mm(c.avg)))}
     ${ikpi('Above 10', c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : 'goal under&nbsp;25&nbsp;%', c.high >= 25 ? 'var(--high)' : '')}</div>`;
 }
 // En stapel per dag: grön från 70 % i mål, ockra under, ett kort streck för dagar utan tillräckligt med värden.
 // N = antal platser (7 för veckan, månadens längd), lab(i) = etikett under stapeln eller ''.
+// N ≤ 7 (veckan): procenten står ovanför varje stapel, så att t.ex. 80 och 95 % inte ser likadana ut i den låga grafen
 function dayBars(el, days, N, lab, say, tip) {
-  const z = chartScale(), w = Math.max(280, Math.round(el.clientWidth) || 700), h = Math.round(92 * z), l = 30 * z, r = 4, B = 18 * z, top = 6;
+  const z = chartScale(), num = N <= 7, w = Math.max(280, Math.round(el.clientWidth) || 700), h = Math.round((num ? 104 : 92) * z), l = 30 * z, r = 4, B = 18 * z, top = num ? 16 * z : 6;
   const bw = (w - l - r) / N, Y = v => h - B - v / 100 * (h - B - top);
   let sv = `<line class="mgl" x1="${l}" x2="${w - r}" y1="${Y(70)}" y2="${Y(70)}"/><text x="${l - 5 * z}" y="${Y(70) + 4 * z}" text-anchor="end">70 %</text>`;
   for (let i = 0; i < N; i++) {
     const v = days[i] ? days[i][1] : undefined, ww = Math.min(bw * .72, 34 * z), bx = l + i * bw + (bw - ww) / 2;
     sv += v == null ? `<rect class="mdn" x="${bx.toFixed(1)}" y="${(Y(0) - 2).toFixed(1)}" width="${ww.toFixed(1)}" height="2" rx="1"/>`
-      : `<rect x="${bx.toFixed(1)}" y="${Y(v).toFixed(1)}" width="${ww.toFixed(1)}" height="${Math.max(2, Y(0) - Y(v)).toFixed(1)}" rx="${Math.min(4, ww / 3).toFixed(1)}" style="fill:var(${v >= 70 ? '--ok' : '--high-fill'})"><title>${tip(i)}: ${v} % in range</title></rect>`;
+      : `<rect x="${bx.toFixed(1)}" y="${Y(v).toFixed(1)}" width="${ww.toFixed(1)}" height="${Math.max(2, Y(0) - Y(v)).toFixed(1)}" rx="${Math.min(4, ww / 3).toFixed(1)}" style="fill:var(${v >= 70 ? '--ok' : '--high-fill'})"><title>${tip(i)}: ${v} % in range</title></rect>`
+        + (num ? `<text x="${(bx + ww / 2).toFixed(1)}" y="${(Y(v) - 4 * z).toFixed(1)}" text-anchor="middle" style="fill:var(--fg);font-weight:600">${v}</text>` : '');
     const t = lab(i); if (t) sv += `<text x="${(l + (i + .5) * bw).toFixed(1)}" y="${h - 4 * z}" text-anchor="middle">${t}</text>`;
   }
   return `<svg class="mdays" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(say)}">${sv}</svg>`;
@@ -1765,12 +1790,15 @@ function renderWeek() {
   if (lw) L.push(irow('var(--low)', `${lw.text}. <button class="lk" id="lowpat">See them in Patterns</button>`, 'A low = at least 15 min below 3.9'));
   else L.push(irow('var(--ok)', 'No lows in the last 7 days', 'A low = at least 15 min below 3.9'));
   if (c.cov < 70) L.push(irow('var(--high)', `Readings cover <b>${c.cov.toFixed(0)} %</b> of the week`, 'Treat these numbers with caution'));
-  const mealLine = m => [m.hi ? `went above 10 after ${m.hi} of ${m.n === 1 ? '1 time' : m.n + ' times'}` : '', m.lo ? `was followed by a low ${m.lo} of ${m.n === 1 ? '1 time' : m.n + ' times'}` : ''].filter(Boolean).join(', and ');
+  const meals = n => n === 1 ? '1 meal' : n + ' meals';
+  const mealLine = m => [m.hi ? `above 10 after ${m.hi} of ${meals(m.n)}` : '', m.lo ? `a low after ${m.lo} of ${meals(m.n)}` : ''].filter(Boolean).join(', and ');
   wk.meals.filter(m => m.lo || (m.n >= 2 && m.hi / m.n >= .5) || (m.n >= 2 && !m.hi))
     .sort((a, b) => (b.lo / b.n - a.lo / a.n) || (b.hi / b.n - a.hi / a.n) || b.n - a.n).slice(0, 5)
-    .forEach(m => M.push(irow(m.lo ? 'var(--low)' : m.hi ? 'var(--high)' : 'var(--ok)', `<b>${esc(m.name)}</b> ${mealLine(m) || `stayed in range all ${m.n} times`}`, `Peak ${f1(mm(m.peak))} mmol/L on average`)));
+    .forEach(m => M.push(irow(m.lo ? 'var(--low)' : m.hi ? 'var(--high)' : 'var(--ok)', `<b>${esc(m.name)}</b>: ${mealLine(m) || `in range after all ${meals(m.n)}`}`, `Peak ${f1(mm(m.peak))} mmol/L on average`)));
   if (!M.length) M.push(`<p class="mut fine m0 ipad">Meals show up here once they have 3 hours of readings after them, and have started in range.</p>`);
+  const H = moFacts({ days, best: wk.best, inR: wk.inR, noLow: wk.noLow, top: [] }).map(f => irow(f.k === 'nolow' ? 'var(--note)' : 'var(--ok)', `${f.lab}: <b>${esc(f.val)}</b>`, esc(f.sub)));
   el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars
+    + (H.length ? `<div class="igrid ihl">${igroup('Highlights', H)}</div>` : '')
     + `<div class="igrid">${igroup('Lows', L)}${igroup('Meals', M)}</div>`;
 }
 $('wk').onclick = e => {
@@ -1800,12 +1828,15 @@ function renderYear() {
   });
   const good = have.filter(d => d[1] >= 70).length, avg = have.reduce((a, d) => a + d[1], 0) / have.length, byM = new Map();
   for (const [t, v] of have) { const k = new Date(t).getFullYear() * 12 + new Date(t).getMonth(), m = byM.get(k) || { t, s: 0, n: 0 }; m.s += v; m.n++; byM.set(k, m); }
-  const best = [...byM.values()].filter(m => m.n >= 15).sort((a, b) => b.s / b.n - a.s / a.n)[0];
+  // Bästa månaden: bara hela kalendermånader inom rutnätet (inte den första, om data börjar mitt i den, och inte den pågående)
+  const cutM = d => new Date(d).getFullYear() * 12 + new Date(d).getMonth(), firstM = cutM(Math.max(D[0][0], yr.first)) + (new Date(Math.max(D[0][0], yr.first)).getDate() > 1 ? 1 : 0), nowM = cutM(Date.now());
+  const best = [...byM.entries()].filter(([k, m]) => k >= firstM && k < nowM && m.n >= 20).map(([, m]) => m).sort((a, b) => b.s / b.n - a.s / a.n)[0];
   const since = D[0][0] > Date.now() - 360 * 864e5 ? `Each day since ${new Date(yr.first).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}` : 'Each day, last 12 months';
   const say = `Time in range per day. ${good} of ${have.length} days with readings were at 70 % or more.`;
   el.innerHTML = `<h3 class="grp">${since}</h3><div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
     + `<div class="yrlg" aria-hidden="true"><span><i style="background:${yrFill(60)}"></i>Under 70 %</span><span><i style="background:${yrFill(75)}"></i>70–79 %</span><span><i style="background:${yrFill(85)}"></i>80–89 %</span><span><i style="background:${yrFill(95)}"></i>90 % or more</span><span><i style="background:${yrFill(null)}"></i>Not enough readings</span></div>`
     + `<div class="yrst"><span>Average <b>${Math.round(avg)} %</b> in range</span><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
+  const yw = el.querySelector('.yrw'); if (yw) yw.scrollLeft = yw.scrollWidth; // de senaste veckorna syns först
 }
 
 // Höjdpunkterna i månaden, i den här ordningen: samma i listan och på bilden
@@ -2104,6 +2135,7 @@ function renderPi(p) {
     : `<div class="pir"><span class="mut">${esc(r.k)}</span><span>${r.s ? `<i class="pd" data-s="${r.s}" aria-hidden="true"></i>` : ''}${piV(r.v)}${r.s === 'warn' ? '<span class="sr"> (warning)</span>' : r.s === 'crit' ? '<span class="sr"> (problem)</span>' : ''}</span></div>`;
   const card = (h, rows, cls = '') => `<section class="pis${cls}"><h3>${esc(h)}</h3>${rows.map(row).join('')}</section>`;
   const msgs = [...crit, ...warn];
+  $('pisr').textContent = (lvl === 'ok' ? 'Everything looks fine.' : [crit.length && piN(crit.length, 'problem'), warn.length && piN(warn.length, 'warning')].filter(Boolean).join(', ') + ': ' + msgs.join('; ') + '.') + ` Updated ${hhmm(p.at)}.`;
   setHTML($('pibody'), `<div class="pisum" data-l="${lvl}"><b>${lvl === 'ok' ? 'Everything looks fine' : [crit.length && piN(crit.length, 'problem'), warn.length && piN(warn.length, 'warning')].filter(Boolean).join(', ')}</b>${msgs.length ? `<ul>${msgs.map(x => `<li>${piV(x)}</li>`).join('')}</ul>` : ''}</div>
     <div class="pigrid">${card('Glucose dashboard', app.rows, ' app')}${p.missing ? card('Raspberry Pi', [{ k: 'pistatus', v: 'Not installed on this computer, so only the dashboard is shown.' }]) : p.error ? card('Raspberry Pi', [{ k: 'pistatus', v: 'Could not run: ' + p.error, s: 'warn' }]) : (p.sections || []).map(x => card(x.h, x.rows)).join('')}</div>`);
 }

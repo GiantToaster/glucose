@@ -282,8 +282,9 @@ function weekly() {
   }
   for (const n of db.notes) if (n.t >= now - W && n.t <= now) notes[n.kind] = (notes[n.kind] || 0) + 1;
   const d0 = new Date(now); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - 6);
-  return { cur: period(part(now - W, now), now - W, now), prev: period(part(now - 2 * W, now - W), now - 2 * W, now - W),
-    meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes, days: perDay(d0.getTime(), now).map(([t, v]) => [t, v]) };
+  const pd = perDay(d0.getTime(), now), ca = part(now - W, now), cur = period(ca, now - W, now);
+  return { cur, prev: period(part(now - 2 * W, now - W), now - 2 * W, now - W), ...(cur ? highlights(ca, cur.lows, pd) : {}),
+    meals: [...meals.values()].map(x => ({ ...x, peak: x.peak / x.n })), notes, days: pd.map(([t, v]) => [t, v]) };
 }
 
 // ---------- Året: tid i mål per dag ----------
@@ -314,25 +315,30 @@ const defaultMonth = list => {
   const k = mkey(Date.now()), pk = mkey(mstart(k) - 1), pref = (Date.now() - mstart(k) < 7 * 864e5 ? [pk, k] : [k, pk]).filter(m => list.includes(m));
   return pref.find(m => monthCov(m) >= 20) || [...list].reverse().find(m => monthCov(m) >= 20) || list[list.length - 1];
 };
-function monthly(k) {
-  const now = Date.now(), from = mstart(k), to = Math.min(mnext(k), now), a = range(from, to), p = period(a, from, to);
-  if (!p || from >= now) return null;
-  const pf = mstart(mkey(from - 1)), pp = period(range(pf, from), pf, from), lowDay = new Set(p.lows.map(l => ymd(l[0])));
-  // Dag för dag: tid i mål (null = under halva dygnet har värden), bästa dagen (minst 70 % täckning) och dagar i rad utan
-  // känning. En dag utan tillräckligt med värden bryter raden, eftersom man inte vet hur den gick.
-  const days = []; let best = null, run = null, noLow = null;
-  for (const [ds, v, q] of perDay(from, to)) {
-    const ok = v !== null; days.push([ds, v]);
+// Höjdpunkter i en period: bästa dagen (minst 70 % täckning), flest dagar i rad utan känning (en dag utan tillräckligt
+// med värden bryter raden, eftersom man inte vet hur den gick) och längsta tiden i följd mellan 3.9 och 10 (en lucka
+// över 20 min avslutar den, precis som för en känning). a = värdena, lows = periodens känningar, pd = perDay().
+// Används av veckan (sedan 2026-11-12, så att den börjar med det som gick bra) och månaden.
+function highlights(a, lows, pd) {
+  const lowDay = new Set(lows.map(l => ymd(l[0]))); let best = null, run = null, noLow = null;
+  for (const [ds, v, q] of pd) {
     if (q && q.cov >= 70 && (!best || q.tir >= best.tir)) best = { t: ds, tir: Math.round(q.tir) };
-    if (ok && !lowDay.has(ymd(ds))) { run = run ? { ...run, to: ds, n: run.n + 1 } : { from: ds, to: ds, n: 1 }; if (!noLow || run.n > noLow.n) noLow = run; } else run = null;
+    if (v !== null && !lowDay.has(ymd(ds))) { run = run ? { ...run, to: ds, n: run.n + 1 } : { from: ds, to: ds, n: 1 }; if (!noLow || run.n > noLow.n) noLow = run; } else run = null;
   }
-  // Längsta tiden i följd mellan 3.9 och 10. En lucka över 20 min avslutar den, precis som för en känning.
   let inR = null, s = null;
   for (let i = 0; i < a.length; i++) {
     const [t, v] = a[i], ok = v >= 70 && v <= 180;
     if (ok && (!s || t - a[i - 1][0] > 20 * 6e4)) s = t;
     if (!ok) s = null; else if (!inR || t - s > inR.min * 6e4) inR = { t: s, min: Math.round((t - s) / 6e4) };
   }
+  return { best, noLow, inR };
+}
+function monthly(k) {
+  const now = Date.now(), from = mstart(k), to = Math.min(mnext(k), now), a = range(from, to), p = period(a, from, to);
+  if (!p || from >= now) return null;
+  const pf = mstart(mkey(from - 1)), pp = period(range(pf, from), pf, from);
+  // Dag för dag: tid i mål (null = under halva dygnet har värden), och höjdpunkterna
+  const pd = perDay(from, to), days = pd.map(([ds, v]) => [ds, v]), { best, noLow, inR } = highlights(a, p.lows, pd);
   // Måltider: flest gånger, och den som höll sig lägst efteråt (minst 3 gånger, började i mål, 3 h värden efter)
   const db = readDb(), cnt = new Map(), calm = new Map();
   for (const m of db.log) {
