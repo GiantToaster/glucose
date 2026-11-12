@@ -40,7 +40,9 @@ cd ~/glucose && HOST=0.0.0.0 sudo -E bash pi/install.sh
 
 Skriptet sätter tidszonen till Europe/Stockholm, installerar Node.js om det saknas och gör dashboarden till
 tjänsten `glucose-dashboard`, som startar med Pi:n och startar om sig själv om den stannar.
-`HOST=0.0.0.0` gör den nåbar i hemnätet; utan den nås den bara på Pi:n själv.
+`HOST=0.0.0.0` gör den nåbar i hemnätet; utan den nås den bara på Pi:n själv. Har Pi:n fler nät (till exempel
+en egen WiFi-accesspunkt på wlan0) lägger man till `LAN_IFACE=eth0`: då får bara enheter på hemnätet svar, och
+enheterna på det andra nätet får "403".
 
 `data` innehåller mätvärden, måltider, inloggningsnyckeln till LibreLinkUp och Telegram-boten. Inget lösenord
 finns i mappen. Kopiera aldrig `raspberry.txt`.

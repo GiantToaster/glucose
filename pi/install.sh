@@ -3,6 +3,7 @@
 # Run from the dashboard folder on the Pi:   sudo bash pi/install.sh
 #   HOST=0.0.0.0 sudo -E bash pi/install.sh   reachable from the home network (http://<pi-name>.local:3000)
 #   add OLLAMA_URL=http://<pc-name>.local:11434 to use the AI on another computer
+#   add LAN_IFACE=eth0 to answer only devices on that network (when the Pi is also a WiFi access point, for example)
 # It: sets the time zone (the dashboard counts days and clock times in local time), installs Node.js if it is missing
 # or older than 18, and adds a systemd service that starts at boot and restarts if it ever stops.
 # Safe to run again (e.g. after copying a newer index.html / server.js).
@@ -21,6 +22,9 @@ TZ_NAME="${TZ_NAME:-Europe/Stockholm}"
 OLLAMA_URL="${OLLAMA_URL:-}"
 # The dashboard's own name on the home network (published by the bg-alias service below). Other .local names of this
 # Pi (e.g. its hostname) are sent on to it, so the dashboard has one address. BG_NAME=0 turns both off.
+# Only answer clients on this network card's network, e.g. LAN_IFACE=eth0. Use it when the Pi has more than one network
+# (a WiFi access point, a guest network): the devices there then get no answer. Empty = every network.
+LAN_IFACE="${LAN_IFACE:-}"
 SITE_NAME=""; [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ] && SITE_NAME=bg.local
 
 [ -f "$DIR/server.js" ] || { echo "server.js not found in $DIR"; exit 1; }
@@ -53,7 +57,7 @@ After=network-online.target
 User=$RUN_AS
 WorkingDirectory=$DIR
 ExecStart=$(command -v node) server.js
-Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}${SITE_NAME:+ SITE_NAME=$SITE_NAME}
+Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}${SITE_NAME:+ SITE_NAME=$SITE_NAME}${LAN_IFACE:+ LAN_IFACE=$LAN_IFACE}
 Restart=always
 RestartSec=10
 
