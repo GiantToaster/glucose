@@ -300,12 +300,13 @@ function weekly() {
 
 // ---------- Året: tid i mål per dag ----------
 // Från måndagen i veckan med första mätvärdet, men högst ett år bakåt. Per dag: [dagens början, procent i mål eller null
-// (under halva dygnet har värden), antal känningar]. Samma uträkning som veckans och månadens staplar (perDay).
+// (under halva dygnet har värden), antal känningar, och med värden procent under 3.9 och över 10]. Samma uträkning som dagarna i veckan och månaden (perDay).
 function yearly() {
   const now = Date.now(); if (!S.length) return { days: [] };
   const d0 = new Date(Math.max(S[0][0], now - 364 * 864e5)); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
   const p = period(range(d0.getTime(), now), d0.getTime(), now);
-  return { first: S[0][0], days: perDay(d0.getTime(), now).map(([t, v, q]) => [t, v, q ? q.lows.length : 0]),
+  return { first: S[0][0],
+    days: perDay(d0.getTime(), now).map(([t, v, q]) => [t, v, q ? q.lows.length : 0, ...(v != null ? [Math.round(q.low * 10) / 10, Math.round(q.high * 10) / 10] : [])]),
     cur: p && { tir: p.tir, low: p.low, high: p.high, avg: p.avg, cov: p.cov, lows: p.lows.length } };
 }
 
