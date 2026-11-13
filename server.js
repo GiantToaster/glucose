@@ -269,6 +269,17 @@ function perDay(from, to) {
   while (d.getTime() < to) { const ds = d.getTime(); d.setDate(d.getDate() + 1); const de = Math.min(d.getTime(), to), q = period(range(ds, de), ds, de); out.push([ds, q && q.cov >= 50 ? Math.round(q.tir) : null, q]); }
   return out;
 }
+// Kvartsvärden per kalenderdag i [from, to): [dagens början, 96 värden i mg/dL (medel i kvarten, null utan värden)].
+// Bergskedjan och värmekartan under Insights. Ett dygn med sommartid blir ändå 96 kvartar (23 eller 25 h delat på 96).
+function quarters(from, to) {
+  const out = [], d = new Date(from);
+  while (d.getTime() < to) {
+    const ds = d.getTime(); d.setDate(d.getDate() + 1); const de = d.getTime(), q = (de - ds) / 96, s = new Array(96).fill(0), n = new Array(96).fill(0);
+    for (const [t, v] of range(ds, Math.min(de, to))) { const i = Math.min(95, Math.floor((t - ds) / q)); s[i] += v; n[i]++; }
+    out.push([ds, s.map((x, i) => n[i] ? Math.round(x / n[i]) : null)]);
+  }
+  return out;
+}
 // Senaste 7 dygnen mot de 7 före, plus hur varje måltid gick (bara de som började i mål, som i appens jämförelse)
 function weekly() {
   const now = Date.now(), W = 7 * 864e5, a = sorted(now - 2 * W, now), db = readDb(), part = (f, t) => a.filter(r => r[0] >= f && r[0] < t);
@@ -293,7 +304,9 @@ function weekly() {
 function yearly() {
   const now = Date.now(); if (!S.length) return { days: [] };
   const d0 = new Date(Math.max(S[0][0], now - 364 * 864e5)); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
-  return { first: S[0][0], days: perDay(d0.getTime(), now).map(([t, v, q]) => [t, v, q ? q.lows.length : 0]) };
+  const p = period(range(d0.getTime(), now), d0.getTime(), now);
+  return { first: S[0][0], days: perDay(d0.getTime(), now).map(([t, v, q]) => [t, v, q ? q.lows.length : 0]),
+    cur: p && { tir: p.tir, low: p.low, high: p.high, avg: p.avg, cov: p.cov, lows: p.lows.length } };
 }
 
 // ---------- Månaden i siffror ("Month in review") ----------
@@ -1140,7 +1153,7 @@ function route(req, res) {
     tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
   });
   if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false });
-  if (u.pathname === '/api/weekly') return send(res, weekly());
+  if (u.pathname === '/api/weekly') { const w = weekly(); return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], Date.now()) : [] }); }
   if (u.pathname === '/api/year') return send(res, yearly());
   // Kurvan efter en måltid (spökkurvorna i detaljvyn): [minuter efter måltiden, mg/dL] från 4 min före till 3 h efter,
   // högst ett värde var 3:e minut (luckor och kvartsvärden från LibreLinkUp blir kvar som de är). ?ids=a,b,c (högst 20).
@@ -1151,7 +1164,8 @@ function route(req, res) {
   }
   if (u.pathname === '/api/month') {
     const list = monthList(), q = u.searchParams.get('m'), k = list.includes(q) ? q : defaultMonth(list);
-    return send(res, { months: list, demo: !!DEMO, ...(k && monthly(k)) });
+    const x = k && monthly(k);
+    return send(res, { months: list, demo: !!DEMO, ...x, ...(x && { q: quarters(x.from, x.to) }) });
   }
   // Exakt det som skickas till AI:n, så att man kan se vad den svarar utifrån
   if (u.pathname === '/api/ai/context') { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(ASK + aiContext()); }
