@@ -875,7 +875,8 @@ function hover(t, say) {
   const { X, Y, z, l, r, w, T } = cg, x = X(p[0]), v = mm(p[1]), y = Y(v), lab = `${hhmm(p[0])}  ${f1(v)} mmol/L`;
   const bw = Math.ceil((drawChart.cx ? drawChart.cx.measureText(lab).width : lab.length * 6.2 * z) + 16 * z), bx = Math.min(w - r - bw, Math.max(l, x - bw / 2)), by = y - 34 * z < T ? y + 12 * z : y - 34 * z; // under punkten när den är högt upp
   g.style.display = '';
-  g.querySelector('.hvl').setAttribute('x1', x); g.querySelector('.hvl').setAttribute('x2', x);
+  // Linjen går bara nedåt från punkten (eller från rutan, när den står under punkten), inte genom kurvan ovanför
+  const hl = g.querySelector('.hvl'); hl.setAttribute('x1', x); hl.setAttribute('x2', x); hl.setAttribute('y1', by > y ? by + 22 * z : y + 4.5 * z);
   const c = g.querySelector('.hvc'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.style.fill = col(v);
   const b = g.querySelector('.hvb'); b.setAttribute('x', bx); b.setAttribute('y', by); b.setAttribute('width', bw);
   const tx = g.querySelector('.hvt'); tx.setAttribute('x', bx + 8 * z); tx.setAttribute('y', by + 15 * z);
