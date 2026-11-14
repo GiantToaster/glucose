@@ -133,7 +133,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
    tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
 .mk.ev .halo{opacity:0;transition:opacity .12s}.mk.ev:hover .halo,.mk.ev.sel .halo{opacity:.55}.mk.ev:focus-visible .halo{opacity:1}
 .mk.ev .pl{fill:color-mix(in srgb,var(--kc) 10%,var(--card));stroke:color-mix(in srgb,var(--kc) 45%,transparent);stroke-width:1;transition:fill .12s}.mk.ev .bd{fill:color-mix(in srgb,var(--kc) 16%,var(--card));stroke:color-mix(in srgb,var(--kc) 55%,transparent);stroke-width:1}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
-.mk.ev:focus-visible circle{stroke-width:2}svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg .gap{fill:var(--sub);opacity:.7}svg text.gapt,svg text.nodata{fill:var(--fg);font-weight:600}svg text.nodata{font-size:.875rem}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
+.mk.ev:focus-visible circle{stroke-width:2}svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg .gap{fill:var(--sub);opacity:.7}svg .nsens{fill:var(--note);opacity:.09}svg .nsensl{stroke:var(--note);stroke-width:1;stroke-dasharray:3 3;opacity:.75}#sens:empty{display:none}svg text.gapt,svg text.nodata{fill:var(--fg);font-weight:600}svg text.nodata{font-size:.875rem}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
 /* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
 .cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
@@ -313,6 +313,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="srlive" class="sr" aria-live="polite"></div>
   <div class="meta">
     <div class="mut">mmol/L · <span id="age"></span></div>
+    <div class="mut" id="sens"></div>
     <div id="lastmeal"></div>
     <div class="tir24" id="tir24"></div>
     <p class="treat" id="treat" hidden></p>
@@ -582,6 +583,22 @@ const dayLabel = t => new Date(t).toDateString() === new Date().toDateString() ?
 // Kort datum: "Today", "Yesterday" eller "3 Nov". dmid = samma mitt i en mening ("logged today at 07:55").
 const dshort = t => { const d = dayLabel(t); return d.length > 9 ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : d; };
 const dmid = t => dshort(t).replace(/^(Today|Yesterday)$/, s => s.toLowerCase());
+// Sensorns ålder: LibreLinkUp skickar när den startades, livslängden (15 dagar, Plus-sensorn) kommer från servern.
+// Ingen ny start rapporterad två dygn efter att sensorn borde ha tagit slut: hellre ingen text än en gissning.
+const SDAY = 864e5;
+function sensTxt(sn, now = Date.now()) {
+  const a = sn && sn.starts[sn.starts.length - 1]; if (!a || now < a) return '';
+  const end = a + sn.life * SDAY, n = Math.floor((now - a) / SDAY) + 1;
+  if (now - a < sn.warm * 6e4) return 'New sensor warming up';
+  if (now > end + 2 * SDAY) return '';
+  if (now >= end) return `Sensor day ${n}`;
+  const ds = Math.round((new Date(end).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / SDAY);
+  return `Sensor day ${n} of ${sn.life}` + (ds <= 1 ? `, ends ${ds ? 'tomorrow' : 'today'} at ${hhmm(end)}` : '');
+}
+function renderSens() {
+  const t = sensTxt(snr), el = $('sens'); el.textContent = t;
+  el.title = t ? 'Started ' + new Date(snr.starts[snr.starts.length - 1]).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+}
 // Minuter efter midnatt som klockslag, och vilken del av dygnet ett tvåtimmarsfönster som börjar där ligger i
 const hm2 = m => p2(Math.floor(m / 60) % 24) + ':' + p2(m % 60);
 const dayPart = m => { const h = ((m + 60) / 60) % 24; return h < 6 ? 'At night' : h < 11 ? 'In the morning' : h < 14 ? 'Around lunch' : h < 18 ? 'In the afternoon' : h < 22 ? 'In the evening' : 'Late evening'; };
@@ -647,7 +664,7 @@ async function refresh() {
     }
     // Saknas utfall (första laddningen, eller en måltid loggad i efterhand) hämtas alla en gång; servern svarar för varje måltid
     if (db.log.some(m => !out[m.id]) || db.notes.some(x => x.kind === LOWT && !out[x.id])) out = { ...out, ...await api('/api/outcomes') };
-    lastNow = n.last || null;
+    lastNow = n.last || null; snr = n.sensor || null; renderSens();
     const txt = { ok: 'Live', demo: 'Demo mode', starting: 'Connecting…', login: 'Not logged in' }[n.status];
     // Fel från LibreLinkUp: en begriplig mening i fältet; tekniska detaljer (HTTP-koder, adresser) bara som verktygstips
     const tech = !txt && /HTTP \d|\/llu\/|fetch failed|ECONN|ENOTFOUND|EAI_AGAIN/i.test(n.status);
@@ -755,6 +772,14 @@ function drawChart() {
   const T = 10 * z, pb = h - B - laneH, lt = pb + 10 * z; // grafens topp och botten, spårets överkant
   const Y = v => pb - v / ym * (pb - T);
   let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
+  // Ny sensor: det första dygnet får ett svagt fält (värdena kan vara mindre exakta då) och en streckad linje vid starten
+  let snl = '';
+  for (const a of snr ? snr.starts : []) {
+    const a0 = Math.max(a, t0), b = Math.min(a + SDAY, t1, Date.now()); if (b <= a0) continue;
+    const xa = X(a0), xb = X(b);
+    s += `<rect class="nsens" x="${xa.toFixed(1)}" y="${T}" width="${(xb - xa).toFixed(1)}" height="${(pb - T).toFixed(1)}"/>` + (a >= t0 ? `<line class="nsensl" x1="${xa.toFixed(1)}" x2="${xa.toFixed(1)}" y1="${T}" y2="${pb.toFixed(1)}"/>` : '');
+    if (xb - xa >= 76 * z) snl += `<text x="${(xa + 6 * z).toFixed(1)}" y="${(pb - 6 * z).toFixed(1)}">New sensor</text>`;
+  }
   const span = (t1 - t0) / 36e5; let sp = span > 12 ? 4 : span > 3 ? 2 : 1;
   while ((w - l - r) / (span / sp) < 46 * z) sp *= 2; // glesare tider när etiketterna inte får plats bredvid varandra
   // Klockslag nära vänsterkanten börjar vid axeln i stället för att centreras ovanpå y-axelns "0"
@@ -776,6 +801,7 @@ function drawChart() {
       if (gw >= 84 * z) s += `<text class="gapt" x="${((xa + xb) / 2).toFixed(1)}" y="${(T + 16 * z).toFixed(1)}" text-anchor="middle">No readings</text><text x="${((xa + xb) / 2).toFixed(1)}" y="${(T + 30 * z).toFixed(1)}" text-anchor="middle">${lab}</text>`;
     }
   }
+  s += snl;
   const cx = drawChart.cx || (drawChart.cx = document.createElement('canvas').getContext('2d'));
   cx.font = `600 ${12 * z}px ${getComputedStyle(document.body).fontFamily}`;
   const line = a => 'M' + a.map(p => X(p[0]).toFixed(1) + ',' + Y(mm(p[1])).toFixed(1)).join('L');
@@ -1691,7 +1717,7 @@ $('flow').onsubmit = e => {
 };
 // Efter en behandlad känning: en rad i huvudkortet som följer värdet tills det varit tillbaka över 3.9 i en timme, så att
 // känningen får ett slut ("back above 3.9 after 18 min") i stället för att bara sluta med en anteckning.
-let lastNow = null;
+let lastNow = null, snr = null;
 function renderTreat() {
   applyLow();
   const n = db.notes.find(x => x.kind === LOWT && x.t <= Date.now() + 6e4 && Date.now() - x.t < 3 * 36e5), el = $('treat');

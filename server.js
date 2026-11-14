@@ -98,6 +98,7 @@ async function pollOnce(retry = true) {
     }
     const d = (await call(`/llu/connections/${pid}/graph`)).data, g = d.connection && d.connection.glucoseMeasurement;
     if (g0 !== gen) return; // in- eller utloggad medan anropet pågick
+    seenSensor(d.connection && d.connection.sensor);
     // Inget aktuellt värde (t.ex. sensorbyte eller uppvärmning): spara historiken och behåll senaste kända värdet.
     [...(d.graphData || []), ...(g ? [g] : [])].forEach(x => add(ts(x.FactoryTimestamp), x.ValueInMgPerDl ?? x.Value));
     const t = g && ts(g.FactoryTimestamp);
@@ -112,6 +113,22 @@ async function pollOnce(retry = true) {
     if (e.http === 401) { if (!creds) return logout('Your saved login has expired. Please log in again.'); token = null; if (retry) return pollOnce(false); }
     status = why(e); // nätverksfel o.d.: behåll token, ingen ny inloggning varje minut
   }
+}
+
+// ---------- Sensorn: när den startades ----------
+// LibreLinkUp skickar sensorns starttid (connection.sensor.a, unix-sekunder) och uppvärmningen i minuter (w), men inte
+// hur länge den håller: Plus-sensorn håller 15 dagar (SENSOR_DAYS). Starterna sparas, så att äldre byten kan markeras i grafen.
+const SNF = path.join(DIR, 'sensors.json'), SENSOR_DAYS = 15;
+let sens = { starts: [], warm: 60 };
+if (DEMO) for (let k = 6; k >= 0; k--) sens.starts.push(Math.round(Date.now() - (8.4 + 14 * k) * 864e5));
+else try { const j = JSON.parse(fs.readFileSync(SNF, 'utf8')); sens = { starts: (j.starts || []).filter(Number.isFinite), warm: j.warm > 0 ? j.warm : 60 }; } catch {}
+const saveSens = () => { if (DEMO) return; try { fs.writeFileSync(SNF, JSON.stringify(sens)); } catch (e) { console.error(e.message); } };
+function seenSensor(x) {
+  const a = x && x.a * 1000, w = x && x.w > 0 ? x.w : 60;
+  if (!(a > 0) || a > Date.now() + 864e5) return; // saknas eller orimlig
+  if (sens.starts.includes(a) && sens.warm === w) return;
+  if (!sens.starts.includes(a)) sens.starts = [...sens.starts, a].sort((p, q) => p - q).slice(-60);
+  sens.warm = w; saveSens();
 }
 
 // ---------- Demo ----------
@@ -1073,7 +1090,7 @@ function route(req, res) {
   if (u.pathname === '/icon.svg') return file(res, 'icon.svg', 'image/svg+xml');
   if (u.pathname === '/api/bye') { pageGone(u.searchParams.get('c')); res.writeHead(204); return res.end(); }
   if (u.pathname === '/api/now') pageSeen(u.searchParams.get('c'));
-  if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev() });
+  if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev(), sensor: { starts: sens.starts.slice(-40), warm: sens.warm, life: SENSOR_DAYS } });
   if (u.pathname === '/api/stats') return send(res, stats());
   if (u.pathname === '/api/pi') { piStatus(u.searchParams.has('fresh')).then(p => send(res, { ...p, app: appHealth() })); return; }
   if (u.pathname === '/api/readings') {
