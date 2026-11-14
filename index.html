@@ -50,7 +50,7 @@ kbd{font-family:inherit;font-size:.6875rem;font-weight:600;line-height:1;padding
 .hero.is-vhigh{background:color-mix(in srgb,var(--high-fill) 9%,var(--card));border-color:color-mix(in srgb,var(--high) 45%,var(--bd))}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 svg text.thr{fill:var(--ok);font-weight:650}
-.meta{display:flex;flex-direction:column;gap:6px;min-width:0;text-wrap:pretty}#lastmeal:empty,#tir24:empty{display:none}
+.meta{display:flex;flex-direction:column;gap:6px;min-width:0;text-wrap:pretty}#lastmeal:empty,#tir24:empty{display:none}#lastmeal svg{display:inline-block;vertical-align:-3px;margin-right:6px}
 .tir24{display:flex;align-items:center;gap:10px}.tir24 .tirbar{width:140px;flex:0 1 140px;min-width:60px}
 .cta{display:flex;gap:8px}.cta button{padding:10px 16px}
 /* Lågt läge: huvudknappen fylld i lågfärgen: vit text på #c42b2b i ljust tema (5.6:1), mörk text på #e05050 i mörkt (5.0:1) */
@@ -937,7 +937,11 @@ const ARR = '<span class="ar" aria-hidden="true">→</span><span class="sr">to</
 function renderLog() {
   const ins24 = db.log.filter(m => m.t > Date.now() - 864e5).reduce((a, m) => a + m.ins, 0), lm = db.log[0];
   const ago = lm && Math.max(0, Math.round((Date.now() - lm.t) / 6e4)), agoTxt = ago < 1 ? 'just now' : dur(ago * 6e4) + ' ago';
-  $('lastmeal').innerHTML = lm && ago < 1440 ? `<span class="mut">${isCorr(lm.name) ? 'Last dose' : 'Last meal'}</span> <b>${esc(lm.name)}</b>, <b class="u nw">${units(lm.ins)}</b> <span class="mut nw">· ${agoTxt}</span>` : '';
+  // Senaste måltiden eller dosen: samma symbol som i grafen i stället för orden "Last meal"/"Last dose" (som finns kvar för
+  // skärmläsare). En korrektion: "5 units correction", en måltid: namnet och sedan dosen.
+  const lc = lm && isCorr(lm.name);
+  $('lastmeal').innerHTML = lm && ago < 1440 ? `<span aria-hidden="true">${evIcon(EVK[lc ? 'corr' : 'meal'], 8, 8, 16)}</span><span class="sr">${lc ? 'Last dose' : 'Last meal'}: </span>`
+    + (lc ? `<b class="nw">${units(lm.ins)}</b> <span class="mut">correction</span>` : `<b>${esc(lm.name)}</b> <span class="mut nw">${units(lm.ins)}</span>`) + ` <span class="mut nw">· ${agoTxt}</span>` : '';
   $('ins24').innerHTML = `Mealtime insulin, last 24 h: <b style="color:var(--fg)">${units(ins24)}</b>`;
   const tm = (t, dur) => `<div class="tm"><b>${hhmm(t)}${dur ? '–' + hhmm(t + dur * 6e4) : ''}</b><span>${dshort(t)}</span></div>`;
   // Filtret: namn, typ eller text innehåller det man skrivit ("pizza", "low", "walk")
