@@ -16,7 +16,7 @@
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0 auto;max-width:1080px;padding:0 16px 32px;background:var(--bg);color:var(--fg);font:.875rem/1.5 "Segoe UI Variable Text","Segoe UI",-apple-system,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
 /* Namn kan vara långa ord utan mellanslag (inklistrat, dikterat). De får brytas i stället för att trycka ut sidan. */
-.dh>div,.opt>b,.li>div,.insi>div,#cmp td:first-child{min-width:0;overflow-wrap:anywhere}
+.dh>div,.opt>b,.li>div,#cmp td:first-child{min-width:0;overflow-wrap:anywhere}
 /* Rubrikskala med tydliga steg över brödtexten (14 px): avsnitt 16 px, kort 20 px */
 h1,h2,h3{margin:0;letter-spacing:-.01em}h2{font-size:1.25rem;font-weight:650}h3{font-size:1rem;font-weight:600;color:var(--fg);margin:28px 0 10px}
 .mut{color:var(--mut)}.err{color:var(--low)}
@@ -244,8 +244,9 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 
 /* Insikter och frågor till den lokala AI:n */
 /* Insikterna som en lista med avdelare (en kolumn): inga halvtomma rutor, och raderna läses uppifrån och ned */
-.wkg{display:grid;grid-template-columns:1fr}
 .mlab{min-width:9.5em;text-align:center;font-weight:600}svg rect.mdn{fill:var(--bd)}
+/* Pekarrutan under Insights: syns direkt (webbläsarens egen title-ruta väntar ungefär en sekund) */
+#itip{position:fixed;z-index:30;pointer-events:none;background:var(--tbg);color:var(--tfg);border-radius:8px;padding:5px 9px;font-size:.8125rem;line-height:1.35;max-width:min(320px,calc(100vw - 16px));opacity:0;transition:opacity .06s}#itip.on{opacity:1}
 /* Värmekartan och dygnets delar under Insights */
 .hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:.75rem}svg text.rt.td{font-weight:650}
 .parts{margin-top:0}.parts .tirbar{margin:6px 0 6px}.parts .pspan{opacity:.8;font-variant-numeric:tabular-nums}.pdl{font-size:.8125rem;font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
@@ -254,15 +255,11 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.igrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px;align-items:start}.igrid.ihl{grid-template-columns:minmax(0,1fr)}.ihl .wkg{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:0 32px}.igc{min-width:0}@media(max-width:760px){.igrid{grid-template-columns:minmax(0,1fr)}}
-.ipad{padding:10px 0;border-top:1px solid var(--bd)}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
 @media(max-width:440px){.tabs button{padding-inline:9px}}
 .stack{display:flex;flex-direction:column;gap:4px}
 .lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
-.grp{margin:20px 0 8px;font-size:.75rem;font-weight:600;color:var(--mut);letter-spacing:.02em}@media(max-width:640px){.wkg{grid-template-columns:1fr}}
-.insi{display:grid;grid-template-columns:8px minmax(0,1fr);gap:3px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}
-.insi i{width:8px;height:8px;border-radius:50%}.insi span{grid-column:2;font-size:.75rem;color:var(--mut)}
+.grp{margin:20px 0 8px;font-size:.75rem;font-weight:600;color:var(--mut);letter-spacing:.02em}
 .chat{display:flex;flex-direction:column;gap:10px}.chat:not(:empty){margin-bottom:12px}
 .msg{padding:10px 14px;border-radius:12px;max-width:min(680px,92%)}.msg.u{align-self:flex-end;background:color-mix(in srgb,var(--acc) 14%,transparent)}.msg.a{align-self:flex-start;background:var(--sub)}
 .msg p{margin:0 0 6px}.msg p:last-child{margin:0}.msg ul{margin:4px 0 6px;padding-left:20px}
@@ -369,6 +366,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 </section>
 
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
+  <div id="itip" aria-hidden="true"></div>
   <h2 class="sr">Insights</h2>
   <div class="insbar">
     <div class="seg" id="iseg" role="group" aria-label="Period"><button data-v="week" class="on" aria-pressed="true">This week</button><button data-v="month" aria-pressed="false">Month</button><button data-v="year" aria-pressed="false">Year</button></div>
@@ -1741,10 +1739,8 @@ try { const v = localStorage.getItem('insv'); if (v === 'month' || v === 'year')
 const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
-const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows', tms = n => n === 1 ? 'once' : n + ' times';
+const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
 const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${val}</b><span>${sub}</span></div>`;
-const irow = (color, main, sub) => `<div class="insi"><i style="background:${color}"></i><div>${main}</div>${sub ? `<span>${sub}</span>` : ''}</div>`;
-const igroup = (title, rows) => rows.length ? `<div class="igc"><h3 class="grp">${title}</h3><div class="wkg">${rows.join('')}</div></div>` : '';
 // De fyra nyckeltalen. p = perioden före (eller null), pl = vad den heter ("Week before", "September").
 // Med en jämförelse står den under talet; utan står målet, som under Patterns.
 function ikpis(c, p, pl, lowsCur, lowsPrev) {
@@ -1771,7 +1767,7 @@ function heatSvg(el, q) {
     const y = j * rh, last = j === n - 1;
     for (let i = 0; i < 96;) {
       const b = hzBin(vals[i]); let k = i + 1; while (k < 96 && hzBin(vals[k]) === b) k++;
-      sv += `<rect x="${X(i).toFixed(1)}" y="${y.toFixed(1)}" width="${((k - i) * cw + .4).toFixed(1)}" height="${(rh - gap).toFixed(1)}" style="fill:${b < 0 ? 'var(--sub)' : HZ[b][1]}"><title>${dDate(t)}, ${qTime(i)}–${qTime(k)}: ${b < 0 ? 'no readings' : HZ[b][2] + ' mmol/L'}</title></rect>`;
+      sv += `<rect x="${X(i).toFixed(1)}" y="${y.toFixed(1)}" width="${((k - i) * cw + .4).toFixed(1)}" height="${(rh - gap).toFixed(1)}" style="fill:${b < 0 ? 'var(--sub)' : HZ[b][1]}" data-tip="${dDate(t)}, ${qTime(i)}–${qTime(k)}: ${b < 0 ? 'no readings' : HZ[b][2] + ' mmol/L'}"/>`;
       i = k;
     }
     sv += `<text class="rt${last && qLab(t, true) === 'Today' ? ' td' : ''}" x="${(l - 8 * z).toFixed(1)}" y="${(y + (rh - gap) / 2 + 4 * z).toFixed(1)}" text-anchor="end">${qLab(t, last)}</text>`;
@@ -1790,7 +1786,7 @@ function partsHtml(P, pl, cmp) {
     if (!c) return `<div class="kpi">${head}<b class="mut">–</b><span>Too few readings</span></div>`;
     const p = cmp && P.prev && P.prev[i], d = p ? Math.round(c.tir) - Math.round(p.tir) : 0;
     const arrow = Math.abs(d) >= 2 ? ` <span class="pdl ${d > 0 ? 'up' : 'dn'}" aria-hidden="true">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}</span>` : '';
-    return `<div class="kpi" title="${Math.round(c.low)} % under 3.9, ${Math.round(c.high)} % over 10">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)} %${arrow}</b>${tirbar(c)}`
+    return `<div class="kpi" data-tip="${Math.round(c.low)} % under 3.9, ${Math.round(c.high)} % over 10">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)} %${arrow}</b>${tirbar(c)}`
       + `<span>${p ? `${pl}: ${Math.round(p.tir)} %` : `${Math.round(c.low)} % under 3.9 · ${Math.round(c.high)} % over 10`}</span></div>`;
   }).join('') + '</div>';
 }
@@ -1820,7 +1816,7 @@ function renderWeek() {
 
 // Året: en ruta per dag (kolumn = vecka, måndag överst), färgad efter tid i mål. Samma gräns som dagsstaplarna: grönt från
 // 70 % (mörkare ju mer), ockra under, grått utan tillräckligt med värden. Från veckan med första värdet, högst ett år bakåt.
-// Rutorna har en <title> (pekaren), och sammanfattningen står i aria-label och under rutnätet.
+// Rutorna har en data-tip (pekaren, se #itip), och sammanfattningen står i aria-label och under rutnätet.
 // En dag med en känning får en röd prick i hörnet. Under rutnätet står en stapel per vecka i samma kolumn: rött nerifrån
 // för tiden under 3.9, grönt i mål och ockra uppifrån för tiden över 10 (medel av veckans dagar med värden), och målet 70 %.
 const yrFill = v => v == null ? 'var(--sub)' : v < 70 ? 'color-mix(in srgb,var(--high-fill) 55%,var(--card))' : v < 80 ? 'color-mix(in srgb,var(--ok) 38%,var(--card))' : v < 90 ? 'color-mix(in srgb,var(--ok) 68%,var(--card))' : 'var(--ok)';
@@ -1838,7 +1834,7 @@ function renderYear() {
     const d = new Date(t), x = l + Math.floor(i / 7) * (c + g), y = top + (i % 7) * (c + g);
     if (i % 7 === 0 && d.getMonth() !== lastM && (d.getDate() <= 7 || i === 0)) { lastM = d.getMonth(); sv += `<text x="${x.toFixed(1)}" y="${(top - 6 * z).toFixed(1)}">${d.toLocaleDateString('en-GB', { month: 'short' })}</text>`; }
     const td = d.toDateString() === today;
-    sv += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${c}" height="${c}" rx="${Math.min(3, c / 4)}" style="fill:${yrFill(v)}"${td ? ' stroke="var(--fg)" stroke-width="1.5"' : ''}><title>${dDate(t)}: ${v == null ? (td ? 'today, not enough readings yet' : 'not enough readings') : `${v} % in range${lows ? ', ' + lowsN(lows) : ''}`}</title></rect>`;
+    sv += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${c}" height="${c}" rx="${Math.min(3, c / 4)}" style="fill:${yrFill(v)}"${td ? ' stroke="var(--fg)" stroke-width="1.5"' : ''} data-tip="${dDate(t)}: ${v == null ? (td ? 'today, not enough readings yet' : 'not enough readings') : `${v} % in range${lows ? ', ' + lowsN(lows) : ''}`}"/>`;
     if (lows) sv += `<circle cx="${(x + c * .78).toFixed(1)}" cy="${(y + c * .22).toFixed(1)}" r="${Math.max(2.2, c * .17).toFixed(1)}" style="fill:var(--low);stroke:var(--card)" stroke-width="1.2" pointer-events="none"/>`;
   });
   // Veckostaplarna
@@ -1848,7 +1844,7 @@ function renderYear() {
     if (!had.length) { sv += `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--sub)"/>`; continue; }
     const lo = had.reduce((a, d) => a + d[3], 0) / had.length, hi = had.reduce((a, d) => a + d[4], 0) / had.length, nl = wd.reduce((a, d) => a + d[2], 0);
     const hl = lo > 0 ? Math.max(1.5, lo / 100 * BH) : 0, hh = hi / 100 * BH;
-    sv += `<g><title>Week of ${dDate(wd[0][0])}: ${Math.round(100 - lo - hi)} % in range, ${Math.round(lo)} % under 3.9, ${Math.round(hi)} % over 10, ${lowsN(nl)}</title>`
+    sv += `<g data-tip="Week of ${dDate(wd[0][0])}: ${Math.round(100 - lo - hi)} % in range, ${Math.round(lo)} % under 3.9, ${Math.round(hi)} % over 10, ${lowsN(nl)}">`
       + `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--ok)"/><rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${hh.toFixed(1)}" style="fill:var(--high-fill)"/><rect x="${x}" y="${(BT + BH - hl).toFixed(1)}" width="${c}" height="${hl.toFixed(1)}" style="fill:var(--low)"/></g>`;
   }
   sv += `<line x1="${l}" x2="${W - g}" y1="${BY(70).toFixed(1)}" y2="${BY(70).toFixed(1)}" style="stroke:var(--fg)" stroke-width="1.2" stroke-dasharray="4 3" opacity=".75" pointer-events="none"/><text x="${l - 6 * z}" y="${(BY(70) + 4 * z).toFixed(1)}" text-anchor="end">70 %</text>`;
@@ -1887,15 +1883,19 @@ function renderMonth() {
   if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">${!L.length ? 'Your month in review shows up here once there is a day of readings.' : `Too few readings in ${monthName(x.m)} to sum up${c ? ` (${c.cov.toFixed(0)} % of the month has readings)` : ''}.`}</div>`; return; }
   const p = x.prev, pn = p && monthName(p.m).split(' ')[0];
   const bars = partsHtml(x.parts, pn, !!p) + qViews(el, x.q);
-  const H = moFacts(x).filter(f => f.k !== 'top').map(f => irow(f.k === 'nolow' ? 'var(--note)' : 'var(--ok)', `${f.lab}: <b>${esc(f.val)}</b>`, esc(f.sub))), M = [];
-  if (!H.length) H.push(`<p class="mut fine m0 ipad">Highlights show up once a few days have readings most of the day.</p>`);
-  if (x.top.length) M.push(irow('var(--acc)', `Most logged: <b>${esc(x.top[0].name)}</b>, ${tms(x.top[0].n)}`, (x.top.length > 1 ? 'Then ' + x.top.slice(1).map(m => `${esc(m.name)} ${m.n}`).join(', ') + '. ' : '') + `${x.meals} meals logged in all`));
-  if (x.steady) M.push(irow('var(--ok)', `Lowest peaks after eating: <b>${esc(x.steady.name)}</b>`, `Peak ${f1(mm(x.steady.peak))} mmol/L on average, ${x.steady.n} times that started in range`));
-  const ex = x.notes.Exercise; if (ex) M.push(irow('var(--note)', `Exercise logged <b>${tms(ex)}</b>`, x.exMin ? `${dur(x.exMin * 6e4)} with a length written down` : ''));
-  if (!M.length) M.push(`<p class="mut fine m0 ipad">No meals logged this month.</p>`);
+  // Bara nyckeltalen, dygnets delar och värmekartan; Highlights och Meals and activity togs bort 2026-11-14 (finns kvar i bilden)
   el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
-    + `<div class="igrid">${igroup('Highlights', H)}${igroup('Meals and activity', M)}</div>`
     + `<div class="ifoot"><span>${x.n.toLocaleString('en-GB')} readings · sensor active ${c.cov.toFixed(0)} %${c.cov < 70 ? ' (treat with caution)' : ''} · Est. HbA1c ${gmi(c.avg)} mmol/mol (GMI, from the average)</span><button id="mimg">Save as image</button></div>`;
+}
+// Pekarrutan: texten från närmaste data-tip, placerad vid pekaren och inom fönstret. Följer med när pekaren rör sig.
+{ const tip = $('itip'), hide = () => tip.classList.remove('on');
+  $('tab-ins').addEventListener('pointermove', e => {
+    const el = e.pointerType === 'touch' ? null : e.target.closest('[data-tip]'); if (!el) return hide();
+    if (tip.textContent !== el.dataset.tip) tip.textContent = el.dataset.tip;
+    const w = tip.offsetWidth, h = tip.offsetHeight, x = Math.min(e.clientX + 14, innerWidth - w - 8), y = e.clientY + 18 + h > innerHeight - 8 ? e.clientY - h - 10 : e.clientY + 18;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = y + 'px'; tip.classList.add('on');
+  });
+  $('tab-ins').addEventListener('pointerleave', hide); addEventListener('scroll', hide, { passive: true });
 }
 $('mprev').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i > 0) loadMonth(L[i - 1]); };
 $('mnext').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i >= 0 && i < L.length - 1) loadMonth(L[i + 1]); };
