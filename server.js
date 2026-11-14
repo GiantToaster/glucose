@@ -280,6 +280,17 @@ function quarters(from, to) {
   }
   return out;
 }
+// Tid i mål per del av dygnet (natt 00–06, förmiddag 06–12, eftermiddag 12–18, kväll 18–24) i [from, to), för "Parts of
+// the day" under Insights. Samma vikter som period(): varje värde räknas fram till nästa, högst 15 min. En del blir null
+// när under en femtedel av dess tid har värden.
+function dayParts(from, to) {
+  const a = range(from, to), acc = [0, 1, 2, 3].map(() => ({ w: 0, lo: 0, hi: 0 })), span = (to - from) / 4;
+  for (let i = 0; i < a.length; i++) {
+    const [t, v] = a[i], next = a[i + 1] ? a[i + 1][0] : to, d = Math.min(next - t, 15 * 6e4), x = acc[Math.floor(new Date(t).getHours() / 6)];
+    x.w += d; if (v < 70) x.lo += d; else if (v > 180) x.hi += d;
+  }
+  return acc.map(x => x.w >= span * .2 ? { tir: (x.w - x.lo - x.hi) / x.w * 100, low: x.lo / x.w * 100, high: x.hi / x.w * 100 } : null);
+}
 // Senaste 7 dygnen mot de 7 före, plus hur varje måltid gick (bara de som började i mål, som i appens jämförelse)
 function weekly() {
   const now = Date.now(), W = 7 * 864e5, a = sorted(now - 2 * W, now), db = readDb(), part = (f, t) => a.filter(r => r[0] >= f && r[0] < t);
@@ -1154,7 +1165,10 @@ function route(req, res) {
     tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
   });
   if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false });
-  if (u.pathname === '/api/weekly') { const w = weekly(); return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], Date.now()) : [] }); }
+  if (u.pathname === '/api/weekly') {
+    const w = weekly(), n = Date.now(), W = 7 * 864e5;
+    return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], n) : [], parts: { cur: dayParts(n - W, n), prev: dayParts(n - 2 * W, n - W) } });
+  }
   if (u.pathname === '/api/year') return send(res, yearly());
   // Kurvan efter en måltid (spökkurvorna i detaljvyn): [minuter efter måltiden, mg/dL] från 4 min före till 3 h efter,
   // högst ett värde var 3:e minut (luckor och kvartsvärden från LibreLinkUp blir kvar som de är). ?ids=a,b,c (högst 20).
@@ -1166,7 +1180,7 @@ function route(req, res) {
   if (u.pathname === '/api/month') {
     const list = monthList(), q = u.searchParams.get('m'), k = list.includes(q) ? q : defaultMonth(list);
     const x = k && monthly(k);
-    return send(res, { months: list, demo: !!DEMO, ...x, ...(x && { q: quarters(x.from, x.to) }) });
+    return send(res, { months: list, demo: !!DEMO, ...x, ...(x && { q: quarters(x.from, x.to), parts: { cur: dayParts(x.from, x.to), prev: dayParts(mstart(mkey(x.from - 1)), x.from) } }) });
   }
   // Exakt det som skickas till AI:n, så att man kan se vad den svarar utifrån
   if (u.pathname === '/api/ai/context') { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(ASK + aiContext()); }
