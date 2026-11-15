@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Blood glucose</title>
 <link rel="icon" href="/icon.svg">
-<script>try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
+<script>try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('btns') === 'hide') document.documentElement.dataset.btns = 'hide'; } catch {}</script>
 <style>
 /* Statusfärgerna bär text (glukosvärden, tabellsiffror, etiketter) och klarar 4.5:1 mot --card och --sub i båda teman.
    --high-fill är den klara gula för ytor utan text (staplar). --field är kanten på inmatningsfält (minst 3:1). */
@@ -38,6 +38,16 @@ kbd{font-family:inherit;font-size:.6875rem;font-weight:600;line-height:1;padding
 .pill{display:inline-flex;align-items:center;gap:7px;font-size:.75rem;color:var(--mut);padding:4px 10px;border-radius:999px;border:1px solid var(--bd);max-width:min(62vw,460px)}.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--mut)}
 .pill.ok i{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}.pill.stale{color:var(--fg);border-color:color-mix(in srgb,var(--high-fill) 60%,transparent);background:color-mix(in srgb,var(--high-fill) 16%,transparent)}.pill.stale i{background:var(--high-fill)}.pill.err{color:var(--low);border-color:color-mix(in srgb,var(--low) 40%,transparent)}.pill.err i{background:var(--low)}
 .hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px 28px;align-items:center;padding:20px 24px}
+/* Knapparna Log meal, Note och Low treatment kan döljas under Settings (data-btns=hide på <html>): då loggar man bara
+   genom att skriva. Under en känning visas behandlingsknappen ändå, och fritextrutan finns kvar även på låga skärmar. */
+:root[data-btns=hide] .hero .cta>button:not(.lowbtn):not(.lowsec){display:none}:root[data-btns=hide] .hero:not(.is-low) .cta{display:none}
+@media(max-height:560px){:root[data-btns=hide] .hero:not(.is-low) .ql{display:flex}}
+/* Favoriter: de måltider man loggat mest, i en liten lista under fältet. Ett val fyller i fältet; man ändrar dosen och loggar. */
+.ql{position:relative}.ql #qfav{display:inline-flex;align-items:center;gap:6px;padding-inline:12px}.ql #qfav svg{flex:none;color:var(--mut)}.ql #qfav[aria-expanded=true]{border-color:var(--acc)}
+.favl{position:absolute;right:0;top:100%;z-index:12;margin-top:4px;width:min(360px,100%);padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:2px}
+.favl button{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:8px;font-weight:600}.favl button:hover,.favl button:focus-visible{background:var(--sub)}
+.favl button span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.favl button span:last-child{flex:none;color:var(--mut);font-weight:500;font-size:.8125rem}
+@media(max-width:480px){.ql #qfav span{display:none}}
 .ql{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 8px}.ql label{flex-basis:100%;font-size:.75rem;color:var(--mut);font-weight:500}.ql input{flex:1;min-width:0}.ql button{padding:8px 16px}
 .now{display:grid;grid-template-columns:auto 1fr;justify-content:start;align-items:baseline;column-gap:4px}#cur{font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.03em}#arrow{font-size:2.5rem;font-weight:600;line-height:1;color:var(--mut)}
 /* Gammalt värde (över 15 min): siffran dämpas, pilen tas bort och lägesordet byts mot åldern, så att det inte ser aktuellt ut */
@@ -320,7 +330,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </div>
   <div class="cta"><button class="p" id="openMeal" aria-keyshortcuts="L">Log meal<kbd aria-hidden="true">L</kbd></button><button id="openNote" aria-keyshortcuts="N">Note<kbd aria-hidden="true">N</kbd></button><button class="quiet" id="openLow" aria-keyshortcuts="T">Low treatment<kbd aria-hidden="true">T</kbd></button></div>
   <p class="lowtip" id="lowtip" hidden>Treat it first. You can log it afterwards.</p>
-  <form class="ql" id="ql"><label for="qlt">Or log it in your own words</label><input id="qlt" aria-describedby="qlerr" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button id="qlb">Log<kbd aria-hidden="true">/</kbd></button>
+  <form class="ql" id="ql"><label for="qlt" id="qll">Or log it in your own words</label><input id="qlt" aria-describedby="qlerr" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-haspopup="true" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><button id="qlb">Log<kbd aria-hidden="true">/</kbd></button>
     <p class="qlerr" id="qlerr" role="alert" hidden></p>
 </form>
 </section>
@@ -461,6 +471,9 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <span class="sm" id="evsl">Meals and notes in the chart</span>
       <div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="lane" aria-pressed="true">One row</button><button data-ev="tracks" aria-pressed="false">Food, insulin, other</button></div>
       <span class="mut fine">One row keeps the chart short. Food, insulin, other puts each on its own row, so all insulin of the day is in one line.</span>
+      <span class="sm" id="btnsl">Log meal, Note and Low treatment buttons</span>
+      <div class="seg" id="btns" role="group" aria-labelledby="btnsl"><button data-b="show" aria-pressed="true">Show</button><button data-b="hide" aria-pressed="false">Hide</button></div>
+      <span class="mut fine">Hide them to log only by writing what you did. The low treatment button still shows while you are low, and the keys L, N and T keep working.</span>
     </div>
     <div class="sec"><h3>Your insulin</h3>
       <div class="grid2">
@@ -705,7 +718,7 @@ async function refresh() {
     const d = s['24h'];
     $('tir24').innerHTML = !d ? '' : d.cov < 50 ? `<span class="mut">Readings cover <b style="color:var(--fg)">${d.cov.toFixed(0)} %</b> of the last 24 h, too few for time in range</span>`
       : `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>`;
-    drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); mealWarn();
+    drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); mealWarn(); syncFav();
     if (!$('tab-ins').hidden && iview === 'week') loadWeek();
   } catch { setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; }
 }
@@ -979,7 +992,7 @@ function renderLog() {
   const more = all.length > logLimit ? `<div class="more"><button id="more">Show older</button><span class="mut fine">${all.length - logLimit} more</span></div>` : '';
   renderTreat();
   setHTML($('log'), rows.join('') + more || (q ? `<div class="empty">Nothing matches “${esc($('lq').value.trim())}”. <button id="lqclear">Clear filter</button></div>`
-    : '<div class="empty">Nothing logged yet. Use <b>Log meal</b> at the top to log your first meal.</div>'));
+    : `<div class="empty">Nothing logged yet. ${btnsHidden() ? 'Write what you ate in the field at the top, e.g. <b>pizza 7.5 units</b>.' : 'Use <b>Log meal</b> at the top to log your first meal.'}</div>`));
 }
 
 // Tidigare tillfällen med en måltid, nyast först. Bara de som började i målområdet och har 3 h mätvärden efteråt,
@@ -2164,6 +2177,49 @@ function setTheme(t) {
 }
 setTheme(document.documentElement.dataset.theme || '');
 $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setTheme(b.dataset.th); };
+// Knapparna Log meal, Note och Low treatment: visa eller dölj (sparat i webbläsaren, per enhet). Dolda: man loggar genom
+// att skriva, och rubriken över fältet är "Log it in your own words" i stället för "Or log it …".
+function setBtns(v) {
+  const hide = v === 'hide';
+  if (hide) document.documentElement.dataset.btns = 'hide'; else delete document.documentElement.dataset.btns;
+  try { if (hide) localStorage.setItem('btns', 'hide'); else localStorage.removeItem('btns'); } catch {}
+  $('btns').querySelectorAll('button').forEach(b => { const on = b.dataset.b === (hide ? 'hide' : 'show'); b.setAttribute('aria-pressed', on); b.classList.toggle('on', on); });
+  $('qll').textContent = hide ? 'Log it in your own words' : 'Or log it in your own words';
+}
+const btnsHidden = () => document.documentElement.dataset.btns === 'hide';
+setBtns(btnsHidden() ? 'hide' : 'show');
+$('btns').onclick = e => { const b = e.target.closest('button'); if (b) { setBtns(b.dataset.b); renderLog(); } };
+// Favoriter bredvid fritextfältet: de sex måltider man loggat flest gånger de senaste 30 dagarna, sedan sparade måltider
+// (samma urval som knapparna i Telegram). Ett val fyller i fältet med namnet och den egna dosen (den sparade, annars
+// den senast loggade) och markerar talet, så att man kan ändra det och trycka Log. Inget loggas av själva valet.
+function favMeals() {
+  const since = Date.now() - 30 * 864e5, c = new Map();
+  for (const m of db.log) if (m.t >= since && !isCorr(m.name)) { const name = cleanName(m.name), k = name.toLowerCase(), x = c.get(k) || { name, n: 0, ins: m.ins }; x.n++; c.set(k, x); }
+  const out = [...c.values()].sort((a, b) => b.n - a.n);
+  for (const m of db.meals) if (out.length < 6 && !out.some(x => x.name.toLowerCase() === m.name.toLowerCase())) out.push({ name: m.name, ins: m.ins });
+  return out.slice(0, 6).map(x => { const sv = libMeal(x.name); return { name: x.name, ins: sv ? sv.ins : x.ins }; });
+}
+const favOpen = on => { $('qfavl').hidden = !on; $('qfav').setAttribute('aria-expanded', on); };
+function syncFav() { $('qfav').hidden = !favMeals().length; if ($('qfav').hidden) favOpen(false); }
+$('qfav').onclick = () => {
+  if (!$('qfavl').hidden) return favOpen(false);
+  $('qfavl').innerHTML = favMeals().map((f, i) => `<button type="button" data-i="${i}"><span>${esc(f.name)}</span><span>${f.ins > 0 ? units(f.ins) : ''}</span></button>`).join('');
+  favOpen(true); $('qfavl').querySelector('button').focus();
+};
+$('qfavl').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const f = favMeals()[+b.dataset.i]; if (!f) return;
+  const t = $('qlt'), d = f.ins > 0 ? String(f.ins) : '';
+  t.value = d ? `${f.name} ${d} units` : f.name + ' '; favOpen(false); t.focus();
+  if (d) t.setSelectionRange(f.name.length + 1, f.name.length + 1 + d.length); // dosen markerad: skriv en annan direkt
+  t.dispatchEvent(new Event('input'));
+};
+$('qfavl').addEventListener('keydown', e => {
+  const bs = [...$('qfavl').querySelectorAll('button')], i = bs.indexOf(document.activeElement);
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); favOpen(false); $('qfav').focus(); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); bs[(i + (e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus(); }
+});
+document.addEventListener('click', e => { if (!$('qfavl').hidden && !e.target.closest('#qfav,#qfavl')) favOpen(false); });
 // Hur måltider och anteckningar visas under grafen: "lane" = ett spår, "tracks" = mat, insulin och övrigt på var sin rad
 function setEvStyle(v) {
   evStyle = v === 'tracks' ? 'tracks' : 'lane'; try { localStorage.setItem('evstyle', evStyle); } catch {}
