@@ -216,7 +216,21 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 #pibtn{position:relative}#pibtn[data-lvl=warn]::after,#pibtn[data-lvl=crit]::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--sys);box-shadow:0 0 0 2px var(--bg)}#pibtn[data-lvl=crit]::after{background:var(--low)}
 .dl{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}.dhd{display:flex;justify-content:space-between;align-items:center}.dhd h2{font-size:1.375rem}
 .dft{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}.dft button{padding:9px 16px}
-.sec{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:.9375rem}
+.sec{display:flex;flex-direction:column;gap:14px;padding-top:18px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:1rem;font-weight:650}
+/* Settings: en rad per inställning. Namnet (sname) och förklaringen (sd) till vänster, reglaget till höger. På smala skärmar
+   hamnar ett brett reglage under texten; en strömbrytare eller en knapp (sw) står kvar till höger. */
+.set{display:flex;align-items:center;justify-content:space-between;gap:8px 20px}.stx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.sname{font-size:.875rem;font-weight:600;color:var(--fg);overflow-wrap:anywhere}label.sname{cursor:pointer}.sd{font-size:.8125rem;line-height:1.45;color:var(--mut);text-wrap:pretty}
+.set>.seg,.set>button,.set>div:not(.stx){flex:none}
+@media(max-width:520px){.set:not(.sw){flex-direction:column;align-items:flex-start}}
+/* Strömbrytare: en vanlig kryssruta (role=switch) ritad som reglage. På = accentfärgen och knoppen till höger. */
+.swi{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:42px;height:24px;margin:0;border-radius:999px;border:1px solid var(--field);background:var(--sub);cursor:pointer;transition:background .15s,border-color .15s}
+.swi::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--mut);transition:transform .15s,background .15s}
+.swi:checked{background:var(--acc);border-color:var(--acc)}.swi:checked::after{transform:translateX(18px);background:var(--onacc)}
+.swi:disabled{opacity:.5;cursor:default}
+@media(prefers-reduced-motion:reduce){.swi,.swi::after{transition:none}}
+/* Rubriken och stängknappen ligger kvar överst när man scrollar i dialogen */
+#dset .dhd{position:sticky;top:0;z-index:2;margin:-18px -20px 0;padding:18px 20px 12px;background:var(--card);border-radius:16px 16px 0 0}
 /* Spökkurvorna i måltidens detaljvy */
 .ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:1rem;font-weight:600;color:var(--fg)}
 .ghc svg{display:block;max-width:100%;height:auto}.ghc.mut{padding:24px 0}
@@ -465,45 +479,45 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <dialog id="dset" aria-labelledby="dseth">
   <div class="dl">
     <div class="dhd"><h2 id="dseth" tabindex="-1">Settings</h2><button class="icon" data-close aria-label="Close">✕</button></div>
+    <!-- En rad per inställning: namnet och en kort förklaring till vänster, reglaget till höger. Av/på är alltid en strömbrytare. -->
     <div class="sec"><h3>Appearance</h3>
-      <div class="seg" id="theme" role="group" aria-label="Theme"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div>
-      <span class="mut fine">Dark is easier on the eyes at night. System follows your computer or phone.</span>
-      <span class="sm" id="evsl">Meals and notes in the chart</span>
-      <div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="lane" aria-pressed="true">One row</button><button data-ev="tracks" aria-pressed="false">Food, insulin, other</button></div>
-      <span class="mut fine">One row keeps the chart short. Food, insulin, other puts each on its own row, so all insulin of the day is in one line.</span>
-      <span class="sm" id="btnsl">Log meal, Note and Low treatment buttons</span>
-      <div class="seg" id="btns" role="group" aria-labelledby="btnsl"><button data-b="show" aria-pressed="true">Show</button><button data-b="hide" aria-pressed="false">Hide</button></div>
-      <span class="mut fine">Hide them to log only by writing what you did. The low treatment button still shows while you are low, and the keys L, N and T keep working.</span>
+      <div class="set"><div class="stx"><span class="sname" id="thl">Theme</span><span class="sd">System follows your computer or phone.</span></div>
+        <div class="seg" id="theme" role="group" aria-labelledby="thl"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div></div>
+      <div class="set"><div class="stx"><span class="sname" id="evsl">Meals and notes in the chart</span><span class="sd">One row keeps the chart short. Separate rows show all insulin of the day in one line.</span></div>
+        <div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="lane" aria-pressed="true">One row</button><button data-ev="tracks" aria-pressed="false">Food, insulin, other</button></div></div>
+      <div class="set sw"><div class="stx"><label class="sname" for="btnsw">Log meal, Note and Low treatment buttons</label><span class="sd" id="btnsq">Off: you log by writing what you did. The low treatment button still shows during a low, and the keys L, N and T keep working.</span></div>
+        <input class="swi" id="btnsw" type="checkbox" role="switch" aria-describedby="btnsq" checked></div>
     </div>
     <div class="sec"><h3>Your insulin</h3>
       <div class="grid2">
         <div class="fld"><label for="ifast">Fast-acting (mealtime)</label><select id="ifast"></select><input id="ifasto" placeholder="Name of your insulin" hidden></div>
         <div class="fld"><label for="ilong">Long-acting (basal)</label><select id="ilong"></select><input id="ilongo" placeholder="Name of your insulin" hidden></div>
       </div>
-      <span class="mut fine">The mealtime insulin is shown on each meal you log. Both are given to the local AI, so its answers know what you take.</span>
+      <span class="sd">The mealtime insulin is shown on each meal you log. Both are given to the local AI, so its answers know what you take.</span>
     </div>
     <div class="sec"><h3>History</h3>
-      <div><button id="imbtn">Import from LibreView…</button><input id="imfile" type="file" accept=".csv,text/csv" hidden></div>
-      <span class="mut fine" id="imsg">Fills in older readings from a LibreView CSV export. Safe to run more than once.</span>
+      <div class="set"><div class="stx"><span class="sname">Older readings</span><span class="sd" id="imsg" aria-live="polite">Fills in older readings from a LibreView CSV export. Safe to run more than once.</span></div>
+        <div><button id="imbtn" aria-describedby="imsg">Import from LibreView…</button><input id="imfile" type="file" accept=".csv,text/csv" hidden></div></div>
     </div>
     <div class="sec" id="autosec" hidden><h3>Startup</h3>
-      <label class="chk"><input id="auto" type="checkbox"> Start the dashboard when I log in to Windows</label>
-      <span class="mut fine">It starts minimized in the taskbar, so Telegram messages are read as soon as the computer is on. Close that window to stop it. The local AI (Ollama) is started too when needed.</span>
+      <div class="set sw"><div class="stx"><label class="sname" for="auto">Start the dashboard when I log in to Windows</label><span class="sd" id="autoq">It starts minimized in the taskbar, so Telegram messages are read as soon as the computer is on. Close that window to stop it. The local AI (Ollama) is started too when needed.</span></div>
+        <input class="swi" id="auto" type="checkbox" role="switch" aria-describedby="autoq"></div>
     </div>
     <div class="sec"><h3>Telegram</h3>
-      <span class="mut sm" id="tgtxt"></span>
+      <span class="sd" id="tgtxt"></span>
       <form class="tw" id="tgset" hidden><input id="tgtok" type="password" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token"><button id="tgsave">Connect</button></form>
-      <div class="ph m0" id="tgon" hidden><span class="mut fine" id="tgwho"></span><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
-      <div class="stack" id="tgstw" hidden><label class="chk"><input id="tgst" type="checkbox" aria-describedby="tgstq"> Tell me when readings stop coming in</label>
-        <span class="mut fine" id="tgstq">One message when there has been no new reading for 30 minutes, and one when they are back. Only times, never readings. Silent between 23:00 and 07:00. Turn it off for a sensor change if you like.</span></div>
-      <div class="stack" id="tgrepw" hidden><label class="chk"><input id="tgrep" type="checkbox" aria-describedby="tgrepq"> Send me a weekly and monthly summary</label>
-        <span class="mut fine" id="tgrepq">Sundays at 19:00 and on the 1st of each month at 09:00: time in range, lows and average, never individual readings. It goes through Telegram. You can also ask for one any time with /week or /month.</span></div>
+      <div class="set sw" id="tgon" hidden><div class="stx"><span class="sname" id="tgwho"></span></div><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
+      <div class="set sw" id="tgstw" hidden><div class="stx"><label class="sname" for="tgst">Tell me when readings stop coming in</label><span class="sd" id="tgstq">One message after 30 minutes without a new reading, and one when they are back. Only times, never readings. Silent between 23:00 and 07:00.</span></div>
+        <input class="swi" id="tgst" type="checkbox" role="switch" aria-describedby="tgstq"></div>
+      <div class="set sw" id="tgrepw" hidden><div class="stx"><label class="sname" for="tgrep">Send me a weekly and monthly summary</label><span class="sd" id="tgrepq">Sundays at 19:00 and the 1st of each month at 09:00: time in range, lows and average, never individual readings. Ask for one any time with /week or /month.</span></div>
+        <input class="swi" id="tgrep" type="checkbox" role="switch" aria-describedby="tgrepq"></div>
       <span class="fine warnq" id="tgoffq" aria-live="polite"></span>
     </div>
     <!-- Hopfällt: det är en lista att slå upp i, inte något man ändrar ofta. Läget (On/Off) syns ändå på raden. -->
     <div class="sec" id="keysec"><details id="keyd"><summary><h3>Keyboard shortcuts</h3><span class="mut fine" id="keyst">On</span></summary>
       <div class="keyb">
-        <label class="chk"><input id="keys" type="checkbox" checked> Use single-key shortcuts</label>
+        <div class="set sw"><div class="stx"><label class="sname" for="keys">Use single-key shortcuts</label><span class="sd" id="keysq">Turn them off if you use speech input or they get in the way. They never act while you type in a field.</span></div>
+          <input class="swi" id="keys" type="checkbox" role="switch" aria-describedby="keysq" checked></div>
         <dl class="kl">
           <dt><kbd>L</kbd> <kbd>N</kbd> <kbd>T</kbd></dt><dd>Log a meal, add a note, log a low treatment</dd>
           <dt><kbd>/</kbd> <kbd>F</kbd></dt><dd>Write in your own words, filter Activity</dd>
@@ -512,11 +526,10 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
           <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Read the chart (when it has focus; Shift = 30 min)</dd>
           <dt><kbd>Esc</kbd></dt><dd>Close details, dialogs and messages</dd>
         </dl>
-        <span class="mut fine">Turn them off if you use speech input or they get in the way. They never act while you type in a field.</span>
       </div>
     </details></div>
     <div class="sec" id="acct" hidden><h3>Account</h3>
-      <div class="ph m0"><span id="acctu"></span><button id="logout" aria-describedby="logoutq">Log out</button></div>
+      <div class="set sw"><div class="stx"><span class="sname" id="acctu"></span></div><button id="logout" aria-describedby="logoutq">Log out</button></div>
       <span class="fine warnq" id="logoutq" aria-live="polite"></span>
     </div>
   </div>
@@ -2183,12 +2196,12 @@ function setBtns(v) {
   const hide = v === 'hide';
   if (hide) document.documentElement.dataset.btns = 'hide'; else delete document.documentElement.dataset.btns;
   try { if (hide) localStorage.setItem('btns', 'hide'); else localStorage.removeItem('btns'); } catch {}
-  $('btns').querySelectorAll('button').forEach(b => { const on = b.dataset.b === (hide ? 'hide' : 'show'); b.setAttribute('aria-pressed', on); b.classList.toggle('on', on); });
+  $('btnsw').checked = !hide;
   $('qll').textContent = hide ? 'Log it in your own words' : 'Or log it in your own words';
 }
 const btnsHidden = () => document.documentElement.dataset.btns === 'hide';
 setBtns(btnsHidden() ? 'hide' : 'show');
-$('btns').onclick = e => { const b = e.target.closest('button'); if (b) { setBtns(b.dataset.b); renderLog(); } };
+$('btnsw').onchange = e => { setBtns(e.target.checked ? 'show' : 'hide'); renderLog(); };
 // Favoriter bredvid fritextfältet: de sex måltider man loggat flest gånger de senaste 30 dagarna, sedan sparade måltider
 // (samma urval som knapparna i Telegram). Ett val fyller i fältet med namnet och den egna dosen (den sparade, annars
 // den senast loggade) och markerar talet, så att man kan ändra det och trycka Log. Inget loggas av själva valet.
