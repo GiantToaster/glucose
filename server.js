@@ -494,26 +494,48 @@ function aiContext() {
     'All glucose values are mmol/L. Target range 3.9-10.0. Goals: in range over 70 %, below 3.9 under 4 %, above 10 under 25 %. A "low" is at least 15 minutes below 3.9.');
   const s = db.settings || {}; if (s.fast || s.long) L.push(`Insulin: mealtime ${s.fast || 'not set'}, basal ${s.long || 'not set'}.`);
   const w = weekly();
+  // Dagen med veckodag, och "today"/"yesterday": modellen tog annars ibland fel dag på "igår"
+  const day0 = new Date(now).setHours(0, 0, 0, 0), dTag = t => { const k = Math.round((day0 - new Date(t).setHours(0, 0, 0, 0)) / 864e5); return `${ymd(t)} ${new Date(t).toLocaleDateString('en-GB', { weekday: 'short' })}${k === 0 ? ' (today)' : k === 1 ? ' (yesterday)' : ''}`; };
   const span = (a, b) => `${ymd(a)} ${hm(a)} to ${ymd(b)} ${hm(b)}`; // skrivs ut så att modellen inte gissar datumen själv
-  L.push('', 'SUMMARY', `Last 7 days (${span(now - 7 * 864e5, now)}): ${w.cur ? sum(w.cur) : 'no readings'}`,
-    `The 7 days before (${span(now - 14 * 864e5, now - 7 * 864e5)}): ${w.prev ? sum(w.prev) : 'no readings'}`);
+  // Insulinet summerat här: modellen räknade fel när den fick lägga ihop dagarna själv
+  const insIn = (a, b) => { const x = db.log.filter(m => m.t >= a && m.t < b), u = Math.round(x.reduce((y, m) => y + (+m.ins || 0), 0) * 10) / 10; return `mealtime insulin ${u} units in ${x.length} doses`; };
+  L.push('', 'SUMMARY', `Last 7 days (${span(now - 7 * 864e5, now)}): ${w.cur ? sum(w.cur) : 'no readings'}, ${insIn(now - 7 * 864e5, now)}`,
+    `The 7 days before (${span(now - 14 * 864e5, now - 7 * 864e5)}): ${w.prev ? sum(w.prev) : 'no readings'}, ${insIn(now - 14 * 864e5, now - 7 * 864e5)}`);
   L.push('', 'DAYS (newest first; lows listed as start time, lowest value, minutes)');
   const a = sorted(now - 15 * 864e5, now);
   for (let i = 0; i < 14; i++) {
     const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
     const from = d.getTime(); d.setDate(d.getDate() + 1); const to = Math.min(d.getTime(), now);
-    const p = period(a.filter(r => r[0] >= from && r[0] < to), from, to), lab = `${ymd(from)} ${new Date(from).toLocaleDateString('en-GB', { weekday: 'short' })}${i === 0 ? ' (today so far)' : ''}`;
-    L.push(p ? `${lab}: ${sum(p)}, lowest ${mm(p.min[1])} at ${hm(p.min[0])}, highest ${mm(p.max[1])} at ${hm(p.max[0])}${p.lows.length ? ', lows: ' + p.lows.map(([t, v, n]) => `${hm(t)} ${mm(v)} ${n} min`).join('; ') : ''}` : `${lab}: no readings`);
+    const p = period(a.filter(r => r[0] >= from && r[0] < to), from, to), lab = `${dTag(from)}${i === 0 ? ' so far' : ''}`;
+    const di = db.log.filter(m => m.t >= from && m.t < to), dIns = Math.round(di.reduce((x, m) => x + (+m.ins || 0), 0) * 10) / 10;
+    L.push(p ? `${lab}: ${sum(p)}, mealtime insulin ${dIns} units in ${di.length} ${di.length === 1 ? 'dose' : 'doses'}, lowest ${mm(p.min[1])} at ${hm(p.min[0])}, highest ${mm(p.max[1])} at ${hm(p.max[0])}${p.lows.length ? ', lows: ' + p.lows.map(([t, v, n]) => `${hm(t)} ${mm(v)} ${n} min`).join('; ') : ''}` : `${lab}: no readings`);
   }
   L.push('', 'MEALS, last 14 days (glucose at the meal, the peak within 3 h, then the lowest value between the peak and 3 h after the meal)');
   // Lägsta värdet efter toppen: det som spelar roll för en känning. Lägsta inom hela 3 h är ofta bara värdet före stigningen.
   const lowAfter = (from, to) => { let lo = null; for (let k = Math.ceil(from / 6e4) * 6e4; k <= to; k += 6e4) { const v = R.get(k); if (v !== undefined && (!lo || v < lo[1])) lo = [k, v]; } return lo; };
   for (const m of db.log.filter(m => m.t >= now - 14 * 864e5 && m.t <= now)) {
     const o = outcome(m.t, treatCut(m.t, db.notes)), min = t => Math.round((t - m.t) / 6e4) + ' min', la = o.pk && lowAfter(o.pk[0], m.t + 3 * 36e5);
-    L.push(`${ymd(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
+    L.push(`${dTag(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.pk ? ` => ${[o.pk[1] > 180 && 'went above 10', la && la[1] < 70 && 'went below 3.9'].filter(Boolean).join(' and ') || 'stayed in range'}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
   }
   const notes = db.notes.filter(n => n.t >= now - 14 * 864e5 && n.t <= now);
-  if (notes.length) L.push('', 'NOTES, last 14 days', ...notes.map(n => `${ymd(n.t)} ${hm(n.t)}${n.dur ? '-' + hm(n.t + n.dur * 6e4) : ''} ${n.kind}${n.text ? ': ' + n.text : ''}`));
+  if (notes.length) L.push('', 'NOTES, last 14 days', ...notes.map(n => `${dTag(n.t)} ${hm(n.t)}${n.dur ? '-' + hm(n.t + n.dur * 6e4) : ''} ${n.kind}${n.text ? ': ' + n.text : ''}`));
+  // Varje rätt de senaste 90 dagarna, så att frågor som "hur brukar pizza gå" kan besvaras (förut bara 14 dagar)
+  const med = x => { const v = [...x].sort((p, q) => p - q), n = v.length; return n ? (n % 2 ? v[n >> 1] : (v[n / 2 - 1] + v[n / 2]) / 2) : null; }, dish = new Map();
+  for (const m of db.log) if (m.t >= now - 90 * 864e5 && m.t <= now && !isCorr(m.name)) { const k = String(m.name).toLowerCase(); if (!dish.has(k)) dish.set(k, { name: m.name, list: [] }); dish.get(k).list.push(m); }
+  if (dish.size) L.push('', 'DISHES, last 90 days (times eaten; logged doses; median glucose at the meal and median peak within 3 h; times it went below 3.9 within 3 h)');
+  for (const { name, list } of [...dish.values()].sort((p, q) => q.list.length - p.list.length).slice(0, 30)) {
+    const os = list.map(m => outcome(m.t, treatCut(m.t, db.notes))), ds = list.map(m => +m.ins || 0), at = os.filter(o => o.b).map(o => o.b[1]), pk = os.filter(o => o.pk).map(o => o.pk[1]);
+    L.push(`${name}: ${list.length}x, doses ${Math.min(...ds) === Math.max(...ds) ? Math.min(...ds) : Math.min(...ds) + '-' + Math.max(...ds)} units${at.length ? ', at meal ' + mm(med(at)) : ''}${pk.length ? ', peak ' + mm(med(pk)) : ''}, below 3.9 afterwards ${os.filter(o => o.lo && o.lo[1] < 70).length}x`);
+  }
+  // Kalendermånaderna det senaste året och dygnets delar de senaste 30 dagarna mot de 30 före
+  L.push('', 'MONTHS (calendar months, newest first)');
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(1); d.setMonth(d.getMonth() - i); const from = d.getTime(); d.setMonth(d.getMonth() + 1); const to = Math.min(d.getTime(), now);
+    const p = period(range(from, to), from, to); if (p && p.cov >= 20) L.push(`${new Date(from).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}${i === 0 ? ' (so far)' : ''}: ${sum(p)}, ${insIn(from, to)}`);
+  }
+  const PN = ['Night 00-06', 'Morning 06-12', 'Afternoon 12-18', 'Evening 18-24'], dp = (a, b) => dayParts(a, b).map((x, i) => `${PN[i]}: ${x ? `in range ${x.tir.toFixed(0)} %, below 3.9 ${x.low.toFixed(1)} %, above 10 ${x.high.toFixed(0)} %` : 'too few readings'}`);
+  L.push('', 'PARTS OF THE DAY, last 30 days', ...dp(now - 30 * 864e5, now), 'PARTS OF THE DAY, the 30 days before', ...dp(now - 60 * 864e5, now - 30 * 864e5));
+  if (sens.starts.length) L.push('', 'SENSOR STARTS (newest last; readings can be less accurate the first day)', sens.starts.slice(-6).map(t => `${ymd(t)} ${hm(t)}`).join(', '));
   const pr = profile(14).b; L.push('', 'TIME OF DAY, last 14 days (typical value and the low end, 5th percentile)');
   for (let h = 0; h < 24; h += 2) {
     const q = pr.slice(h * 2, h * 2 + 4).filter(Boolean);
@@ -521,12 +543,18 @@ function aiContext() {
   }
   return L.join('\n');
 }
-const ASK = `You are the assistant in a personal blood glucose dashboard. The user has type 1 diabetes, wears a FreeStyle Libre sensor and logs meals with mealtime insulin. Their recent data is below.
-Answer using only this data. Be concise and concrete: name dates, times, meals and numbers. Use mmol/L. If the data cannot answer the question, say so.
+const ASK = `You are a friendly, knowledgeable assistant in a personal blood glucose dashboard. The user has type 1 diabetes, wears a FreeStyle Libre sensor, logs meals with their mealtime insulin, sometimes long-acting insulin, and notes. Their data is below.
+How to answer:
+- Base facts and numbers on the data. When the data gives a total or an average, use it as it is. Otherwise you may add up, count, average and compare; say briefly how you got the number.
+- Be exact about the range: 3.9 to 10.0 is in range, a value over 10.0 is high and under 3.9 is low, even for a short time.
+- Explain, don't just list. Point out patterns, compare with earlier periods and say what stands out, good things too.
+- When asked why something happened, name possible contributing factors you can see in the data (when and what they ate, a high before a low, exercise, alcohol, illness or stress notes, a new sensor, gaps in readings) and general, well-known type 1 effects (fat and protein can delay and stretch the rise, exercise can lower glucose for hours, stress and illness can raise it). Check the times: only link something to an event that came before it. Say how sure you are. If the data cannot tell, say so plainly.
+- Be warm and direct, like a knowledgeable friend. Usually 2 to 6 sentences or a few "- " bullet points. Use mmol/L, dates and times.
+- You may end with one thing they could keep an eye on, or bring up with their diabetes team.
 Rules, most important first:
-1. Never recommend, suggest or estimate an insulin dose, a dose change, an insulin-to-carb ratio, carbohydrate amounts or any other treatment change, not even as a range or an example, and not even when asked directly. Describe what happened instead and suggest bringing it up with their diabetes team.
-2. Do not diagnose.
-3. Only use numbers that appear in the data. Do not calculate new kinds of values.
+1. Never recommend, suggest or estimate an insulin dose, a dose change, an insulin-to-carb ratio, carbohydrate amounts or any other treatment change, not as a range, not as an example and not when asked directly. Doses already logged in the data may be stated, counted and summed as facts.
+2. Do not diagnose, and do not judge whether a dose or an insulin is right, works, or is too much or too little.
+3. Never invent readings, meals or events that are not in the data.
 4. Answer in the language of the question. Plain text: short paragraphs or "- " bullet points, **bold** at most, no headings, no LaTeX or math symbols.
 
 DATA
@@ -534,13 +562,21 @@ DATA
 // Modellen följer inte alltid instruktionen ovan (i test gav den ett dosförslag på en direkt fråga). Därför:
 // 1) frågor som ber om en dos besvaras här med ett fast svar och når aldrig modellen,
 // 2) regeln upprepas sist i varje fråga, där en liten modell tar störst hänsyn till den.
-const DOSE_WORDS = '(units?|insulin|doses?|bolus|ratio|enhet(er)?|dos(en|er)?|insulinet|kvot(en)?)';
-const DOSE_Q = new RegExp(`(how (many|much)|should i|shall i|do i need|recommend|suggest|advise|what dose|which dose|correct(ion)?|hur (många|mycket)|ska jag|bör jag|borde jag|behöver jag|rekommendera|föreslå|vilken dos|korrigera|korrektion).{0,60}${DOSE_WORDS}|${DOSE_WORDS}.{0,60}(should i|ska jag|bör jag|borde jag|recommend|rekommendera|föreslå)`, 'i');
+// Spärren före AI:n stoppar bara frågor om vad man SKA göra med insulinet ("ska jag ta mer insulin", "hur många enheter
+// ska jag ta", "behöver jag korrigera", "är 5 enheter lagom"). Frågor om vad som HAR hänt ("hur mycket insulin har jag
+// tagit", "tog jag", "brukar jag ta") och varför-frågor går till AI:n, som får räkna på loggade doser men aldrig föreslå
+// en. Förut stoppades också faktafrågor med ett fast svar, medan "Behöver jag korrigera nu?" slank igenom.
+const DOSE_W = '(units?|insulin\\w*|doses?|dosing|bolus|basal|ratio|correct\\w*|enhet\\w*|dos(en|er|erna|era)?|kvot\\w*|korrig\\w*|korrektion\\w*)';
+const ADVICE = '(should|shall|ought|do i need|need to|must|recommend\\w*|suggest\\w*|advi[cs]e\\w*|ska|skall|bör|borde|behöver|måste|rekommender\\w*|föreslå\\w*|råd\\w*)';
+const AMOUNT = '(too much|too little|enough|lagom|för mycket|för lite|tillräckligt)';
+const DOSE_Q = new RegExp([`${ADVICE}.{0,60}${DOSE_W}`, `${DOSE_W}.{0,60}${ADVICE}`, `${AMOUNT}.{0,30}${DOSE_W}`, `${DOSE_W}.{0,30}${AMOUNT}`].map(x => `(^|[^\\p{L}])(${x})`).join('|'), 'iu');
+const WHY_Q = /^\s*(varför|why|hur kommer det sig|how come)\b/i;
+const doseQ = q => DOSE_Q.test(q) && !WHY_Q.test(q);
 const DOSE_NO = sv => sv
   ? 'Jag kan inte ge råd om doser eller ändringar i behandlingen. Det beslutet är ditt och ditt diabetesteams.\n\nNär du loggar en måltid visar appen hur det gick de senaste gångerna med samma måltid och dos, och under Patterns jämförs dina måltider. Jag kan gärna beskriva vad som hände efter en viss måltid, till exempel: "Hur har det gått de senaste gångerna jag ätit pizza?"'
   : 'I can\'t give advice on doses or treatment changes. That decision is yours and your diabetes team\'s.\n\nWhen you log a meal, the app shows how it went the last times with the same meal and dose, and Patterns compares your meals. I can describe what happened after a meal, for example: "How did it go the last times I had pizza?"';
 const SWEDISH = /[åäö]|\b(jag|ska|hur|vad|och|mina?|varför|när|vilka?)\b/i;
-const REMIND = '\n\n(Answer from the data only. Do not recommend or estimate insulin doses, ratios or treatment changes.)';
+const REMIND = '\n\n(Reminder: never recommend or estimate insulin doses, ratios or treatment changes. Logged doses may be stated and summed.)';
 
 // ---------- Logga med egna ord: "pizza 7,5 enheter", "promenad 45 min" ----------
 // Används av textfältet på dashboarden och av Telegram-boten. Den lokala AI:n tolkar texten; är den inte igång tar en
@@ -554,16 +590,18 @@ Saved meals: ${names.join('; ') || '(none)'}
 - meal: for a meal, the saved meal name exactly if the text refers to one (also in another language or misspelled). Otherwise a short, natural dish name in the user's language: capital first letter, obvious typos fixed, separate foods joined the way people write a dish ("fläskfärs ris" -> "Fläskfärs och ris", "kyckling pasta pesto" -> "Kyckling med pasta och pesto", "chicken rice" -> "Chicken and rice"). Never add or drop foods. "" otherwise.
 - Insulin taken without food is a correction dose ("1,5 enheter ingen mat", "2 units correction", "tog 2 e för att jag låg högt"): type "meal", meal "Correction", units = the dose. Never a note.
 - units: insulin units taken for the meal. A bare number next to the food usually means units. A number with g, gram or carbs is never units. null if not given.
-- note_kind: for a note one of Exercise, Alcohol, Illness, Stress, Low treated (sugar taken against a low: "druvsocker 15 g", "känning, drack juice"), Other. "" otherwise.
+- Long-acting (basal) insulin is never a meal and never a correction: type "note", note_kind "Long-acting" ("lantus 14", "tresiba 20 e", "basal 12 enheter"), note_text the insulin name and the dose ("Lantus 14 units").
+- note_kind: for a note one of Exercise, Alcohol, Illness, Stress, Low treated (sugar taken against a low: "druvsocker 15 g", "känning, drack juice"), Long-acting, Other. "" otherwise.
 - note_text: for a note, a short natural description in the user's language with a capital first letter, WITHOUT the duration (the app shows it as a time span): "promenad 5 minuter" -> "Kort promenad", "gymmade en timme" -> "Gym", "promenad 5 km" -> "Promenad 5 km", "tog två öl" -> "Två öl". Keep distances and amounts. "" otherwise.
 - duration_minutes: for a note, how long the activity lasted if said ("5 minuter" = 5, "en timme" = 60, "1,5 h" = 90). A distance is not a duration. null otherwise.
 - minutes_ago: only when they say it happened some time ago ("för 20 min sen", "20 min ago", "för en halvtimme sen" = 30). Never the length of an activity. null otherwise.
 - clock: "HH:MM" in 24 h if a clock time is given, otherwise null.
+- days_ago: 1 for "igår"/"i går"/"yesterday", 2 for "i förrgår", otherwise 0.
 Never invent numbers.`;
-const INTERPRET_SCHEMA = { type: 'object', required: ['type', 'meal', 'units', 'note_kind', 'note_text', 'duration_minutes', 'minutes_ago', 'clock'], properties: {
+const INTERPRET_SCHEMA = { type: 'object', required: ['type', 'meal', 'units', 'note_kind', 'note_text', 'duration_minutes', 'minutes_ago', 'clock', 'days_ago'], properties: {
   type: { type: 'string', enum: ['meal', 'note', 'other'] }, meal: { type: 'string' }, units: { type: ['number', 'null'] },
   note_kind: { type: 'string', enum: [...KINDS, ''] }, note_text: { type: 'string' }, duration_minutes: { type: ['number', 'null'] },
-  minutes_ago: { type: ['number', 'null'] }, clock: { type: ['string', 'null'] } } };
+  minutes_ago: { type: ['number', 'null'] }, clock: { type: ['string', 'null'] }, days_ago: { type: ['number', 'null'] } } };
 // En anteckning med längd ("promenad 5 minuter") slutar när den skrevs, om inte en starttid angavs ("kl 17", "för en timme sen")
 const okDur = d => Number.isFinite(d) && d >= 1 && d <= 1440 ? Math.round(d) : null;
 const noteAt = (kind, text, dur, t, timed, ref) => ({ type: 'note', kind, text: text ? text.charAt(0).toUpperCase() + text.slice(1) : '', ...(dur && { dur }), t: dur && !timed ? ref - dur * 6e4 : t });
@@ -677,8 +715,13 @@ async function interpret(text, ref) {
     const j = await r.json(); logTokens('interpret', j); o = JSON.parse(j.message.content);
   } catch (e) { console.error('Reading the text with the simple reader:', aiErr(e)); return { ...L, via: 'simple' }; }
   const c = typeof o.clock === 'string' && o.clock.match(/^(\d{1,2})[:.](\d{2})$/);
-  const t = c && +c[1] < 24 && +c[2] < 60 ? atClock(+c[1], +c[2], ref) : Number.isFinite(o.minutes_ago) && o.minutes_ago > 0 && o.minutes_ago <= 1440 ? ref - o.minutes_ago * 6e4 : L.t || ref;
-  const timed = !!c || (Number.isFinite(o.minutes_ago) && o.minutes_ago > 0);
+  // "igår kl 19": klockslaget den dagen. Utan klockslag och "för X min sen" gäller den enkla tolkarens tid, som redan
+  // förstår "igår", "i morse" och "i kväll"; har bara AI:n hittat dagen flyttas tiden så många dygn bakåt.
+  const dago = Number.isFinite(o.days_ago) && o.days_ago >= 1 && o.days_ago <= 7 ? Math.round(o.days_ago) : 0;
+  const dayAt = (h, mi) => { const d = new Date(ref); d.setDate(d.getDate() - dago); d.setHours(h, mi, 0, 0); return d.getTime(); };
+  const t = c && +c[1] < 24 && +c[2] < 60 ? (dago ? dayAt(+c[1], +c[2]) : atClock(+c[1], +c[2], ref)) : Number.isFinite(o.minutes_ago) && o.minutes_ago > 0 && o.minutes_ago <= 1440 ? ref - o.minutes_ago * 6e4 - dago * 864e5
+    : L.t && L.t !== ref ? L.t : ref - dago * 864e5;
+  const timed = !!c || (Number.isFinite(o.minutes_ago) && o.minutes_ago > 0) || dago > 0 || (L.t && L.t !== ref);
   if (o.type === 'note' && KINDS.includes(o.note_kind)) return { ...noteAt(o.note_kind, cleanName(o.note_text || '').slice(0, 200), okDur(o.duration_minutes), t, timed, ref), via: 'ai' };
   const name = /^(correction|korrigering|korrektion|correction dose|korrigeringsdos)$/i.test(cleanName(o.meal || '')) ? CORR : cleanName(o.meal || '');
   if (o.type !== 'meal' || !name) return { type: 'other', via: 'ai' };
@@ -1259,11 +1302,11 @@ function route(req, res) {
       .map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
     if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return send(res, { error: 'bad data' }, 400);
     const q = msgs[msgs.length - 1].content;
-    if (DOSE_Q.test(q)) { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(DOSE_NO(SWEDISH.test(q))); }
+    if (doseQ(q)) { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(DOSE_NO(SWEDISH.test(q))); }
     msgs[msgs.length - 1] = { role: 'user', content: q + REMIND };
     const ac = new AbortController(); res.on('close', () => { if (!res.writableFinished) ac.abort(); }); // sidan stängd: sluta generera
     let r;
-    try { r = await ollama({ stream: true, options: { temperature: 0.3 }, messages: [{ role: 'system', content: ASK + aiContext() }, ...msgs] }, ac.signal); }
+    try { r = await ollama({ stream: true, options: { temperature: 0.5 }, messages: [{ role: 'system', content: ASK + aiContext() }, ...msgs] }, ac.signal); }
     catch (e) { return send(res, { error: aiErr(e) }, 503); }
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
     try { // Ollama skickar en JSON-rad per bit text
