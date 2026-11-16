@@ -291,8 +291,13 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 .insbar{scroll-margin-top:12px}
 /* Byte av vy: rutan med vyerna ändrar höjd mjukt och den nya vyn tonar in */
 #iviews.anim{overflow:hidden;transition:height .25s cubic-bezier(.2,.7,.3,1)}.ifade{animation:ifade .25s ease-out}@keyframes ifade{from{opacity:0}}
+/* Medan rutan krymper ligger den gamla vyn kvar under den nya och tonar ut, så att rutan aldrig är tom */
+#iviews{position:relative}#iviews>div:not([hidden]){display:flow-root}.iover{position:absolute;top:0;left:0;right:0;z-index:1;background:var(--card)}.iout{animation:iout .25s ease-out forwards;pointer-events:none}@keyframes iout{to{opacity:0}}
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
-.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi .ss{display:none}
+/* Smal skärm: rutorna fyra i bredd och tätare (förut två och två), så att veckan och månaden ryms på en skärm */
+@media(max-width:640px){.kpis.k4{gap:6px}.kpis.k4 .kpi{padding:8px 7px}.kpis.k4 .kpi b{font-size:1.125rem}.kpis.k4 .kpi span{font-size:.6875rem;line-height:1.3}.kpis.k4 .pdl{font-size:.625rem;margin-left:2px;vertical-align:2px;white-space:nowrap}.kpis.k4 .pspan{white-space:nowrap}.kpis.k4 .tirbar{height:6px}.kpi .sl{display:none}.kpi .ss{display:inline}}
+@media(max-width:359px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
 @media(max-width:440px){.tabs button{padding-inline:9px}}
 .stack{display:flex;flex-direction:column;gap:4px}
@@ -1804,13 +1809,16 @@ const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleD
 const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
 const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
-const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${val}</b><span>${sub}</span></div>`;
+const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${String(val).replace(/ %$/, '&nbsp;%')}</b><span>${sub}</span></div>`;
 // De fyra nyckeltalen. p = perioden före (eller null), pl = vad den heter ("Week before", "September").
 // Med en jämförelse står den under talet; utan står målet, som under Patterns.
+// Jämförelsen i en ruta: "October: 86 %" på en rad, på mobilen på två rader ("October:" / "86 %") och "Last week" i
+// stället för "Week before", så att inget bryts mitt i ett tal eller ett ord i de smala rutorna
+const cmpTxt = (pl, val) => { val = String(val).replace(/ %$/, '&nbsp;%'); return `<span class="sl">${pl}: ${val}</span><span class="ss">${pl === 'Week before' ? 'Last&nbsp;week' : pl}:<br>${val}</span>`; };
 function ikpis(c, p, pl, lowsCur, lowsPrev) {
-  const was = (v, f) => p ? `${pl}: ${f(v)}` : '';
+  const was = (v, f) => p ? cmpTxt(pl, f(v)) : '';
   return `<div class="kpis k4">${ikpi('In range', c.tir.toFixed(0) + ' %', p ? was(p.tir, v => v.toFixed(0) + ' %') : 'goal over&nbsp;70&nbsp;%', c.tir >= 70 ? 'var(--ok)' : 'var(--high)')}
-    ${ikpi('Lows', lowsCur, lowsPrev != null ? `${pl}: ${lowsPrev}` : '15 min or more below 3.9', c.low >= 4 ? 'var(--low)' : '')}
+    ${ikpi('Lows', lowsCur, lowsPrev != null ? cmpTxt(pl, lowsPrev) : '<span class="sl">15 min or more below 3.9</span><span class="ss">15+ min under 3.9</span>', c.low >= 4 ? 'var(--low)' : '')}
     ${ikpi('Average', f1(mm(c.avg)), p ? was(p.avg, v => f1(mm(v))) : 'mmol/L', col(mm(c.avg)))}
     ${ikpi('Above 10', c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : 'goal under&nbsp;25&nbsp;%', c.high >= 25 ? 'var(--high)' : '')}</div>`;
 }
@@ -1823,8 +1831,9 @@ const HZ = [[3, 'var(--low)', 'under 3.0'], [3.9, 'color-mix(in srgb,var(--low) 
   [7, 'color-mix(in srgb,var(--ok) 68%,var(--card))', '5.5–6.9'], [8.5, 'color-mix(in srgb,var(--ok) 84%,var(--card))', '7.0–8.4'], [10.05, 'var(--ok)', '8.5–10.0'],
   [13, 'color-mix(in srgb,var(--high-fill) 58%,var(--card))', '10.1–12.9'], [16, 'color-mix(in srgb,var(--high-fill) 80%,var(--card))', '13.0–15.9'], [1e9, 'var(--high-fill)', '16 or more']];
 const hzBin = v => v == null ? -1 : HZ.findIndex(([lim]) => r1(mm(v)) < lim);
-function heatSvg(el, q) {
-  const z = chartScale(), n = q.length, wk = n <= 7, w = Math.max(280, Math.round(el.clientWidth) || 700), l = 56 * z, r = 6, rh = (wk ? 26 : 14) * z, gap = wk ? 2 : 1;
+function heatSvg(el, q, rhFit) {
+  const z = chartScale(), n = q.length, wk = n <= 7, w = Math.max(280, Math.round(el.clientWidth) || 700), l = 56 * z, r = 6, rh = rhFit || (wk ? 26 : 14) * z, gap = wk && rh > 14 * z ? 2 : 1;
+  const every = Math.ceil(12 * z / rh); // låga rader: dagsetikett bara på var n:te rad (räknat från den senaste), så att texten inte krockar
   const h = Math.round(rh * n + 20 * z), cw = (w - l - r) / 96, X = i => l + i * cw;
   let sv = '';
   q.forEach(([t, vals], j) => {
@@ -1834,12 +1843,22 @@ function heatSvg(el, q) {
       sv += `<rect x="${X(i).toFixed(1)}" y="${y.toFixed(1)}" width="${((k - i) * cw + .4).toFixed(1)}" height="${(rh - gap).toFixed(1)}" style="fill:${b < 0 ? 'var(--sub)' : HZ[b][1]}" data-tip="${dDate(t)}, ${qTime(i)}–${qTime(k)}: ${b < 0 ? 'no readings' : HZ[b][2] + ' mmol/L'}"/>`;
       i = k;
     }
-    sv += `<text class="rt${last && qLab(t, true) === 'Today' ? ' td' : ''}" x="${(l - 8 * z).toFixed(1)}" y="${(y + (rh - gap) / 2 + 4 * z).toFixed(1)}" text-anchor="end">${qLab(t, last)}</text>`;
+    if ((n - 1 - j) % every === 0) sv += `<text class="rt${last && qLab(t, true) === 'Today' ? ' td' : ''}" x="${(l - 8 * z).toFixed(1)}" y="${(y + (rh - gap) / 2 + 4 * z).toFixed(1)}" text-anchor="end">${qLab(t, last)}</text>`;
   });
   return `<svg class="hmap" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Glucose every 15 minutes, one row per day, coloured by value: red under 3.9, green 3.9 to 10, ochre over 10.">${sv}${qHours(z, i => l + i * cw, h - 5 * z)}</svg>`
     + `<div class="yrlg" aria-hidden="true"><span><i style="background:${HZ[0][1]}"></i>Under 3.9</span><span><i style="background:linear-gradient(90deg,${HZ[2][1]},${HZ[5][1]})"></i>3.9–10</span><span><i style="background:linear-gradient(90deg,${HZ[6][1]},${HZ[8][1]})"></i>Over 10</span><span><i style="background:var(--sub)"></i>No readings</span></div>`;
 }
 const qViews = (el, q) => q && q.length ? `<h3 class="grp">Hour by hour</h3>${heatSvg(el, q)}` : '';
+// Ryms inte vyn på skärmen med knapparna överst (mobilen, låga datorskärmar) blir värmekartans rader lägre, så att hela
+// vyn syns utan att man scrollar: ner till 7 px per dag för en månad och 16 px för en vecka. Annars som förut.
+function fitHeat(el, q) {
+  const svg = el.querySelector('svg.hmap'), bar = document.querySelector('#tab-ins .insbar'); if (!svg || !q || !q.length || el.hidden) return;
+  const z = chartScale(), n = q.length, rh0 = (n <= 7 ? 26 : 14) * z, min = (n <= 7 ? 16 : 7) * z;
+  const need = el.getBoundingClientRect().bottom - bar.getBoundingClientRect().top + parseFloat(getComputedStyle($('tab-ins')).paddingBottom) + 24, over = need - innerHeight;
+  if (!(el.getBoundingClientRect().height > 0) || over <= 0) return;
+  const rh = Math.max(min, rh0 - over / n); if (rh0 - rh < .5) return;
+  svg.outerHTML = heatSvg(el, q, rh).split('<div class="yrlg"')[0];
+}
 // Dygnets fyra delar: tid i mål, en stapel låg / i mål / hög och perioden före (pl = vad den heter, som under nyckeltalen).
 // Pilen visas från 2 procentenheters skillnad: upp = mer tid i mål. Jämförelsen bara när cmp (båda perioderna har värden).
 const PARTN = [['Night', '00–06'], ['Morning', '06–12'], ['Afternoon', '12–18'], ['Evening', '18–24']];
@@ -1850,8 +1869,8 @@ function partsHtml(P, pl, cmp) {
     if (!c) return `<div class="kpi">${head}<b class="mut">–</b><span>Too few readings</span></div>`;
     const p = cmp && P.prev && P.prev[i], d = p ? Math.round(c.tir) - Math.round(p.tir) : 0;
     const arrow = Math.abs(d) >= 2 ? ` <span class="pdl ${d > 0 ? 'up' : 'dn'}" aria-hidden="true">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}</span>` : '';
-    return `<div class="kpi" data-tip="${Math.round(c.low)} % under 3.9, ${Math.round(c.high)} % over 10">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)} %${arrow}</b>${tirbar(c)}`
-      + `<span>${p ? `${pl}: ${Math.round(p.tir)} %` : `${Math.round(c.low)} % under 3.9 · ${Math.round(c.high)} % over 10`}</span></div>`;
+    return `<div class="kpi" data-tip="${Math.round(c.low)} % under 3.9, ${Math.round(c.high)} % over 10">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)}&nbsp;%${arrow}</b>${tirbar(c)}`
+      + `<span>${p ? cmpTxt(pl, Math.round(p.tir) + ' %') : `${Math.round(c.low)} % under 3.9 · ${Math.round(c.high)} % over 10`}</span></div>`;
   }).join('') + '</div>';
 }
 
@@ -1884,21 +1903,25 @@ function insFit(smooth) {
 const IVIEW = { week: 'wk', month: 'mo', year: 'yr' };
 let insEnd = null;
 function insSwitch(v) {
-  const box = $('iviews'), had = { week: wk, month: mo, year: yr }[v], still = calm();
   if (insEnd) insEnd(); // ett nytt klick under en pågående animation: den avslutas först
+  const box = $('iviews'), had = { week: wk, month: mo, year: yr }[v], still = calm(), pv = iview, old = $(IVIEW[pv]);
+  const yw = old.querySelector('.yrw'), sl = yw ? yw.scrollLeft : 0; // årets rutnät behåller sin scroll medan det tonar ut
   const h0 = box.offsetHeight;
   if (!still) box.style.height = h0 + 'px'; // samma höjd tills den nya vyn är ritad
   const p = setView(v);
-  const done = () => requestAnimationFrame(() => {
+  const done = () => {
     const el = $(IVIEW[v]), h1 = el.offsetHeight;
     if (still) { box.style.height = ''; return insFit(false); }
     el.classList.remove('ifade'); void el.offsetWidth; el.classList.add('ifade');
     if (h1 >= h0) { box.style.height = ''; return insFit(true); }
-    let tm; const end = () => { clearTimeout(tm); box.removeEventListener('transitionend', end); box.classList.remove('anim'); box.style.height = ''; insEnd = null; };
+    const keep = old !== el; if (keep) { old.hidden = false; old.classList.add('iout'); el.classList.add('iover'); if (yw) yw.scrollLeft = sl; }
+    let tm; const end = () => { clearTimeout(tm); box.removeEventListener('transitionend', end); box.classList.remove('anim'); box.style.height = ''; insEnd = null;
+      if (keep) { old.classList.remove('iout'); el.classList.remove('iover'); old.hidden = IVIEW[iview] !== old.id; } };
     insEnd = end; box.classList.add('anim'); void box.offsetWidth; box.style.height = h1 + 'px';
     box.addEventListener('transitionend', end); tm = setTimeout(end, 400);
     setTimeout(() => insFit(true), 260); // en lägre vy kan ändå vara högre än skärmen (mobilen)
-  });
+  };
+  // Redan hämtad: allt i samma bildruta (förut syntes en tom yta under en bildruta). Annars när den har kommit.
   if (had) done(); else Promise.resolve(p).then(done, done);
 }
 document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => insSwitch(b.dataset.v));
@@ -1912,6 +1935,7 @@ function renderWeek() {
   // Bara nyckeltalen och graferna (Highlights, Lows och Meals togs bort 2026-11-14); en varning om veckan har för lite värden
   el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars
     + (c.cov < 70 ? `<div class="ifoot"><span>Readings cover ${c.cov.toFixed(0)} % of the week. Treat these numbers with caution.</span></div>` : '');
+  fitHeat(el, wk.q);
 }
 
 // Året: en ruta per dag (kolumn = vecka, måndag överst), färgad efter tid i mål. Samma gräns som dagsstaplarna: grönt från
@@ -1989,6 +2013,7 @@ function renderMonth() {
   // Bara nyckeltalen, dygnets delar och värmekartan; Highlights och Meals and activity togs bort 2026-11-14 (finns kvar i bilden)
   el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
     + `<div class="ifoot"><span>${x.n.toLocaleString('en-GB')} readings · sensor active ${c.cov.toFixed(0)} %${c.cov < 70 ? ' (treat with caution)' : ''} · Est. HbA1c ${gmi(c.avg)} mmol/mol (GMI, from the average)</span><button id="mimg">Save as image</button></div>`;
+  fitHeat(el, x.q);
 }
 // Pekarrutan: texten från närmaste data-tip, placerad vid pekaren och inom fönstret. Följer med när pekaren rör sig.
 { const tip = $('itip'), hide = () => tip.classList.remove('on');
