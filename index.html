@@ -289,6 +289,8 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 .pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
 .insbar{scroll-margin-top:12px}
+/* Byte av vy: rutan med vyerna ändrar höjd mjukt och den nya vyn tonar in */
+#iviews.anim{overflow:hidden;transition:height .25s cubic-bezier(.2,.7,.3,1)}.ifade{animation:ifade .25s ease-out}@keyframes ifade{from{opacity:0}}
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
@@ -409,9 +411,9 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
     <div class="seg" id="iseg" role="group" aria-label="Period"><button data-v="week" class="on" aria-pressed="true">This week</button><button data-v="month" aria-pressed="false">Month</button><button data-v="year" aria-pressed="false">Year</button></div>
     <div class="nav" id="monav" hidden><button id="mprev" aria-label="Previous month">‹</button><span class="mlab" id="mlab" aria-live="polite"></span><button id="mnext" aria-label="Next month">›</button></div>
   </div>
-  <div id="wk"></div>
+  <div id="iviews"><div id="wk"></div>
   <div id="mo" hidden></div>
-  <div id="yr" hidden></div>
+  <div id="yr" hidden></div></div>
 </section>
 
 <section class="card panel" id="tab-ask" role="tabpanel" aria-labelledby="t-ask" hidden>
@@ -1873,26 +1875,24 @@ function insFit() {
   const bar = document.querySelector('#tab-ins .insbar'), r = bar.getBoundingClientRect();
   if ($('tab-ins').getBoundingClientRect().bottom > innerHeight + 1 && r.top > 16) bar.scrollIntoView({ block: 'start', behavior: calm() ? 'auto' : 'smooth' });
 }
-// Byte av vy utan ryck och utan tomrum. Kortets höjd hålls medan den nya vyn ritas. Är den nya vyn kortare och sidan
-// skulle krympa under det man tittar på (då drar webbläsaren upp sidan i ett ryck), glider sidan först upp lika mycket
-// och höjden släpps när den har stannat. Annars släpps höjden direkt. Förut var kortet alltid minst en skärm högt, vilket
-// lämnade ett stort tomrum under en kort vy.
+// Byte av vy: rutan med vyerna går mjukt från den gamla höjden till den nya (0,25 s) medan den nya vyn tonar in. Blir
+// sidan kortare följer sidan med under animationen i stället för att rycka till, och inget tomrum ligger kvar efteråt.
+// Ryms den nya vyn inte under knapparna flyttas knapparna samtidigt till skärmens överkant. Med minskad rörelse byts
+// vyn direkt. (Förut hölls kortets höjd tills sidan hade glidit klart, vilket syntes som en tom ruta.)
 const IVIEW = { week: 'wk', month: 'mo', year: 'yr' };
-const insNatural = v => { const p = $('tab-ins'); return $(IVIEW[v]).getBoundingClientRect().bottom - p.getBoundingClientRect().top + parseFloat(getComputedStyle(p).paddingBottom); };
-let insHold = null;
 function insSwitch(v) {
-  const panel = $('tab-ins'), held = panel.offsetHeight, had = { week: wk, month: mo, year: yr }[v];
-  if (insHold) insHold(); // ett snabbt nytt klick: den förra hållningen avslutas först
-  panel.style.minHeight = held + 'px';
+  const box = $('iviews'), h0 = box.offsetHeight, had = { week: wk, month: mo, year: yr }[v], still = calm();
+  if (!still) { box.classList.remove('anim'); box.style.height = h0 + 'px'; box.classList.add('anim'); }
   const p = setView(v);
   const done = () => requestAnimationFrame(() => {
-    let tm; const release = () => { clearTimeout(tm); removeEventListener('scrollend', release); panel.style.minHeight = ''; insHold = null; };
-    insHold = release;
-    const h1 = insNatural(v), maxY = document.documentElement.scrollHeight - Math.max(0, held - h1) - innerHeight;
-    if (h1 >= held || scrollY <= maxY) { release(); return insFit(); }
-    scrollTo({ top: Math.max(0, maxY), behavior: calm() ? 'auto' : 'smooth' });
-    if (calm()) return release();
-    addEventListener('scrollend', release); tm = setTimeout(release, 700);
+    const el = $(IVIEW[v]); if (still) return insFit();
+    const h1 = el.offsetHeight, bar = document.querySelector('#tab-ins .insbar');
+    el.classList.remove('ifade'); void el.offsetWidth; el.classList.add('ifade');
+    const end = () => { box.removeEventListener('transitionend', end); clearTimeout(tm); box.classList.remove('anim'); box.style.height = ''; };
+    const tm = setTimeout(end, 400); box.addEventListener('transitionend', end);
+    box.style.height = h1 + 'px';
+    // Ryms den nya vyn under knapparna när den har vuxit klart? Annars glider knapparna upp till överkanten.
+    if ($('tab-ins').getBoundingClientRect().bottom + (h1 - h0) > innerHeight + 1 && bar.getBoundingClientRect().top > 16) bar.scrollIntoView({ block: 'start', behavior: 'smooth' });
   });
   if (had) done(); else Promise.resolve(p).then(done, done);
 }
