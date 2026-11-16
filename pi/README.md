@@ -77,7 +77,28 @@ sudo systemctl status glucose-dashboard     # körs den?
 
 ## Uppdatera
 
-`index.html` läses vid varje sidladdning, så den räcker att kopiera. Ändras `server.js` behövs en omstart:
+Ett kommando i PowerShell, från projektmappen:
+
+```powershell
+.\pi\deploy.ps1
+```
+
+Det kopierar filerna, startar om tjänsten om `server.js` har ändrats (`index.html` läses vid varje sidladdning, så
+den behöver ingen omstart) och kontrollerar att Pi:n har samma filer som datorn och att dashboarden svarar.
+`.\pi\deploy.ps1 -Restart` startar om även när `server.js` är oförändrad. Ladda sedan om dashboarden i webbläsaren.
+
+Omstarten kräver `sudo`, så skriptet frågar efter Pi:ns lösenord när den behövs. Vill du slippa det kör du det här
+en gång (då frågar den en sista gång):
+
+```powershell
+ssh -t pi "sudo bash glucose/pi/allow-restart.sh"
+```
+
+Det ger användaren `pi` rätt att köra just `systemctl restart glucose-dashboard` utan lösenord, inget annat.
+Efter det behövs lösenordet inte för uppladdningar, och `raspberry.txt` kan tas bort från datorn.
+Ångra: `ssh -t pi "sudo rm /etc/sudoers.d/020_glucose-dashboard"`.
+
+För hand går det också:
 
 ```powershell
 scp index.html server.js pi:glucose/
