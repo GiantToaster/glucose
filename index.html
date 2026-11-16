@@ -260,7 +260,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .login{max-width:440px;margin:12px auto}.login .dl{padding:4px}.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:24px}.chk input{width:16px;height:16px;margin:0}
 #toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;bottom:24px;transform:translateY(16px);opacity:0;pointer-events:none;background:var(--tbg);color:var(--tfg);padding:10px 16px;border-radius:10px;font-size:.8125rem;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .2s,transform .2s,visibility 0s .2s;visibility:hidden;max-width:calc(100vw - 32px);z-index:20}#toast.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
 #toast button{margin-left:12px;padding:2px 10px;font-size:.75rem;background:none;color:inherit;border-color:currentColor}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
-footer{font-size:.75rem;color:var(--mut);margin-top:24px;text-align:center}
+.disc{margin:-6px 0 12px;font-size:.75rem;line-height:1.4;color:var(--mut);text-wrap:pretty}@media(max-height:560px){.disc{margin:-4px 0 8px}}
 .fine{font-size:.75rem}.sm{font-size:.8125rem}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}
 .foot{margin:8px 0 0;font-size:.75rem}#lmsg{margin:0;font-size:.75rem}#aist{font-size:.75rem}#cmp{overflow-x:auto}.lgband{fill:var(--ok)}
 p{text-wrap:pretty}.warnq:empty{display:none}.warnq{color:var(--fg)}
@@ -298,7 +298,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Smal skärm: rutorna fyra i bredd och tätare (förut två och två), så att veckan och månaden ryms på en skärm */
 @media(max-width:640px){.kpis.k4{gap:6px}.kpis.k4 .kpi{padding:8px 7px}.kpis.k4 .kpi b{font-size:1.125rem}.kpis.k4 .kpi span{font-size:.6875rem;line-height:1.3}.kpis.k4 .pdl{font-size:.625rem;margin-left:2px;vertical-align:2px;white-space:nowrap}.kpis.k4 .pspan{white-space:nowrap}.kpis.k4 .tirbar{height:6px}.kpi .sl{display:none}.kpi .ss{display:inline}}
 @media(max-width:359px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
+.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}.ifoot>button:only-child{margin-left:auto}
 @media(max-width:440px){.tabs button{padding-inline:9px}}
 .stack{display:flex;flex-direction:column;gap:4px}
 .lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
@@ -337,6 +337,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
     <button class="icon" id="gear" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </header>
+<!-- Överst, så att den syns i alla flikar utan att man scrollar (förut stod den sist på sidan) -->
+<p class="disc">Information tool only. It gives no dosing advice and does not replace the Libre app or its alarms.</p>
 
 <main>
 <form class="card login" id="login" hidden>
@@ -444,7 +446,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 </section>
 </main>
 
-<footer>Information tool only. It gives no dosing advice and does not replace the Libre app or its alarms.</footer>
 
 <dialog id="dmeal" aria-labelledby="dmealh">
   <form class="dl" id="fmeal">
@@ -2012,7 +2013,7 @@ function renderMonth() {
   const bars = partsHtml(x.parts, pn, !!p) + qViews(el, x.q);
   // Bara nyckeltalen, dygnets delar och värmekartan; Highlights och Meals and activity togs bort 2026-11-14 (finns kvar i bilden)
   el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
-    + `<div class="ifoot"><span>${x.n.toLocaleString('en-GB')} readings · sensor active ${c.cov.toFixed(0)} %${c.cov < 70 ? ' (treat with caution)' : ''} · Est. HbA1c ${gmi(c.avg)} mmol/mol (GMI, from the average)</span><button id="mimg">Save as image</button></div>`;
+    + `<div class="ifoot">${c.cov < 70 ? `<span>The sensor was active ${c.cov.toFixed(0)} % of the month. Treat these numbers with caution.</span>` : ''}<button id="mimg">Save as image</button></div>`;
   fitHeat(el, x.q);
 }
 // Pekarrutan: texten från närmaste data-tip, placerad vid pekaren och inom fönstret. Följer med när pekaren rör sig.
