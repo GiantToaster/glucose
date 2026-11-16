@@ -547,7 +547,7 @@ const REMIND = '\n\n(Answer from the data only. Do not recommend or estimate ins
 // enkel regelbaserad tolkare över. ref = när texten skrevs, så att "för 20 min sen" blir rätt även när ett
 // Telegram-meddelande läses först när datorn startar.
 // "Low treated" = snabba kolhydrater mot en känning (samma namn som anteckningstypen på dashboarden)
-const KINDS = ['Exercise', 'Alcohol', 'Illness', 'Stress', 'Low treated', 'Other'];
+const KINDS = ['Exercise', 'Alcohol', 'Illness', 'Stress', 'Low treated', 'Long-acting', 'Other'];
 const INTERPRET = names => `Turn the user's message into one entry for a diabetes diary. It can be in any language and may be dictated.
 Saved meals: ${names.join('; ') || '(none)'}
 - type: "meal" if they ate something, "note" for exercise, alcohol, illness, stress, treating a low (dextrose, juice or sweets taken because glucose was low) or a similar event, "other" if it is neither (a question, a greeting, unclear).
@@ -574,7 +574,7 @@ const atClock = (h, m, ref) => { const d = new Date(ref); d.setHours(h, m, 0, 0)
 // Den enkla tolkaren: tal + enhet = dos, "20 min sen"/"kl 18:30" = tid, några ord = anteckning, resten = maten
 const UNIT = /^(u|units?|e|enh|enhet|enheter|ie|iu)$/, MINW = /^(m|min|mins|minut|minuter|minute|minutes)$/, HOURW = /^(h|hr|hrs|hour|hours|tim|timme|timmar)$/, AGO = /^(ago|sedan|sen|sedn)$/;
 const DIST = /^(km|kilometer|kilometers|mil|meter|steg|steps)$/, GRAM = /^(g|gr|gram|grams|grammes?|kh|carbs?|kolhydrater)$/;
-const EDGE = new Set(['i', 'had', 'have', 'ate', 'eat', 'eaten', 'took', 'take', 'with', 'and', 'at', 'about', 'around', 'kl', 'klockan', 'för', 'med', 'och', 'tog', 'åt', 'jag', 'har', 'ett', 'en', 'a', 'an', 'the', 'of', 'insulin', 'some', 'lite', 'cirka', 'ca', 'runt', 'typ', 'just', 'nyss', 'now', 'nu', 'plus', 'samt']);
+const EDGE = new Set(['till', 'på', 'gick', 'went', 'for', 'did', 'to', 'i', 'had', 'have', 'ate', 'eat', 'eaten', 'took', 'take', 'with', 'and', 'at', 'about', 'around', 'kl', 'klockan', 'för', 'med', 'och', 'tog', 'åt', 'jag', 'har', 'ett', 'en', 'a', 'an', 'the', 'of', 'insulin', 'some', 'lite', 'cirka', 'ca', 'runt', 'typ', 'just', 'nyss', 'now', 'nu', 'plus', 'samt']);
 // Känning först: "promenad, känning efteråt" handlar om känningen
 const NOTE_WORDS = [['Low treated', /^(druvsocker|dextro|dextrosol|glukos|glukostabletter|glucose|hypo|känning|känningen|känningar)$/], ['Exercise',/^(träna|tränade|träning|gym|gymmade|gymmet|promenad|promenerade|cykel|cyklade|cykling|löpning|sprang|jogga|joggade|simmade|simning|walk|walked|run|ran|running|workout|exercise|bike|biked|cycling|swim|swam|yoga|fotboll|padel|tennis)$/],
   ['Alcohol', /^(öl|vin|alkohol|drink|drinkar|beer|beers|wine|alcohol|cocktail|cider|sprit)$/], ['Illness', /^(sjuk|förkyld|feber|influensa|magsjuk|ill|sick|fever|flu)$/], ['Stress', /^(stress|stressad|stressed)$/]];
@@ -593,14 +593,30 @@ function matchMeal(raw, names) {
 const CORR = 'Correction';
 const NOFOOD = /^(ingen|utan|no|without|not|inte|mat|food|meal|måltid|ate|åt|bara|only|dos|dosen|dose|korr\w*|correct\w*|fiasp|novorapid|humalog|lyumjev|apidra|actrapid|trurapi)$/;
 const isCorr = name => String(name).toLowerCase() === CORR.toLowerCase();
+// Skälet till en korrektion ("2 enheter för att jag låg högt"): bara sådana ord och en dos är också en korrektion
+const WHY = /^(att|eftersom|pga|då|låg|ligger|var|är|blev|högt|hög|höga|high|was|so|because|blodsocker|blodsockret|sockret|bs|bring|it|down|ner|sänka|för)$/;
+// Långverkande insulin är ingen måltidsdos. Den sparas som en anteckning "Long-acting" med dosen i texten ("Lantus 14
+// units"), så att den inte räknas in i måltidsinsulinet och inte jämförs med måltiderna. Förut blev "lantus 14" en
+// måltid på 14 enheter.
+const BASAL = /^(lantus|tresiba|toujeo|levemir|abasaglar|semglee|insulatard|basal|basalinsulin|basaldos|basaldosen|långverkande|langverkande|långtidsverkande|long-acting|longacting)$/;
+const BASALW = /^(basal|basalinsulin|basaldos|basaldosen|långverkande|langverkande|långtidsverkande|long-acting|longacting)$/;
+// Måltidsinsulinets namn hör inte till maträtten ("6e novorapid till middag" -> "Middag")
+const BOLUS = /^(fiasp|novorapid|humalog|lyumjev|apidra|actrapid|trurapi|admelog)$/;
+// "i morse", "igår kväll": en ungefärlig tid när ingen klocktid anges
+const PART = { morse: 8, morning: 8, förmiddag: 10, förmiddagen: 10, eftermiddag: 15, eftermiddagen: 15, afternoon: 15, kväll: 20, kvällen: 20, evening: 20, tonight: 20, natt: 3, natten: 3, night: 3 };
 // Frågor och hälsningar är aldrig måltider ("hej", "hur ligger jag?") när den enkla tolkaren används utan AI
 const NOT_MEAL = /\?\s*$|^(hej|hejsan|hallå|tja|tjena|tack|hi|hello|hey|thanks|ok|okej|hur|vad|när|varför|vilken|vilka|how|what|when|why|which|is|am|are|do|does|can)(?![\p{L}\d])/iu; // inte \b: den räknar å/ä/ö som ordgräns, så "okänd rätt" lästes som "ok"
 function interpretLocal(text, ref, names) {
   // Skiljetecken bort, men inte decimalpunkten i 7.5 ("ris." -> "ris")
   const tk = text.toLowerCase().replace(/(\d),(\d)/g, '$1.$2').replace(/[,;!?]+|\.(?!\d)/g, ' ').split(/\s+/).filter(Boolean);
-  let ins = null, ago = null, clock = null, dur = null; const words = [], agoAt = k => AGO.test(tk[k] || '');
+  let ins = null, ago = null, clock = null, dur = null, day = 0, part = null; const words = [], agoAt = k => AGO.test(tk[k] || '');
   for (let i = 0; i < tk.length; i++) {
     const w = tk[i], nx = tk[i + 1] || ''; let m;
+    // Dagen: "igår", "i går", "yesterday", "i förrgår". Dagens del: "i morse", "imorse", "ikväll", "igår kväll", "last night"
+    if (/^(igår|igar|yesterday)$/.test(w) || (w === 'i' && /^(går|gar)$/.test(nx))) { day = 1; if (w === 'i') i++; continue; }
+    if (w === 'iförrgår' || w === 'förrgår' || (w === 'i' && nx === 'förrgår')) { day = 2; if (w === 'i') i++; continue; }
+    if (PART[w] != null || (/^i/.test(w) && PART[w.slice(1)] != null)) { part = PART[w] ?? PART[w.slice(1)]; continue; }
+    if (/^(i|this|last|på|in|the)$/.test(w) && PART[nx] != null) { part = PART[nx]; i++; continue; }
     if ((m = w.match(/^(?:kl\.?)?([01]?\d|2[0-3])[:.]([0-5]\d)$/))) { clock = [+m[1], +m[2]]; continue; }
     if ((m = w.match(/^(\d+(?:\.\d+)?)(u|e|ie|iu|units?|enheter|enhet|enh)$/))) { ins = +m[1]; continue; } // "4e", "4u", "4units", "4enhet"
     // "20 min sen" är en tid sedan; "45 min" utan "sen" är en längd (t.ex. en promenad)
@@ -625,14 +641,25 @@ function interpretLocal(text, ref, names) {
     if (!AGO.test(w)) words.push(w);
   }
   const trim = ws => { ws = [...ws]; while (ws.length && EDGE.has(ws[0])) ws.shift(); while (ws.length && EDGE.has(ws[ws.length - 1])) ws.pop(); return ws; };
-  const t = clock ? atClock(clock[0], clock[1], ref) : ago ? ref - ago * 6e4 : ref, strs = words.filter(x => typeof x === 'string');
+  // Tiden: en klocktid, annars en del av dagen, annars "för 20 min sen", annars nu; "igår" flyttar den en dag bakåt.
+  // En del av dagen som inte har kommit än idag ("i kväll" skrivet kl 18) blir nu.
+  const dayAt = (h, mi) => { const d = new Date(ref); d.setDate(d.getDate() - day); d.setHours(h, mi, 0, 0); return d.getTime(); };
+  const t = clock ? (day ? dayAt(clock[0], clock[1]) : atClock(clock[0], clock[1], ref)) : part != null ? (day ? dayAt(part, 0) : Math.min(dayAt(part, 0), ref))
+    : ago ? ref - ago * 6e4 - day * 864e5 : ref - day * 864e5, timed = !!(clock || ago || day || part != null);
+  const strs = words.filter(x => typeof x === 'string'), bare = words.find(x => typeof x === 'object' && 'n' in x), dose = ins ?? (bare ? bare.n : null);
+  if (strs.some(w => BASAL.test(w)) || (strs.includes('long') && strs.includes('acting'))) {
+    const brand = strs.find(w => BASAL.test(w) && !BASALW.test(w)), n = dose != null ? Math.round(dose * 10) / 10 : null;
+    return noteAt('Long-acting', [brand, n != null && n + (n === 1 ? ' unit' : ' units')].filter(Boolean).join(' '), null, t, timed, ref);
+  }
   const kind = (NOTE_WORDS.find(([, re]) => strs.some(w => re.test(w))) || [])[0];
-  if (kind && ins === null) return noteAt(kind, trim(words).map(x => typeof x === 'string' ? x : x.g || x.n).join(' '), okDur(dur), t, !!(clock || ago), ref);
-  if (ins !== null && !kind && strs.every(w => NOFOOD.test(w) || EDGE.has(w))) return { type: 'meal', name: CORR, ins, t, corr: true };
-  const bare = words.find(x => typeof x === 'object' && 'n' in x), raw = trim(strs).join(' ');
+  if (kind && ins === null) return noteAt(kind, trim(words).map(x => typeof x === 'string' ? x : x.g || x.n).join(' '), okDur(dur), t, timed, ref);
+  // En dos utan mat: "tog 2 enheter", "1.5 korr", "fiasp 4", "2 enheter för att jag låg högt". Ett tal utan "enheter" räcker
+  // när ett ord säger att det är insulin eller en korrektion.
+  if (dose !== null && !kind && strs.every(w => NOFOOD.test(w) || EDGE.has(w) || WHY.test(w)) && (ins !== null || strs.some(w => NOFOOD.test(w) || WHY.test(w)))) return { type: 'meal', name: CORR, ins: dose, t, corr: true };
+  const raw = trim(strs.filter(w => !BOLUS.test(w))).join(' ');
   if (!raw || NOT_MEAL.test(text.trim())) return { type: 'other' };
   // En måltid kräver en dos eller en känd rätt; annars är det troligen inte en måltid ("hej") och inget loggas
-  const [name, known] = matchMeal(raw, names), dose = ins ?? (bare ? bare.n : null);
+  const [name, known] = matchMeal(raw, names);
   // Ett tal utan "units/e/enheter" är en gissning, utom sist efter en känd rätt ("pizza 7"). En gissning sparas aldrig
   // direkt: dashboarden öppnar dialogen ifylld och Telegram frågar (förut blev "2 skivor bröd" 2 enheter).
   const guess = ins === null && bare && !(known && words[words.length - 1] === bare);
@@ -643,7 +670,7 @@ function interpretLocal(text, ref, names) {
 }
 async function interpret(text, ref) {
   const names = mealNames(readDb()), L = interpretLocal(text, ref, names);
-  if (L.corr) return { ...L, via: 'rule' }; // en dos utan mat är entydig; AI:n behövs inte (och gjorde en anteckning av den)
+  if (L.corr || L.kind === 'Long-acting') return { ...L, via: 'rule' }; // en dos utan mat är entydig; AI:n behövs inte (och gjorde en anteckning av den)
   let o;
   try {
     const r = await ollama({ stream: false, format: INTERPRET_SCHEMA, options: { temperature: 0 }, messages: [{ role: 'system', content: INTERPRET(names) }, { role: 'user', content: text }] }, AbortSignal.timeout(45e3));
