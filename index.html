@@ -298,7 +298,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Smal skärm: rutorna fyra i bredd och tätare (förut två och två), så att veckan och månaden ryms på en skärm */
 @media(max-width:640px){.kpis.k4{gap:6px}.kpis.k4 .kpi{padding:8px 7px}.kpis.k4 .kpi b{font-size:1.125rem}.kpis.k4 .kpi span{font-size:.6875rem;line-height:1.3}.kpis.k4 .pdl{font-size:.625rem;margin-left:2px;vertical-align:2px;white-space:nowrap}.kpis.k4 .pspan{white-space:nowrap}.kpis.k4 .tirbar{height:6px}.kpi .sl{display:none}.kpi .ss{display:inline}}
 @media(max-width:359px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}.ifoot>button:only-child{margin-left:auto}
+.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
 @media(max-width:440px){.tabs button{padding-inline:9px}}
 .stack{display:flex;flex-direction:column;gap:4px}
 .lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
@@ -1808,7 +1808,6 @@ let wk = null, mo = null, moKey = null, yr = null, iview = 'week';
 try { const v = localStorage.getItem('insv'); if (v === 'month' || v === 'year') iview = v; } catch {}
 const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-const gmi = mg => Math.round(12.71 + 4.70587 * mm(mg));
 const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
 const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${String(val).replace(/ %$/, '&nbsp;%')}</b><span>${sub}</span></div>`;
 // De fyra nyckeltalen. p = perioden före (eller null), pl = vad den heter ("Week before", "September").
@@ -1992,17 +1991,6 @@ function renderYear() {
   const yw = el.querySelector('.yrw'); if (yw) yw.scrollLeft = yw.scrollWidth; // de senaste veckorna syns först
 }
 
-// Höjdpunkterna i månaden, i den här ordningen: samma i listan och på bilden
-function moFacts(x) {
-  const f = [], N = x.days.filter(d => d[1] != null).length;
-  if (x.best) f.push({ k: 'best', lab: 'Best day', val: dDate(x.best.t), sub: `${x.best.tir} % in range` });
-  if (x.inR && x.inR.min >= 60) f.push({ k: 'inr', lab: 'Longest time in range', val: dur(x.inR.min * 6e4), sub: `In a row, from ${dDate(x.inR.t)} ${hhmm(x.inR.t)}` });
-  if (x.noLow && x.noLow.n >= 2) f.push(x.noLow.n === N
-    ? { k: 'nolow', lab: 'No lows', val: 'on any day', sub: `All ${N} days with readings` }
-    : { k: 'nolow', lab: 'No lows for', val: `${x.noLow.n} days`, sub: `In a row, ${dDate(x.noLow.from)} – ${dDate(x.noLow.to)}` });
-  if (x.top.length) f.push({ k: 'top', lab: 'Most logged', val: `${x.top[0].name} ×${x.top[0].n}`, sub: '' });
-  return f;
-}
 function renderMonth() {
   const el = $('mo'); if (!mo || iview !== 'month') return;
   const L = mo.months || [], i = L.indexOf(mo.m), x = mo, c = x.cur;
@@ -2013,7 +2001,7 @@ function renderMonth() {
   const bars = partsHtml(x.parts, pn, !!p) + qViews(el, x.q);
   // Bara nyckeltalen, dygnets delar och värmekartan; Highlights och Meals and activity togs bort 2026-11-14 (finns kvar i bilden)
   el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
-    + `<div class="ifoot">${c.cov < 70 ? `<span>The sensor was active ${c.cov.toFixed(0)} % of the month. Treat these numbers with caution.</span>` : ''}<button id="mimg">Save as image</button></div>`;
+    + (c.cov < 70 ? `<div class="ifoot"><span>The sensor was active ${c.cov.toFixed(0)} % of the month. Treat these numbers with caution.</span></div>` : '');
   fitHeat(el, x.q);
 }
 // Pekarrutan: texten från närmaste data-tip, placerad vid pekaren och inom fönstret. Följer med när pekaren rör sig.
@@ -2028,71 +2016,6 @@ function renderMonth() {
 }
 $('mprev').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i > 0) loadMonth(L[i - 1]); };
 $('mnext').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i >= 0 && i < L.length - 1) loadMonth(L[i + 1]); };
-$('mo').onclick = e => { if (e.target.closest('#mimg')) saveMonthImage(); };
-// Bilden: samma värld som ikonen (mörk platta, grönt målområde, vit kurva). Kurvan är månadens typiska dag och staplarna
-// under den är dagarna. Ritas på en canvas i webbläsaren och sparas som PNG; inget skickas någonstans.
-function monthCanvas(x) {
-  const c = x.cur, W = 1080, H = 1350, X0 = 84, X1 = W - 84, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-  const g = cv.getContext('2d'), K = { bg: '#101418', fg: '#f1f3f5', mut: '#9aa4ac', ok: '#2bb39a', low: '#f05a5a', high: '#f0b429', bd: '#2b3238' };
-  const F = (wt, px) => `${wt} ${px}px "Segoe UI Variable Display","Segoe UI",-apple-system,system-ui,sans-serif`;
-  // Text som inte får plats krymps (till 60 %), och kortas med … som sista utväg. Returnerar bredden.
-  const text = (s, X, Y, wt, px, color, max = X1 - X0, align = 'left') => {
-    let z = px; g.font = F(wt, z); while (g.measureText(s).width > max && z > px * .6) g.font = F(wt, --z);
-    while (g.measureText(s).width > max && s.length > 2) s = s.slice(0, -2) + '…';
-    g.fillStyle = color; g.textAlign = align; g.fillText(s, X, Y); return g.measureText(s).width;
-  };
-  const line = (ctx, ps) => ps.forEach(([a, b], k) => k ? ctx.lineTo(a, b) : ctx.moveTo(a, b));
-  g.fillStyle = K.bg; g.fillRect(0, 0, W, H);
-  // Märket: ikonens band och kurva i liten skala
-  g.save(); g.translate(X0, 78); g.scale(56 / 512, 56 / 512);
-  g.fillStyle = K.ok; g.globalAlpha = .4; g.beginPath(); g.roundRect(40, 200, 432, 120, 22); g.fill(); g.globalAlpha = 1;
-  g.strokeStyle = K.fg; g.lineWidth = 40; g.lineCap = 'round'; g.stroke(new Path2D('M60 232c76 0 82 152 158 152s88-286 176-286 86 134 116 134')); g.restore();
-  text('Month in review', X0 + 76, 118, 600, 30, K.mut, 520);
-  if (x.demo) text('Demo data', X1, 118, 600, 26, K.mut, 300, 'right');
-  text(monthName(x.m) + (x.partial ? ' so far' : ''), X0, 236, 700, 80, K.fg);
-  const tw = text(`${c.tir.toFixed(0)} %`, X0 - 6, 452, 700, 230, c.tir >= 70 ? K.ok : K.high);
-  text('in range', X0 + tw + 20, 452, 600, 44, K.mut, X1 - X0 - tw - 20);
-  const lw = k => k === 0 ? 'No lows' : k === 1 ? '1 low' : k + ' lows';
-  text([lw(c.lows), `average ${f1(mm(c.avg))} mmol/L`, x.prev ? `${monthName(x.prev.m).split(' ')[0]}: ${x.prev.tir.toFixed(0)} %` : ''].filter(Boolean).join('   ·   '), X0, 520, 500, 34, K.mut);
-  // Typisk dag: grönt målområde, mittersta hälften av värdena som ett svagt band, medianen som kurva i zonfärgerna
-  const pr = x.prof.map((q, i) => q && [i, q.map(mm)]).filter(Boolean), cy0 = 616, cy1 = 856;
-  text('A typical day', X0, 588, 600, 26, K.mut);
-  if (pr.length > 1) {
-    const ym = Math.max(14, Math.ceil(Math.max(...pr.map(([, q]) => q[2])) + 1)), CX = i => X0 + (i + .5) / 48 * (X1 - X0), CY = v => cy1 - (Math.min(Math.max(v, 2), ym) - 2) / (ym - 2) * (cy1 - cy0);
-    const pts = k => pr.map(([i, q]) => [CX(i), CY(q[k])]);
-    g.fillStyle = K.ok; g.globalAlpha = .22; g.beginPath(); g.roundRect(X0, CY(HIGH), X1 - X0, CY(LOW) - CY(HIGH), 14); g.fill();
-    g.fillStyle = K.fg; g.globalAlpha = .12; g.beginPath(); line(g, [...pts(2), ...pts(0).reverse()]); g.closePath(); g.fill(); g.globalAlpha = 1;
-    const med = new Path2D(); line(med, pts(1));
-    g.lineWidth = 8; g.lineJoin = 'round'; g.lineCap = 'round';
-    for (const [a, b, col] of [[0, CY(HIGH), K.high], [CY(HIGH), CY(LOW), K.fg], [CY(LOW), H, K.low]]) { g.save(); g.beginPath(); g.rect(0, a, W, b - a); g.clip(); g.strokeStyle = col; g.stroke(med); g.restore(); }
-    text('10', X1 + 14, CY(HIGH) + 8, 600, 22, K.ok, 60); text('3.9', X1 + 14, CY(LOW) + 8, 600, 22, K.ok, 60);
-    for (const hh of [0, 6, 12, 18, 24]) text(p2(hh % 24) + ':00', X0 + hh / 24 * (X1 - X0), cy1 + 40, 500, 22, K.mut, 200, hh === 0 ? 'left' : hh === 24 ? 'right' : 'center');
-  }
-  // Varje dag i månaden: tid i mål, grön från 70 %, ockra under, en tunn streck för dagar utan tillräckligt med värden
-  const yy = +x.m.slice(0, 4), m0 = +x.m.slice(5, 7) - 1, N = new Date(yy, m0 + 1, 0).getDate(), bw = (X1 - X0) / N, by0 = 976, by1 = 1050;
-  text('Each day', X0, 952, 600, 26, K.mut);
-  for (let d = 0; d < N; d++) {
-    const v = x.days[d] ? x.days[d][1] : null, bx = X0 + d * bw + bw * .16, ww = bw * .68;
-    g.fillStyle = v == null ? K.bd : v >= 70 ? K.ok : K.high; g.beginPath();
-    if (v == null) g.roundRect(bx, by1 - 4, ww, 4, 2); else g.roundRect(bx, by1 - Math.max(4, v / 100 * (by1 - by0)), ww, Math.max(4, v / 100 * (by1 - by0)), 4);
-    g.fill();
-  }
-  g.save(); g.setLineDash([6, 8]); g.strokeStyle = K.mut; g.globalAlpha = .6; g.lineWidth = 2; g.beginPath(); g.moveTo(X0, by1 - .7 * (by1 - by0)); g.lineTo(X1, by1 - .7 * (by1 - by0)); g.stroke(); g.restore();
-  text('70 %', X1 + 14, by1 - .7 * (by1 - by0) + 8, 600, 22, K.mut, 64);
-  // Fyra höjdpunkter i två kolumner; saknas några fylls de på med medelvärdet och GMI
-  const facts = [...moFacts(x), { lab: 'Average', val: f1(mm(c.avg)) + ' mmol/L' }, { lab: 'Est. HbA1c (GMI)', val: gmi(c.avg) + ' mmol/mol' }].slice(0, 4), cw = (X1 - X0) / 2;
-  facts.forEach((f, i) => { const fx = X0 + (i % 2) * cw, fy = 1134 + (i >> 1) * 90; text(f.lab, fx, fy, 500, 26, K.mut, cw - 24); text(f.val, fx, fy + 42, 700, 38, K.fg, cw - 24); });
-  text(`${x.n.toLocaleString('en-GB')} readings   ·   sensor active ${c.cov.toFixed(0)} %`, X0, 1310, 500, 22, K.mut);
-  return cv;
-}
-function saveMonthImage() {
-  const x = mo; if (!x || !x.cur) return;
-  monthCanvas(x).toBlob(b => {
-    if (!b) { toast('Could not make the picture in this browser.'); return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `glucose-${x.m}.png`; document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4e3); toast('Saved the picture to your downloads.');
-  }, 'image/png');
-}
 
 // Frågor till den lokala AI:n. Svaret strömmas in medan det skrivs.
 let chat = [], asking = null;
