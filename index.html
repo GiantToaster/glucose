@@ -309,7 +309,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Patterns: bara en tunn stapel och en lugn rad överst; nyckeltalen finns under Insights */
 .pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
-.insbar{scroll-margin-top:12px}
+.insbar{scroll-margin-top:12px}@media(min-width:601px){html{scroll-padding-top:60px}}
 /* Byte av vy: rutan med vyerna ändrar höjd mjukt och den nya vyn tonar in */
 #iviews.anim{overflow:hidden;transition:height .25s cubic-bezier(.2,.7,.3,1)}.ifade{animation:ifade .25s ease-out}@keyframes ifade{from{opacity:0}}
 /* Medan rutan krymper ligger den gamla vyn kvar under den nya och tonar ut, så att rutan aldrig är tom */
@@ -2052,12 +2052,15 @@ function setView(v) {
   if (v === 'week' && wk) renderWeek(); else if (v === 'month' && mo) renderMonth(); else if (v === 'year' && yr) renderYear();
   return loadIns();
 }
-// Efter ett byte: ryms vyn inte under knapparna flyttas de till överkanten av skärmen, så att man ser vyn utan att scrolla
-// Efter ett byte: syns inte hela vyn scrollar sidan precis så långt att den gör det, men aldrig så långt att knapparna
-// försvinner upptill. Är vyn högre än skärmen hamnar alltså knapparna överst och vyn börjar direkt under dem.
+// Efter ett byte: ryms hela vyn på skärmen om sidan scrollar lite, gör den det (t.ex. året, som är kort). Utrymmet räknas
+// mellan flikraden, som står kvar överst, och skärmens nederkant (på mobilen den fasta flikraden där). Ryms vyn inte ändå
+// scrollar sidan inte alls: förut flyttades knapparna då till skärmens överkant, och sedan flikraden hamnade där
+// (2026-11-17) trycktes de upp mot den med kortets kant bakom.
 function insFit(smooth) {
-  const bt = document.querySelector('#tab-ins .insbar').getBoundingClientRect().top - 12, need = $('tab-ins').getBoundingClientRect().bottom + 12 - innerHeight;
-  if (need > 1 && bt > 1) scrollBy({ top: Math.min(need, bt), behavior: smooth ? 'smooth' : 'auto' });
+  const card = $('tab-ins').getBoundingClientRect(), nav = document.querySelector('.tabs').getBoundingClientRect();
+  const top = $('tabbar').getBoundingClientRect().height + 12, bottom = (nav.top > innerHeight / 2 ? nav.top : innerHeight) - 12;
+  const room = card.top - top, need = card.bottom - bottom;
+  if (need > 1 && need <= room) scrollBy({ top: need, behavior: smooth ? 'smooth' : 'auto' });
 }
 // Byte av vy. Den nya vyn tonar in. Är den högre får rutan sin nya höjd direkt, så att sidan redan är lång nog när den
 // scrollar fram vyn (förut växte rutan i en animation, och scrollningen tog slut för tidigt: Month från Year blev
