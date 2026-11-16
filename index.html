@@ -158,7 +158,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .occh{color:var(--mut);font-size:.75rem;padding:6px 0}
 /* Ett tillfälle som följdes av en känning: en svag röd ton över hela raden, så att det är det man ser först */
 .occn{margin:8px 2px 0}.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
-@media(max-width:600px){#cmp tr.cmpd{display:block;padding:0 0 10px}#cmp tr.cmpd td{display:block;padding:0}#cmp tr.cmpd td::before{content:none}.occh{display:none}.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
+@media(max-width:600px){#cmp tr.cmpd{display:block;padding:0 0 10px}#cmp tr.cmpd td{display:block;padding:0}#cmp tr.cmpd td::before{content:none}.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occr.occh{display:none}.occh+.occr{border-top:0}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 
 
@@ -166,10 +166,9 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 #cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.75rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
 
 /* Måltider, sökruta och listor */
-.subt{margin-top:6px}.cmpall{margin-top:10px;font-size:.8125rem;color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.cmpnote{margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
-#lib .opt .hist{font-size:.8125rem;color:var(--mut);text-decoration:underline;text-decoration-color:var(--bd);text-underline-offset:3px}#lib .opt .hist:hover{color:var(--fg);text-decoration-color:currentColor}
-#cmp tr.flash td{animation:flash 1.6s ease-out}@keyframes flash{from{background:color-mix(in srgb,var(--acc) 18%,transparent)}to{background:transparent}}
-@media(prefers-reduced-motion:reduce){#cmp tr.flash td{animation:none}}
+.subt{margin-top:6px}.cmpall{margin-top:10px;font-size:.8125rem;color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
+#lib .opt .hist{display:inline-flex;align-items:center;font-size:.8125rem;color:var(--mut)}#lib .opt .hist:hover{color:var(--fg)}.hist .chev{margin:0 10px 0 2px}.hist[aria-expanded=true] .chev{transform:rotate(45deg)}
+#lib .libocc{padding:0 0 12px}
 @media(max-width:600px){#lib .opt:has(.hist)>b{flex-basis:100%}}
 .addrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:6px 0 14px}.addrow .fld{flex:1;min-width:170px}.addrow .fld:first-child{flex:2;min-width:200px}
 /* Sparade måltider som rader med avdelare (inte rutor i ett kort); Remove finns i redigeringsläget, inte på varje rad */
@@ -435,7 +434,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="mv-cmp">
     <p class="mut m0 subt">How glucose went after each meal. Open a meal to see every time.</p>
     <div id="cmp"></div>
-    <p class="mut fine cmpnote">Counts meals that started in range and have 3 hours of readings after. Insulin without food (Correction) is left out.</p>
   </div>
   <div id="mv-lib" hidden>
   <p class="mut m0 subt">Saved meals and their usual dose, most eaten first. They show up first when you log a meal.</p>
@@ -603,7 +601,7 @@ const api = (p, o = {}) => fetch(p, o.body ? { ...o, headers: { 'content-type': 
 // Ritar om en del av sidan bara när innehållet ändrats. Då behåller tangentbordet sitt fokus vid minutuppdateringen
 // (förut hamnade fokus på <body> varje minut), och skärmläsare läser inte upp samma sak igen. Ändras innehållet
 // läggs fokus tillbaka på samma knapp eller markering i den nya versionen.
-const FKEYS = ['data-open', 'data-id', 'data-nid', 'data-keep', 'data-edit', 'data-rm'];
+const FKEYS = ['data-open', 'data-id', 'data-nid', 'data-keep', 'data-edit', 'data-rm', 'data-libocc'];
 function setHTML(el, html) {
   if (el._h === html) return; el._h = html;
   const a = document.activeElement, inside = a && a !== el && el.contains(a);
@@ -1208,7 +1206,7 @@ function occList(n) {
     + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above ${THI} from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
 }
 $('cmp').addEventListener('click', e => {
-  if (e.target.closest('#cmpall')) { cmpAll = !cmpAll; renderCmp(); $('cmpall')?.focus(); return; }
+  if (e.target.closest('#cmpall')) { cmpAll = !cmpAll; steady($('cmp'), cmpAll ? null : '#cmpall', renderCmp); $('cmpall')?.focus({ preventScroll: true }); return; }
   const km = e.target.closest('[data-keepm]'), lm = km && db.log.find(x => x.id === km.dataset.keepm);
   if (lm) { keepMeal(lm); renderCmp(); return; }
   // En kolumnrubrik: första klicket högst först (namn: A–Ö), nästa klick åt andra hållet. Fokus stannar på rubriken.
@@ -1216,7 +1214,8 @@ $('cmp').addEventListener('click', e => {
   if (sb) { const k = sb.dataset.sort; setCmpSort(k, k === cmpSort.k ? -cmpSort.dir : k === 'meal' ? 1 : -1); const nb = $('cmp').querySelector(`[data-sort="${k}"]`); if (nb) nb.focus(); return; }
   const b = e.target.closest('[data-cmp]'); if (!b) return;
   const k = decodeURIComponent(b.dataset.cmp); if (cmpOpen.has(k)) cmpOpen.delete(k); else cmpOpen.add(k);
-  renderCmp(); const nb = $('cmp').querySelector(`[data-cmp="${CSS.escape(b.dataset.cmp)}"]`); if (nb) nb.focus(); // fokus kvar på samma rad efter omritningen
+  const sel = `[data-cmp="${CSS.escape(b.dataset.cmp)}"]`; steady($('cmp'), sel, renderCmp);
+  const nb = $('cmp').querySelector(sel); if (nb) nb.focus({ preventScroll: true }); // fokus kvar på samma rad efter omritningen, utan att sidan flyttas
 });
 $('cmp').addEventListener('change', e => { if (e.target.id !== 'cmpsel') return; const [k, d] = e.target.value.split(':'); setCmpSort(k, +d); $('cmpsel').focus(); });
 
@@ -1323,16 +1322,19 @@ function renderMeals() {
 let act = -1;
 // Egen render för biblioteket, så att en pågående redigering inte skrivs över när sökrutan ritas om
 let editId = null;
-// Under Saved: hur många gånger måltiden räknats i Compared och snittoppen, som en länk dit (samma urval som tabellen)
+// Under Saved: hur många gånger måltiden räknats i Compared och snittoppen (samma urval som tabellen). Raden fäller ut
+// varje tillfälle under måltiden, samma lista som i Compared (occList).
+const libOpen = new Set();
 const libHist = name => { const h = hist(name); if (!h.length) return ''; const x = summ(h);
-  return `<button class="lk hist" data-cmpgo="${esc(encodeURIComponent(name.toLowerCase()))}" title="Show in Compared">${x.n === 1 ? 'once' : x.n + ' times'}, avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b></button>`; };
+  const k = name.toLowerCase();
+  return `<button class="lk hist" data-libocc="${esc(encodeURIComponent(k))}" aria-expanded="${libOpen.has(k)}" title="Show every time"><span class="chev" aria-hidden="true"></span><span>${x.n === 1 ? 'once' : x.n + ' times'}, avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b></span></button>`; };
 function renderLib() {
   $('libn').textContent = db.meals.length || '';
   const cnt = new Map(); for (const x of db.log) { const k = cleanName(x.name).toLowerCase(); cnt.set(k, (cnt.get(k) || 0) + 1); }
   const n = m => cnt.get(m.name.toLowerCase()) || 0;
   setHTML($('lib'), [...db.meals].sort((a, b) => n(b) - n(a) || a.name.localeCompare(b.name)).map(m => m.id === editId
     ? `<div class="opt edit"><input class="en" value="${esc(m.name)}" aria-label="Meal name"><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input class="ei" inputmode="decimal" autocomplete="off" value="${m.ins}" aria-label="Usual dose (units)"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div><button class="p" data-save="1">Save</button><button data-cancel="1">Cancel</button><button class="danger" data-rm="${m.id}">Remove meal</button></div>`
-    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>`).join('')
+    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>${libOpen.has(m.name.toLowerCase()) && hist(m.name).length ? `<div class="libocc">${occList(m.name)}</div>` : ''}`).join('')
     || '<div class="empty">Save the meals you eat often. They show up first when you log a meal.</div>');
 }
 function saveEdit() {
@@ -2369,12 +2371,34 @@ document.addEventListener('keydown', e => {
   if (k === '[') { e.preventDefault(); $('dprev').click(); }
   if (k === ']' && !$('dnext').disabled) { e.preventDefault(); $('dnext').click(); }
 });
+// Fälla ut och ihop utan att sidan hoppar: raden man klickade på (sel i box) står kvar på samma ställe på skärmen.
+// Blir sidan kortare än fönstret når (man fäller ihop något längst ner) flyttar webbläsaren annars hela sidan; då hålls
+// rutans höjd uppe i stället, och släpps i takt med att man scrollar uppåt eller när man byter vy eller flik.
+let heldBox = null;
+const boxNat = box => box.lastElementChild ? box.lastElementChild.getBoundingClientRect().bottom - box.getBoundingClientRect().top : 0;
+const unhold = () => { if (heldBox) { heldBox.style.minHeight = ''; heldBox = null; } };
+function steady(box, sel, fn) {
+  if (heldBox && heldBox !== box) unhold();
+  const a = sel && box.querySelector(sel), y0 = a ? a.getBoundingClientRect().top : null;
+  box.style.minHeight = box.offsetHeight + 'px'; // inte kortare medan den ritas om
+  fn();
+  const b = sel && box.querySelector(sel), dy = b && y0 !== null ? b.getBoundingClientRect().top - y0 : 0;
+  const nat = boxNat(box), short = scrollY + dy + innerHeight - (document.documentElement.scrollHeight - (box.offsetHeight - nat));
+  if (short > 0) { box.style.minHeight = Math.ceil(nat + short) + 'px'; heldBox = box; } else { box.style.minHeight = ''; heldBox = null; }
+  if (dy) scrollBy({ top: dy, behavior: 'instant' });
+}
+addEventListener('scroll', () => {
+  if (!heldBox) return;
+  const spare = document.documentElement.scrollHeight - (scrollY + innerHeight), h = heldBox.offsetHeight;
+  if (spare < 1) return;
+  if (h - spare <= boxNat(heldBox)) unhold(); else heldBox.style.minHeight = (h - spare) + 'px';
+}, { passive: true });
 // Meals: Compared (hur måltiderna gick, flyttad hit från Patterns 2026-11-16) eller Saved (måltiderna med vanlig dos).
 // Valet sparas, som Insights vy.
 let mview = 'cmp';
 try { if (localStorage.getItem('mealv') === 'lib') mview = 'lib'; } catch {}
 function setMView(v) {
-  mview = v; $('mv-cmp').hidden = v !== 'cmp'; $('mv-lib').hidden = v !== 'lib'; $('cper').hidden = v !== 'cmp';
+  unhold(); mview = v; $('mv-cmp').hidden = v !== 'cmp'; $('mv-lib').hidden = v !== 'lib'; $('cper').hidden = v !== 'cmp';
   document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.mv === v); b.setAttribute('aria-pressed', b.dataset.mv === v); });
   try { localStorage.setItem('mealv', v); } catch {}
 }
@@ -2389,13 +2413,12 @@ document.querySelectorAll('#cper button').forEach(b => b.onclick = () => setCmpP
 setCmpPer(cmpPer);
 setMView(mview);
 $('lib').addEventListener('click', e => {
-  const b = e.target.closest('[data-cmpgo]'); if (!b) return;
-  e.stopPropagation(); cmpOpen.add(decodeURIComponent(b.dataset.cmpgo)); setMView('cmp'); renderCmp();
-  const nb = $('cmp').querySelector(`[data-cmp="${CSS.escape(b.dataset.cmpgo)}"]`); if (!nb) return;
-  const tr = nb.closest('tr'); tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash');
-  nb.focus({ preventScroll: true }); tr.scrollIntoView({ block: 'center', behavior: calm() ? 'auto' : 'smooth' });
-}, true);
+  const b = e.target.closest('[data-libocc]'); if (!b || editId !== null) return;
+  const k = decodeURIComponent(b.dataset.libocc); if (libOpen.has(k)) libOpen.delete(k); else libOpen.add(k);
+  steady($('lib'), `[data-libocc="${CSS.escape(b.dataset.libocc)}"]`, renderLib);
+});
 function showTab(k) {
+  unhold();
   // Bara den valda fliken ligger i tabbordningen; piltangenterna flyttar mellan flikarna (WAI-ARIA tabs)
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'tab-' + k);
