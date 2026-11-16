@@ -288,9 +288,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Patterns: bara en tunn stapel och en lugn rad överst; nyckeltalen finns under Insights */
 .pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
-/* Insights är minst en skärm hög: när en kortare vy visas krymper inte sidan under det man tittar på (då drog
-   webbläsaren upp sidan och allt hoppade), och raden med knapparna kan alltid ligga överst på skärmen. */
-#tab-ins{min-height:calc(100vh - 24px);min-height:calc(100dvh - 24px)}.insbar{scroll-margin-top:12px}
+.insbar{scroll-margin-top:12px}
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
@@ -1875,10 +1873,30 @@ function insFit() {
   const bar = document.querySelector('#tab-ins .insbar'), r = bar.getBoundingClientRect();
   if ($('tab-ins').getBoundingClientRect().bottom > innerHeight + 1 && r.top > 16) bar.scrollIntoView({ block: 'start', behavior: calm() ? 'auto' : 'smooth' });
 }
-document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => {
-  const had = { week: wk, month: mo, year: yr }[b.dataset.v], p = setView(b.dataset.v);
-  if (had) requestAnimationFrame(insFit); else Promise.resolve(p).then(() => requestAnimationFrame(insFit));
-});
+// Byte av vy utan ryck och utan tomrum. Kortets höjd hålls medan den nya vyn ritas. Är den nya vyn kortare och sidan
+// skulle krympa under det man tittar på (då drar webbläsaren upp sidan i ett ryck), glider sidan först upp lika mycket
+// och höjden släpps när den har stannat. Annars släpps höjden direkt. Förut var kortet alltid minst en skärm högt, vilket
+// lämnade ett stort tomrum under en kort vy.
+const IVIEW = { week: 'wk', month: 'mo', year: 'yr' };
+const insNatural = v => { const p = $('tab-ins'); return $(IVIEW[v]).getBoundingClientRect().bottom - p.getBoundingClientRect().top + parseFloat(getComputedStyle(p).paddingBottom); };
+let insHold = null;
+function insSwitch(v) {
+  const panel = $('tab-ins'), held = panel.offsetHeight, had = { week: wk, month: mo, year: yr }[v];
+  if (insHold) insHold(); // ett snabbt nytt klick: den förra hållningen avslutas först
+  panel.style.minHeight = held + 'px';
+  const p = setView(v);
+  const done = () => requestAnimationFrame(() => {
+    let tm; const release = () => { clearTimeout(tm); removeEventListener('scrollend', release); panel.style.minHeight = ''; insHold = null; };
+    insHold = release;
+    const h1 = insNatural(v), maxY = document.documentElement.scrollHeight - Math.max(0, held - h1) - innerHeight;
+    if (h1 >= held || scrollY <= maxY) { release(); return insFit(); }
+    scrollTo({ top: Math.max(0, maxY), behavior: calm() ? 'auto' : 'smooth' });
+    if (calm()) return release();
+    addEventListener('scrollend', release); tm = setTimeout(release, 700);
+  });
+  if (had) done(); else Promise.resolve(p).then(done, done);
+}
+document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => insSwitch(b.dataset.v));
 
 function renderWeek() {
   const el = $('wk'), c = wk && wk.cur, p = wk && wk.prev; if (!wk || iview !== 'week') return;
