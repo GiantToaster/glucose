@@ -715,7 +715,7 @@ function removeEntry(id) {
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
 // fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
 // knapparna fanns har fått dem en gång.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true };
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true, piw: true, piKey: '' };
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
 const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
@@ -805,6 +805,23 @@ function staleTick() {
   tg.staleT = lt || bootAt; saveTg();
   tgSay(`⚠️ <b>No new readings since ${lt ? whenTxt(lt) : hm(bootAt) + ', when the dashboard started'}.</b>
 ${why}`, quiet);
+}
+// Varning när Raspberry Pi:n får ett problem: det pistatus skriver överst ("! problem", "* varning"), t.ex. hög
+// temperatur, nästan fullt minneskort eller ett nätverksfel. Ett meddelande när det börjar och ett när allt är bra igen.
+// piKey är problemen utan siffror (så att "82 °C" och "83 °C" räknas som samma), sparad så att en omstart inte skickar
+// igen. Samma resultat två kontroller i rad (fem minuter isär) krävs, så att en kort hicka inte skickar något.
+// Mätvärden som slutar komma har ett eget meddelande (ovan). Mellan 23 och 07 kommer det tyst.
+let piPrev = null;
+async function piTick() {
+  if (DEMO || !tg.token || !tg.chat || !fs.existsSync(PISTATUS)) return;
+  const p = await piStatus(true); if (p.error || p.missing) return;
+  const crit = p.crit || [], msgs = [...crit, ...(p.warn || [])], key = msgs.map(m => m.replace(/\d+(?:[.,]\d+)?/g, '#')).sort().join('\n');
+  const prev = piPrev; piPrev = key; if (key !== prev || key === (tg.piKey || '')) return;
+  const had = !!tg.piKey; tg.piKey = key; saveTg();
+  if (tg.piw === false) return;
+  const h = new Date().getHours(), quiet = { disable_notification: h >= 23 || h < 7 };
+  if (!msgs.length) { if (had) tgSay('✅ <b>The Raspberry Pi is fine again.</b>', quiet); return; }
+  tgSay(`${crit.length ? '🔴' : '⚠️'} <b>The Raspberry Pi needs attention.</b>\n${msgs.map(m => '• ' + he(m)).join('\n')}\n<i>More under the Raspberry Pi button on the dashboard.</i>`, quiet);
 }
 // warn: en ovanlig dos eller en möjlig dubblett. Den loggas ändå direkt (användarens val 2026-11-09: boten ska inte fråga),
 // men svaret säger det, med Undo under, så att ett skrivfel (55 i stället för 5,5) är ett tryck att ångra.
@@ -1016,7 +1033,7 @@ server.listen(PORT, HOST, () => {
   if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
   // Hämtningar startar först när porten är vår
   tick(); setInterval(tick, 6e4); tgLoop(); startOllama();
-  setInterval(reportTick, 6e4); setTimeout(reportTick, 5e3); setInterval(staleTick, 6e4);
+  setInterval(reportTick, 6e4); setTimeout(reportTick, 5e3); setInterval(staleTick, 6e4); setInterval(piTick, 5 * 6e4); setTimeout(piTick, 6e4);
   // Kommandomenyn i Telegram (/week och /month kom till senare; en bot som kopplades in förut får dem här)
   if (tg.token) tgApi('setMyCommands', { commands: COMMANDS }).catch(() => {});
   // En bot som kopplades in innan favoritknapparna fanns får dem en gång, utan att man behöver skriva /fav
@@ -1173,6 +1190,10 @@ function route(req, res) {
     });
   }
   // Rapporterna på/av. Vid påslag räknas dagens söndag/1:a som redan skickad, så att inget skickas direkt.
+  if (u.pathname === '/api/telegram/pi' && req.method === 'POST') return body(req, res, ({ on }) => {
+    if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
+    tg.piw = !!on; saveTg(); send(res, { ok: 1, piw: tg.piw });
+  });
   if (u.pathname === '/api/telegram/stale' && req.method === 'POST') return body(req, res, ({ on }) => {
     if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
     tg.stale = !!on; saveTg(); send(res, { ok: 1, stale: tg.stale });
@@ -1181,7 +1202,7 @@ function route(req, res) {
     if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
     tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
   });
-  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false });
+  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false, piw: tg.piw !== false });
   if (u.pathname === '/api/weekly') {
     const w = weekly(), n = Date.now(), W = 7 * 864e5;
     return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], n) : [], parts: { cur: dayParts(n - W, n), prev: dayParts(n - 2 * W, n - W) } });
