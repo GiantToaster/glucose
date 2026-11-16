@@ -228,7 +228,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .sname .sd{font-weight:400}.sd{font-size:.8125rem;line-height:1.45;color:var(--mut);text-wrap:pretty}.sd:empty{display:none}
 .sintro{margin:0 4px}.sintro:empty{display:none}
 .srow>.seg,.srow>button,.srow>div,.srow>.swi{flex:none}
-.sctl{display:flex;flex-direction:column;gap:6px;width:min(240px,55%)}.sctl select,.sctl input{width:100%}
+.tnum{width:5.5em;flex:none;text-align:right;font-variant-numeric:tabular-nums}.sctl{display:flex;flex-direction:column;gap:6px;width:min(240px,55%)}.sctl select,.sctl input{width:100%}
 .sdet summary{display:flex;align-items:center;cursor:pointer;min-height:44px;padding:12px 14px;font-size:.8125rem;font-weight:600;color:var(--mut);list-style:none}.sdet summary::-webkit-details-marker{display:none}
 .sdet summary::after{content:'';width:7px;height:7px;margin:0 4px 0 auto;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .15s}.sdet[open] summary::after{transform:translateY(2px) rotate(-135deg)}
 .sdet summary:hover{color:var(--fg)}.sdet .kl{padding:0 14px 14px}
@@ -402,7 +402,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="prof"></div>
   <div id="psum"></div>
   <details class="help phelp"><summary>How these are counted</summary><dl>
-    <dt>In range</dt><dd>3.9 to 10.0 mmol/L. The goals are the international targets for CGM.</dd>
+    <dt>In range</dt><dd id="tgdd">3.9 to 10.0 mmol/L. The goals are the international targets for CGM.</dd>
     <dt>A low</dt><dd>At least 15 minutes below 3.9. Very low = below 3.0.</dd>
     <dt>Typical curve</dt><dd>The middle value for each half hour. The darker band holds half of the readings, the lighter band 9 in 10.</dd>
     <dt>Meals compared</dt><dd>Only meals that started in range and have 3 hours of readings after. Insulin without food (Correction) is left out.</dd>
@@ -510,6 +510,11 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="srow"><label class="sname" for="ifast">Mealtime</label><div class="sctl"><select id="ifast"></select><input id="ifasto" placeholder="Name of your insulin" aria-label="Name of your mealtime insulin" hidden></div></div>
       <div class="srow"><label class="sname" for="ilong">Basal</label><div class="sctl"><select id="ilong"></select><input id="ilongo" placeholder="Name of your insulin" aria-label="Name of your basal insulin" hidden></div></div>
     </div></section>
+    <section class="sgw" aria-labelledby="sg8"><h3 class="slab" id="sg8">Target range</h3><div class="sg">
+      <div class="srow"><label class="sname" for="tlo">Low limit<span class="sd">mmol/L, from 3.9</span></label><input class="tnum" id="tlo" inputmode="decimal" autocomplete="off" placeholder="3.9" aria-describedby="tmsg"></div>
+      <div class="srow"><label class="sname" for="thi">High limit<span class="sd">mmol/L, up to 13.9</span></label><input class="tnum" id="thi" inputmode="decimal" autocomplete="off" placeholder="10" aria-describedby="tmsg"></div>
+      <div class="srow" id="tstdw"><span class="sname">Standard range<span class="sd">3.9 to 10, the international one</span></span><button id="tstd">Use 3.9–10</button></div>
+    </div><span class="fine warnq" id="tmsg" aria-live="polite"></span><p class="sd sintro">Time in range, the colours and the charts follow it. A low is always under 3.9.</p></section>
     <section class="sgw" aria-labelledby="sg3"><h3 class="slab" id="sg3">History</h3><div class="sg">
       <div class="srow"><span class="sname">Import from LibreView<span class="sd" id="imsg" aria-live="polite">CSV export. Safe to run again.</span></span><div><button id="imbtn" aria-describedby="imsg">Choose file…</button><input id="imfile" type="file" accept=".csv,text/csv" hidden></div></div>
     </div></section>
@@ -549,9 +554,22 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <div id="toast" role="status"></div>
 
 <script>
-// Gränserna är de internationella i mg/dL (<70 lågt, >180 högt), samma som statistiken i server.js.
-// 70 mg/dL visas som 3.9 och räknas inte som lågt; 3.9 * 18.016 = 70.3 skulle annars färga 70 rött.
-const LOW = 70 / 18.016, HIGH = 180 / 18.016, $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
+// Målområdet (Settings → Target range) i mmol/L: TLO–THI, standard 3.9–10 (de internationella gränserna). Det sparas i
+// db.settings.lo och hi, så att servern räknar tid i mål med samma gränser. Ett värde bedöms på det som visas (en
+// decimal): med 10 som gräns är 10.0 i mål och 10.1 över. LOW och HIGH är linjerna i graferna, mitt emellan två
+// visade värden, så att 3.9 (70 mg/dL) aldrig färgas rött. En känning följer inte målområdet: alltid under 3.9 (70 mg/dL).
+let TLO = 3.9, THI = 10, LOW = 3.85, HIGH = 10.05;
+const okTarget = (lo, hi) => typeof lo === 'number' && typeof hi === 'number' && lo >= 3.9 && lo <= 7 && hi <= 13.9 && hi - lo >= 1;
+const stdTarget = () => TLO === 3.9 && THI === 10;
+function setTarget(st) {
+  const ok = st && okTarget(st.lo, st.hi); TLO = ok ? st.lo : 3.9; THI = ok ? st.hi : 10; LOW = TLO - .05; HIGH = THI + .05; buildHZ();
+  const dd = document.getElementById('tgdd');
+  if (dd) dd.textContent = stdTarget() ? '3.9 to 10.0 mmol/L. The goals are the international targets for CGM.'
+    : `${TLO.toFixed(1)} to ${THI.toFixed(1)} mmol/L, your own target range (Settings). The goals are the international ones, made for 3.9 to 10.0.`;
+}
+// Över eller under målområdet, för ett värde i mg/dL
+const tHi = mg => r1(mm(mg)) > THI, tLo = mg => r1(mm(mg)) < TLO, tIn = mg => !tHi(mg) && !tLo(mg);
 const mm = v => v / 18.016, f1 = v => v.toFixed(1), LOWT = 'Low treated', BASAL = 'Long-acting'; // anteckningstypen för det man tog mot en känning (så heter den i datan, för servern och AI:n)
 const kindLabel = k => k === LOWT ? 'Low treatment' : k === BASAL ? 'Long-acting insulin' : k; // så heter den på skärmen, samma som knappen
 const lowWord = mg => mg < 54 ? 'Very low' : 'Low'; // ett ord för känningar överallt: under 3.0 = Very low
@@ -561,7 +579,7 @@ const isCorr = n => String(n).toLowerCase() === 'correction';
 // Färg och läge räknas på det värde som visas (en decimal), så att samma siffra aldrig får två lägen: 10.0 är i mål
 // (förut var 180 mg/dL "10.0 In range" och 181 "10.0 High"), 3.9 likaså, 3.8 är lågt.
 const r1 = v => Math.round(v * 10) / 10;
-const col = v => r1(v) < 3.9 ? 'var(--low)' : r1(v) > 10 ? 'var(--high)' : 'var(--ok)';
+const col = v => r1(v) < TLO ? 'var(--low)' : r1(v) > THI ? 'var(--high)' : 'var(--ok)';
 const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const p2 = n => String(n).padStart(2, '0');
@@ -610,9 +628,10 @@ const tResume = () => setTimeout(() => { if ($('toast').classList.contains('on')
 $('toast').addEventListener('pointerenter', tPause); $('toast').addEventListener('focusin', tPause);
 $('toast').addEventListener('pointerleave', tResume); $('toast').addEventListener('focusout', tResume);
 const ARROWS = ['', '↓', '↘', '→', '↗', '↑'], TREND = ['', 'falling quickly', 'falling', 'steady', 'rising', 'rising quickly'];
-// Lägesord enligt de internationella nivåerna: under 3.0 och över 13.9 är "very" (nivå 2)
+// Lägesord enligt de internationella nivåerna: under 3.0 och över 13.9 är "very" (nivå 2). Lågt (känningsläget) är
+// alltid under 3.9; med ett eget målområde som börjar högre är värdena däremellan "Below range", utan känningsläget.
 const zone = v => (v = r1(v)) < 3 ? ['Very low', 'var(--low)', 'is-low is-vlow'] : v < 3.9 ? ['Low', 'var(--low)', 'is-low']
-  : v <= 10 ? ['In range', 'var(--ok)', ''] : v <= 13.9 ? ['High', 'var(--high)', ''] : ['Very high', 'var(--high)', 'is-vhigh'];
+  : v < TLO ? ['Below range', 'var(--low)', ''] : v <= THI ? ['In range', 'var(--ok)', ''] : v <= 13.9 ? ['High', 'var(--high)', ''] : ['Very high', 'var(--high)', 'is-vhigh'];
 let lastOld = false, lastZone = null, editLog = null, editNid = null, logLimit = 15; // editNid: id för en anteckning som ändras // editLog: id för en loggad måltid som ändras i dialogen
 let db = { meals: [], log: [], notes: [] }, rd = [], out = {}, st = {}, hrs = 6, selId = null, day = null;
 const dur = ms => { const n = Math.round(ms / 6e4); return n < 60 ? n + ' min' : n < 1440 ? Math.floor(n / 60) + ' h' + (n % 60 ? ' ' + p2(n % 60) + ' min' : '') : Math.floor(n / 1440) + (n < 2880 ? ' day' : ' days') + (Math.floor(n % 1440 / 60) ? ' ' + Math.floor(n % 1440 / 60) + ' h' : ''); };
@@ -696,7 +715,7 @@ async function refresh() {
     if (!saving && n.rev !== undefined && (!base || n.rev !== base.rev)) {
       const sdb = await api('/api/db');
       if (!saving && (!base || sdb.rev > base.rev)) {
-        base = normDb(sdb); db = clone(base); renderMeals(); if (editId === null) renderLib(); if (!$('dset').open) renderInsulin();
+        base = normDb(sdb); db = clone(base); setTarget(db.settings); renderMeals(); if (editId === null) renderLib(); if (!$('dset').open) { renderInsulin(); renderTarget(); }
       }
     }
     // Saknas utfall (första laddningen, eller en måltid loggad i efterhand) hämtas alla en gång; servern svarar för varje måltid
@@ -749,7 +768,7 @@ async function refresh() {
 }
 
 const cut = (s, n = 18) => s.length > n ? s.slice(0, n - 1) + '…' : s;
-// Kurvan är produktens signatur: neutral i målområdet, ockra över 10 och röd under 3.9, med ett svagt fält mellan
+// Kurvan är produktens signatur: neutral i målområdet, ockra över och röd under det, med ett svagt fält mellan
 // kurvan och gränsen där den går utanför. En lodrät gradient med hårda stopp vid gränserna; samma färger som lägesordet
 // vid värdet. segs = kurvans delar mellan luckor, som [x, y]-punkter.
 // id: fast prefix per graf (inte ett löpnummer), så att samma kurva ger samma kod och inte ritas om i onödan
@@ -764,11 +783,11 @@ function zoneTrace(id, segs, Y, x0, x1, sw) {
     + `<g clip-path="url(#${id}h)" style="fill:var(--high)" opacity=".16">${area(yh)}</g><g clip-path="url(#${id}l)" style="fill:var(--low)" opacity=".2">${area(yl)}</g>`
     + `<path fill="none" stroke="url(#${id}g)" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" d="${d}"/>`;
 }
-// Y-axelns etiketter: jämna tal, men gränserna 3.9 och 10 utskrivna (och 4 utelämnad bredvid 3.9)
+// Y-axelns etiketter: jämna tal, men målområdets gränser utskrivna (och jämna tal som skulle krocka med dem utelämnade)
 const yAxis = (Y, ym, x, z) => {
   const st = Y(0) - Y(2) < 15 * z ? 4 : 2; // låg graf: var 4:e i stället för varannan
-  let s = ''; for (let v = 0; v <= ym; v += st) if (v !== 4 && v !== 10 && !(st === 4 && v === 8)) s += `<text x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${v}</text>`;
-  return s + [[LOW, '3.9'], [HIGH, '10']].map(([v, t]) => `<text class="thr" x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${t}</text>`).join('');
+  let s = ''; for (let v = 0; v <= ym; v += st) if ([TLO, THI].every(t => Math.abs(Y(v) - Y(t)) >= 12 * z)) s += `<text x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${v}</text>`;
+  return s + [[LOW, TLO], [HIGH, THI]].map(([v, t]) => `<text class="thr" x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${t}</text>`).join('');
 };
 // Graferna ritas i pixlar. chartScale följer webbläsarens textstorlek (1 = 16 px), coarse = pekskärm.
 const chartScale = () => Math.max(1, parseFloat(getComputedStyle(document.documentElement).fontSize) / 16 || 1);
@@ -986,7 +1005,7 @@ function renderLog() {
   // Filtret: namn, typ eller text innehåller det man skrivit ("pizza", "low", "walk")
   const q = $('lq').value.trim().toLowerCase(), hit = s => !q || String(s || '').toLowerCase().includes(q);
   // Även utfallet ("low", "very low", "high") och dagen ("yesterday", "3 nov")
-  const tags = m => { const o = out[m.id] || {}; return [m.name, o.lo && o.lo[1] < 70 ? lowWord(o.lo[1]) : '', o.pk && o.pk[1] > 180 ? 'high' : '', dshort(m.t)].join(' '); };
+  const tags = m => { const o = out[m.id] || {}; return [m.name, o.lo && o.lo[1] < 70 ? lowWord(o.lo[1]) : '', o.pk && tHi(o.pk[1]) ? 'high' : '', dshort(m.t)].join(' '); };
   const all = [...db.log.filter(m => hit(tags(m))).map(m => ({ t: m.t, m })), ...db.notes.filter(n => hit([kindLabel(n.kind), n.text, dshort(n.t)].join(' '))).map(n => ({ t: n.t, n }))].sort((a, b) => b.t - a.t);
   const rows = all.slice(0, logLimit).map(({ m, n }) => {
     // Namnet är en knapp som öppnar detaljvyn (där Remove finns); på pekskärm räcker ett tryck på raden
@@ -1022,12 +1041,12 @@ function renderLog() {
 }
 
 // Tidigare tillfällen med en måltid, nyast först. Bara de som började i målområdet och har 3 h mätvärden efteråt,
-// så att en hög start inte skylls på dosen. Gränserna i mg/dL är desamma som statistiken i server.js.
+// så att en hög start inte skylls på dosen. Samma målområde som statistiken i server.js.
 const hist = name => db.log.filter(m => m.name.toLowerCase() === name.toLowerCase()).map(m => ({ m, o: out[m.id] || {} }))
-  .filter(({ o }) => o.done && o.b && o.pk && o.b[1] >= 70 && o.b[1] <= 180);
+  .filter(({ o }) => o.done && o.b && o.pk && tIn(o.b[1]));
 const summ = hs => {
   const avg = (a, f) => a.reduce((s, e) => s + f(e), 0) / a.length;
-  const H = hs.filter(e => e.o.pk[1] > 180), L = hs.filter(e => e.o.lo[1] < 70);
+  const H = hs.filter(e => tHi(e.o.pk[1])), L = hs.filter(e => e.o.lo[1] < 70);
   return { n: hs.length, hi: H.length, lo: L.length, peak: avg(hs, e => e.o.pk[1]), rise: avg(hs, e => e.o.pk[1] - e.o.b[1]), ins: avg(hs, e => +e.m.ins || 0) };
 };
 // Dialogen där dosen skrivs: bara skrivfelskontrollen beror på dosen i fältet. Förut visades hur det gått med just den
@@ -1091,8 +1110,8 @@ function ghostHTML(m) {
   const ym = Math.max(14, Math.ceil(Math.max(...vals) + 1)), X = t => l + Math.max(0, Math.min(180, t)) / 180 * (w - l - r), Y = v => T + (1 - Math.min(v, ym) / ym) * (h - T - B);
   // En linje genom punkterna, med ett avbrott där det saknas värden i mer än 20 min (äldre värden kommer var 15:e minut)
   const path = ps => { let d = '', pt = null; for (const [t, v] of ps) { if (t < -4 || t > 181) continue; d += (pt === null || t - pt > 20 ? 'M' : 'L') + X(t).toFixed(1) + ',' + Y(mm(v)).toFixed(1); pt = t; } return d; };
-  let sv = `<rect x="${l}" y="${Y(10).toFixed(1)}" width="${(w - l - r).toFixed(1)}" height="${(Y(3.9) - Y(10)).toFixed(1)}" style="fill:color-mix(in srgb,var(--ok) 9%,transparent)"/>`;
-  for (const v of [3.9, 10]) sv += `<text x="${l - 5 * z}" y="${(Y(v) + 4 * z).toFixed(1)}" text-anchor="end" style="fill:var(--ok);font-weight:600">${v}</text>`;
+  let sv = `<rect x="${l}" y="${Y(THI).toFixed(1)}" width="${(w - l - r).toFixed(1)}" height="${(Y(TLO) - Y(THI)).toFixed(1)}" style="fill:color-mix(in srgb,var(--ok) 9%,transparent)"/>`;
+  for (const v of [TLO, THI]) sv += `<text x="${l - 5 * z}" y="${(Y(v) + 4 * z).toFixed(1)}" text-anchor="end" style="fill:var(--ok);font-weight:600">${v}</text>`;
   for (const t of [0, 60, 120, 180]) sv += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${h - B}" stroke="var(--bd)"${t ? ' stroke-dasharray="2 4"' : ''}/><text x="${X(t)}" y="${h - 5 * z}" text-anchor="${t ? t === 180 ? 'end' : 'middle' : 'start'}">${t ? t / 60 + ' h' : 'Meal'}</text>`;
   for (const x of others) {
     const ps = curv[x.id].pts, pk = ps.filter(p => p[0] >= 0).reduce((a, p) => p[1] > a[1] ? p : a, [0, 0]);
@@ -1144,9 +1163,9 @@ function renderCmp() {
       + (open ? `<tr role="row" class="cmpd"><td role="cell" colspan="7">${occList(n)}</td></tr>` : ''); }).join('') + '</tbody></table>'
     : '<div class="empty">Meals show up here once they have 3 hours of readings after them.</div>';
 }
-// Kolumnerna i Meals compared och vad de sorteras på. "Above 10" och "Below 3.9" sorteras på andelen (2 of 4 före 1 of 4).
+// Kolumnerna i Meals compared och vad de sorteras på. "Above 10" (målområdets övre gräns) och "Below 3.9" sorteras på andelen (2 of 4 före 1 of 4).
 const CMP_COLS = [{ k: 'meal', l: 'Meal' }, { k: 'n', l: 'Times', v: s => s.n }, { k: 'ins', l: 'Avg units', v: s => s.ins }, { k: 'rise', l: 'Avg rise', v: s => s.rise },
-  { k: 'peak', l: 'Avg peak', v: s => s.peak }, { k: 'hi', l: 'Above 10', v: s => s.hi / s.n + s.hi * 1e-6 }, { k: 'lo', l: 'Below 3.9', v: s => s.lo / s.n + s.lo * 1e-6 }];
+  { k: 'peak', l: 'Avg peak', v: s => s.peak }, { k: 'hi', get l() { return 'Above ' + THI; }, v: s => s.hi / s.n + s.hi * 1e-6 }, { k: 'lo', l: 'Below 3.9', v: s => s.lo / s.n + s.lo * 1e-6 }];
 let cmpSort = { k: 'n', dir: -1 };
 try { const s = JSON.parse(localStorage.getItem('cmpSort')); if (s && CMP_COLS.some(c => c.k === s.k) && (s.dir === 1 || s.dir === -1)) cmpSort = s; } catch {}
 function setCmpSort(k, dir) {
@@ -1161,12 +1180,12 @@ function occList(n) {
   const k = n.toLowerCase(), all = db.log.filter(m => m.name.toLowerCase() === k).sort((a, b) => b.t - a.t);
   const v = p => `<b style="color:${col(mm(p[1]))}">${f1(mm(p[1]))}</b>`;
   const row = m => {
-    const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && b[1] >= 70 && b[1] <= 180;
+    const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && tIn(b[1]);
     const sl = b && b[1] < 70; // åt under en känning: det står först i resultatet, aldrig "In range"
-    const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : sl ? 'Not' : b[1] > 180 ? 'Started above 10' : '';
-    // Startvärdet och sedan det som hände: högt (måltidens egen topp över 10) och/eller lågt (under 3.9), med hur lång
+    const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : sl ? 'Not' : tHi(b[1]) ? 'Started above ' + THI : tLo(b[1]) ? 'Started below ' + TLO : '';
+    // Startvärdet och sedan det som hände: högt (måltidens egen topp över målområdet) och/eller lågt (under 3.9), med hur lång
     // tid det tog. Höll det sig i mål: värdet efter 3 h (saknas värden precis där står när, t.ex. "after 2 h 30 min").
-    const high = pk && pk[1] > 180, end = o.end, after = t => 'after ' + dur(t - m.t), steps = [], res = [];
+    const high = pk && tHi(pk[1]), end = o.end, after = t => 'after ' + dur(t - m.t), steps = [], res = [];
     if (sl) res.push('<span class="lowv">Started low</span>');
     if (high) { steps.push(pk); res.push(`<span class="hiv">High ${after(pk[0])}</span>`); }
     if (low) { steps.push(lo); res.push(`<span class="lowv">${lowWord(lo[1])} ${after(lo[0])}</span>`); }
@@ -1176,7 +1195,7 @@ function occList(n) {
       + `<span role="cell">${res.join('<span class="mut">, then </span>')}${why ? `<span class="ncw">${why === 'Not' ? 'Not in the averages' : why + ', not in the averages'}</span>` : ''}</span></div>`;
   };
   return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Glucose</span><span role="columnheader">What happened</span></div>${all.map(row).join('')}</div>`
-    + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above 10 from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
+    + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above ${THI} from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
 }
 $('cmp').addEventListener('click', e => {
   // En kolumnrubrik: första klicket högst först (namn: A–Ö), nästa klick åt andra hållet. Fokus stannar på rubriken.
@@ -1195,7 +1214,7 @@ function renderSum() {
   if (!x) { $('sum').innerHTML = '<div class="empty">No readings for this period yet.</div>'; return; }
   // Bara en tunn stapel och en lugn rad, så att man ser vilken period kurvan bygger på. Nyckeltalen (med jämförelse) finns under Insights.
   $('sum').innerHTML = `<div class="pstir">${tirbar(x, 'big')}<div class="kpi2"><span><b style="color:var(${x.tir >= 70 ? '--ok' : '--high'})">${x.tir.toFixed(0)} %</b> in range</span>`
-    + `<span><b${x.low >= 4 ? ' style="color:var(--low)"' : ''}>${x.low.toFixed(1)} %</b> under 3.9</span><span><b>${x.high.toFixed(0)} %</b> over 10</span>`
+    + `<span><b${x.low >= 4 ? ' style="color:var(--low)"' : ''}>${x.low.toFixed(1)} %</b> under ${TLO}</span><span><b>${x.high.toFixed(0)} %</b> over ${THI}</span>`
     + `<span>Sensor active <b${x.cov < 70 ? ' style="color:var(--high)"' : ''}>${x.cov.toFixed(0)} %</b> of the period</span></div></div>`
     + (x.cov < 70 ? '<p class="mut foot">Less than 70 % of this period has readings, so treat these numbers with caution.</p>' : '');
 }
@@ -1223,7 +1242,7 @@ function drawProf() {
   const outT = med.filter(([, v]) => v > HIGH).map(([i]) => i), outL = med.filter(([, v]) => v < LOW).map(([i]) => i);
   const rng = is => { const r = []; for (const i of is) { const e = r[r.length - 1]; if (e && i === e[1] + 1) e[1] = i; else r.push([i, i]); } return r.map(([a, b]) => `${t(a)} to ${t((b + 1) % 48)}`).join(', '); };
   const said = `Typical glucose by time of day, last ${pdays} days. Highest ${f1(hi[1])} at ${t(hi[0])}, lowest ${f1(lo[1])} at ${t(lo[0])}.`
-    + (outT.length ? ` Typically above 10: ${rng(outT)}.` : ' The typical curve stays below 10.') + (outL.length ? ` Typically below 3.9: ${rng(outL)}.` : '');
+    + (outT.length ? ` Typically above ${THI}: ${rng(outT)}.` : ` The typical curve stays below ${THI}.`) + (outL.length ? ` Typically below ${TLO}: ${rng(outL)}.` : '');
   el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(said)}">${s}</svg>`;
   // När börjar känningarna? Samma definition och samma tvåtimmarsfönster som i Insikter (lowWhen), med perioden i
   // rubriken. Förut räknade Mönster andelen värden under 3.9 och Insikter starttider, och de gav olika svar.
@@ -1337,7 +1356,7 @@ const loadOut = () => api('/api/outcomes').then(o => { out = o; renderLog(); sho
 let base = null, saving = 0, queue = Promise.resolve();
 const clone = o => JSON.parse(JSON.stringify(o));
 const normDb = d => { d = { meals: [], log: [], notes: [], settings: {}, ...d }; d.log.sort((a, b) => b.t - a.t); d.notes.sort((a, b) => b.t - a.t); return d; };
-function renderAll() { renderMeals(); if (editId === null) renderLib(); renderLog(); drawChart(); showDet(); $('ftype').textContent = (db.settings || {}).fast || 'Insulin'; }
+function renderAll() { setTarget(db.settings); renderMeals(); if (editId === null) renderLib(); renderLog(); drawChart(); showDet(); $('ftype').textContent = (db.settings || {}).fast || 'Insulin'; }
 async function push(fn) {
   for (let i = 0; i < 5; i++) {
     if (!base) base = normDb(await api('/api/db'));
@@ -1801,6 +1820,22 @@ for (const k in INSULINS) {
   $('i' + k + 'o').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 }
 
+// Målområdet: två fält i Settings. Det sparas i db.settings (så att mobilen, Telegram och AI:n följer med) och
+// allt som servern räknat ut med gränserna hämtas sedan om.
+function renderTarget() { $('tlo').value = f1(TLO); $('thi').value = f1(THI); $('tstdw').hidden = stdTarget(); $('tmsg').textContent = ''; }
+function saveTarget(lo = num($('tlo').value), hi = num($('thi').value)) {
+  const err = isNaN(lo) || isNaN(hi) ? 'Enter both limits as numbers, e.g. 4 and 7.' : lo < 3.9 ? 'The low limit is 3.9 at the lowest: under 3.9 is always a low.'
+    : lo > 7 ? 'The low limit can be 7 at the most.' : hi > 13.9 ? 'The high limit can be 13.9 at the most.' : hi - lo < 1 ? 'The high limit has to be at least 1 above the low limit.' : '';
+  if (err) { $('tmsg').textContent = err; return; }
+  if (lo === TLO && hi === THI) return renderTarget();
+  const std = lo === 3.9 && hi === 10;
+  save(d => { const x = { ...d.settings }; if (std) { delete x.lo; delete x.hi; } else Object.assign(x, { lo, hi }); d.settings = x; });
+  renderTarget(); toast(`Target range ${f1(TLO)}–${f1(THI)} mmol/L.`);
+  queue.then(() => { refresh(); loadProf(); if (wk) loadWeek(); if (mo) loadMonth(moKey); if (yr) loadYear(); });
+}
+for (const id of ['tlo', 'thi']) { $(id).onchange = () => saveTarget(); $(id).onkeydown = e => { if (e.key === 'Enter') e.target.blur(); }; }
+$('tstd').onclick = () => { saveTarget(3.9, 10); $('thi').focus(); };
+
 // Insights: veckan och månaden visas på samma sätt. Fyra nyckeltal med jämförelse mot perioden före, en stapel per dag,
 // sedan två spalter med det som stack ut, och en lugn rad längst ner. Förut var det två långa listor efter varandra,
 // med chatten under; chatten har nu en egen flik. Bara uträknade fakta, ingen AI.
@@ -1820,16 +1855,23 @@ function ikpis(c, p, pl, lowsCur, lowsPrev) {
   return `<div class="kpis k4">${ikpi('In range', c.tir.toFixed(0) + ' %', p ? was(p.tir, v => v.toFixed(0) + ' %') : 'goal over&nbsp;70&nbsp;%', c.tir >= 70 ? 'var(--ok)' : 'var(--high)')}
     ${ikpi('Lows', lowsCur, lowsPrev != null ? cmpTxt(pl, lowsPrev) : '<span class="sl">15 min or more below 3.9</span><span class="ss">15+ min under 3.9</span>', c.low >= 4 ? 'var(--low)' : '')}
     ${ikpi('Average', f1(mm(c.avg)), p ? was(p.avg, v => f1(mm(v))) : 'mmol/L', col(mm(c.avg)))}
-    ${ikpi('Above 10', c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : 'goal under&nbsp;25&nbsp;%', c.high >= 25 ? 'var(--high)' : '')}</div>`;
+    ${ikpi('Above ' + THI, c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : 'goal under&nbsp;25&nbsp;%', c.high >= 25 ? 'var(--high)' : '')}</div>`;
 }
 // Värmekartan (vecka och månad). q = [[dagens början, 96 kvartsvärden i mg/dL eller null]], äldst först.
 const qLab = (t, last) => last && new Date(t).toDateString() === new Date().toDateString() ? 'Today' : new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
 const qTime = i => p2(Math.floor(i / 4)) + ':' + p2(i % 4 * 15);
 const qHours = (z, X, y) => [0, 6, 12, 18, 24].map(hh => `<text x="${X(hh * 4).toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${hh === 0 ? 'start' : hh === 24 ? 'end' : 'middle'}">${p2(hh)}:00</text>`).join('');
 // Värmekartan: en rad per dag (äldst överst), en ruta per kvart, färgen är värdet. Rutor i följd med samma färg slås ihop.
-const HZ = [[3, 'var(--low)', 'under 3.0'], [3.9, 'color-mix(in srgb,var(--low) 62%,var(--card))', '3.0–3.8'], [5.5, 'color-mix(in srgb,var(--ok) 50%,var(--card))', '3.9–5.4'],
-  [7, 'color-mix(in srgb,var(--ok) 68%,var(--card))', '5.5–6.9'], [8.5, 'color-mix(in srgb,var(--ok) 84%,var(--card))', '7.0–8.4'], [10.05, 'var(--ok)', '8.5–10.0'],
-  [13, 'color-mix(in srgb,var(--high-fill) 58%,var(--card))', '10.1–12.9'], [16, 'color-mix(in srgb,var(--high-fill) 80%,var(--card))', '13.0–15.9'], [1e9, 'var(--high-fill)', '16 or more']];
+// Stegen följer målområdet: två röda under, fyra gröna i mål (lika breda), tre ockra över. [övre gräns (ej med), färg, etikett]
+const HZC = ['var(--low)', 'color-mix(in srgb,var(--low) 62%,var(--card))', 'color-mix(in srgb,var(--ok) 50%,var(--card))', 'color-mix(in srgb,var(--ok) 68%,var(--card))',
+  'color-mix(in srgb,var(--ok) 84%,var(--card))', 'var(--ok)', 'color-mix(in srgb,var(--high-fill) 58%,var(--card))', 'color-mix(in srgb,var(--high-fill) 80%,var(--card))', 'var(--high-fill)'];
+let HZ = [];
+function buildHZ() { // gränserna i tiondelar, så att etiketterna blir exakta
+  const lo = Math.round(TLO * 10), hi = Math.round(THI * 10) + 1, a1 = THI < 9 ? 101 : Math.max(130, Math.floor(THI) * 10 + 20), a2 = Math.max(160, a1 + 30), q = hi - lo >= 40 ? 5 : 1; // breda områden: steg på hela och halva mmol
+  const e = [30, lo, ...[1, 2, 3].map(k => Math.round((lo + (hi - lo) * k / 4) / q) * q), hi, a1, a2], f = x => (x / 10).toFixed(1);
+  HZ = e.map((x, i) => [x / 10, HZC[i], i ? `${f(e[i - 1])}–${f(x - 1)}` : 'under 3.0']).concat([[1e9, HZC[8], a2 / 10 + ' or more']]);
+}
+buildHZ();
 const hzBin = v => v == null ? -1 : HZ.findIndex(([lim]) => r1(mm(v)) < lim);
 function heatSvg(el, q, rhFit) {
   const z = chartScale(), n = q.length, wk = n <= 7, w = Math.max(280, Math.round(el.clientWidth) || 700), l = 56 * z, r = 6, rh = rhFit || (wk ? 26 : 14) * z, gap = wk && rh > 14 * z ? 2 : 1;
@@ -1845,8 +1887,8 @@ function heatSvg(el, q, rhFit) {
     }
     if ((n - 1 - j) % every === 0) sv += `<text class="rt${last && qLab(t, true) === 'Today' ? ' td' : ''}" x="${(l - 8 * z).toFixed(1)}" y="${(y + (rh - gap) / 2 + 4 * z).toFixed(1)}" text-anchor="end">${qLab(t, last)}</text>`;
   });
-  return `<svg class="hmap" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Glucose every 15 minutes, one row per day, coloured by value: red under 3.9, green 3.9 to 10, ochre over 10.">${sv}${qHours(z, i => l + i * cw, h - 5 * z)}</svg>`
-    + `<div class="yrlg" aria-hidden="true"><span><i style="background:${HZ[0][1]}"></i>Under 3.9</span><span><i style="background:linear-gradient(90deg,${HZ[2][1]},${HZ[5][1]})"></i>3.9–10</span><span><i style="background:linear-gradient(90deg,${HZ[6][1]},${HZ[8][1]})"></i>Over 10</span><span><i style="background:var(--sub)"></i>No readings</span></div>`;
+  return `<svg class="hmap" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Glucose every 15 minutes, one row per day, coloured by value: red under ${TLO}, green ${TLO} to ${THI}, ochre over ${THI}.">${sv}${qHours(z, i => l + i * cw, h - 5 * z)}</svg>`
+    + `<div class="yrlg" aria-hidden="true"><span><i style="background:${HZ[0][1]}"></i>Under ${TLO}</span><span><i style="background:linear-gradient(90deg,${HZ[2][1]},${HZ[5][1]})"></i>${TLO}–${THI}</span><span><i style="background:linear-gradient(90deg,${HZ[6][1]},${HZ[8][1]})"></i>Over ${THI}</span><span><i style="background:var(--sub)"></i>No readings</span></div>`;
 }
 const qViews = (el, q) => q && q.length ? `<h3 class="grp">Hour by hour</h3>${heatSvg(el, q)}` : '';
 // Ryms inte vyn på skärmen med knapparna överst (mobilen, låga datorskärmar) blir värmekartans rader lägre, så att hela
@@ -1869,8 +1911,8 @@ function partsHtml(P, pl, cmp) {
     if (!c) return `<div class="kpi">${head}<b class="mut">–</b><span>Too few readings</span></div>`;
     const p = cmp && P.prev && P.prev[i], d = p ? Math.round(c.tir) - Math.round(p.tir) : 0;
     const arrow = Math.abs(d) >= 2 ? ` <span class="pdl ${d > 0 ? 'up' : 'dn'}" aria-hidden="true">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}</span>` : '';
-    return `<div class="kpi" data-tip="${Math.round(c.low)} % under 3.9, ${Math.round(c.high)} % over 10">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)}&nbsp;%${arrow}</b>${tirbar(c)}`
-      + `<span>${p ? cmpTxt(pl, Math.round(p.tir) + ' %') : `${Math.round(c.low)} % under 3.9 · ${Math.round(c.high)} % over 10`}</span></div>`;
+    return `<div class="kpi" data-tip="${Math.round(c.low)} % under ${TLO}, ${Math.round(c.high)} % over ${THI}">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)}&nbsp;%${arrow}</b>${tirbar(c)}`
+      + `<span>${p ? cmpTxt(pl, Math.round(p.tir) + ' %') : `${Math.round(c.low)} % under ${TLO} · ${Math.round(c.high)} % over ${THI}`}</span></div>`;
   }).join('') + '</div>';
 }
 
@@ -1942,7 +1984,7 @@ function renderWeek() {
 // 70 % (mörkare ju mer), ockra under, grått utan tillräckligt med värden. Från veckan med första värdet, högst ett år bakåt.
 // Rutorna har en data-tip (pekaren, se #itip), och sammanfattningen står i aria-label och under rutnätet.
 // En dag med en känning får en röd prick i hörnet. Under rutnätet står en stapel per vecka i samma kolumn: rött nerifrån
-// för tiden under 3.9, grönt i mål och ockra uppifrån för tiden över 10 (medel av veckans dagar med värden), och målet 70 %.
+// för tiden under målområdet, grönt i mål och ockra uppifrån för tiden över målområdet (medel av veckans dagar med värden), och målet 70 %.
 const yrFill = v => v == null ? 'var(--sub)' : v < 70 ? 'color-mix(in srgb,var(--high-fill) 55%,var(--card))' : v < 80 ? 'color-mix(in srgb,var(--ok) 38%,var(--card))' : v < 90 ? 'color-mix(in srgb,var(--ok) 68%,var(--card))' : 'var(--ok)';
 function renderYear() {
   const el = $('yr'); if (!yr || iview !== 'year') return;
@@ -1968,7 +2010,7 @@ function renderYear() {
     if (!had.length) { sv += `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--sub)"/>`; continue; }
     const lo = had.reduce((a, d) => a + d[3], 0) / had.length, hi = had.reduce((a, d) => a + d[4], 0) / had.length, nl = wd.reduce((a, d) => a + d[2], 0);
     const hl = lo > 0 ? Math.max(1.5, lo / 100 * BH) : 0, hh = hi / 100 * BH;
-    sv += `<g data-tip="Week of ${dDate(wd[0][0])}: ${Math.round(100 - lo - hi)} % in range, ${Math.round(lo)} % under 3.9, ${Math.round(hi)} % over 10, ${lowsN(nl)}">`
+    sv += `<g data-tip="Week of ${dDate(wd[0][0])}: ${Math.round(100 - lo - hi)} % in range, ${Math.round(lo)} % under ${TLO}, ${Math.round(hi)} % over ${THI}, ${lowsN(nl)}">`
       + `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--ok)"/><rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${hh.toFixed(1)}" style="fill:var(--high-fill)"/><rect x="${x}" y="${(BT + BH - hl).toFixed(1)}" width="${c}" height="${hl.toFixed(1)}" style="fill:var(--low)"/></g>`;
   }
   sv += `<line x1="${l}" x2="${W - g}" y1="${BY(70).toFixed(1)}" y2="${BY(70).toFixed(1)}" style="stroke:var(--fg)" stroke-width="1.2" stroke-dasharray="4 3" opacity=".75" pointer-events="none"/><text x="${l - 6 * z}" y="${(BY(70) + 4 * z).toFixed(1)}" text-anchor="end">70 %</text>`;
@@ -1979,12 +2021,12 @@ function renderYear() {
   const best = [...byM.entries()].filter(([k, m]) => k >= firstM && k < nowM && m.n >= 20).map(([, m]) => m).sort((a, b) => b.s / b.n - a.s / a.n)[0];
   const since = D[0][0] > Date.now() - 360 * 864e5 ? `Each day since ${new Date(yr.first).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}` : 'Each day, last 12 months';
   const lowDays = D.filter(d => d[2]).length;
-  const say = `Time in range per day, with a red dot on days with a low, and below it one bar per week split into under 3.9, in range and over 10. ${good} of ${have.length} days with readings were at 70 % or more, and ${lowDays} ${lowDays === 1 ? 'day' : 'days'} had a low.`;
+  const say = `Time in range per day, with a red dot on days with a low, and below it one bar per week split into under ${TLO}, in range and over ${THI}. ${good} of ${have.length} days with readings were at 70 % or more, and ${lowDays} ${lowDays === 1 ? 'day' : 'days'} had a low.`;
   // Förklaringarna står intill det de förklarar: färgerna för dagarna ovanför rutnätet, staplarnas under dem.
   // Varje färg har en egen etikett (förut en skala med text bara i ändarna, som var svår att läsa).
   const sw = (bg, t, dot) => `<span><i style="background:${bg}${dot ? ';border-radius:50%;width:9px;height:9px' : ''}"></i>${t}</span>`;
   const dayLg = `<div class="yrlg yrtop" aria-hidden="true"><b>In range each day</b>${sw(yrFill(60), 'Under 70 %')}${sw(yrFill(75), '70–79 %')}${sw(yrFill(85), '80–89 %')}${sw(yrFill(95), '90 % or more')}${sw('var(--low)', 'A low', 1)}</div>`;
-  const weekLg = `<div class="yrlg" aria-hidden="true"><b>Each week</b>${sw('var(--high-fill)', 'Over 10')}${sw('var(--ok)', 'In range')}${sw('var(--low)', 'Under 3.9')}</div>`;
+  const weekLg = `<div class="yrlg" aria-hidden="true"><b>Each week</b>${sw('var(--high-fill)', 'Over ' + THI)}${sw('var(--ok)', 'In range')}${sw('var(--low)', 'Under ' + TLO)}</div>`;
   const yc = yr.cur && yr.cur.cov >= 20 ? yr.cur : null; // nyckeltalen för hela perioden, mot målen
   el.innerHTML = (yc ? ikpis(yc, null, '', yc.lows, null) : '') + `<h3 class="grp">${since}</h3>${dayLg}<div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>${weekLg}`
     + `<div class="yrst"><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
@@ -2293,7 +2335,7 @@ $('pibtn').onclick = () => { $('dpi').showModal(); $('dpih').focus(); if (piLast
 $('pirf').onclick = () => loadPi(true);
 $('pibody').addEventListener('click', e => { const b = e.target.closest('.ipm'); if (b) b.replaceWith(document.createTextNode(b.dataset.ip)); });
 setTimeout(() => loadPi(false), 4000); setInterval(() => loadPi(false), 10 * 6e4); // pricken på knappen och statusfältet, var tionde minut
-$('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); };
+$('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { renderTarget(); $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); };
 document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
 $('dmeal').addEventListener('close', () => {
@@ -2367,7 +2409,7 @@ $('imfile').onchange = async () => {
 };
 nowTime();
 try { const k = localStorage.getItem('tab'); if (k && $('tab-' + k)) showTab(k); } catch {}
-api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { renderMeals(); renderLib(); renderInsulin(); syncNav(); refresh(); loadProf(); });
+api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { setTarget(db.settings); renderMeals(); renderLib(); renderInsulin(); renderTarget(); syncNav(); refresh(); loadProf(); });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); renderYear(); } }, 150); });
 setInterval(refresh, 6e4);
 </script>

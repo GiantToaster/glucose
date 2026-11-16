@@ -192,6 +192,16 @@ if (DEMO && !fs.existsSync(DBF)) { // måltider och anteckningar för de senaste
   fs.writeFileSync(DBF, JSON.stringify({ meals, log: log.reverse(), notes: notes.reverse(), settings: { fast: 'Fiasp', long: 'Tresiba' }, rev: 1 }));
 }
 
+// ---------- Målområdet ----------
+// Settings → Target range: db.settings.lo och hi i mmol/L, standard 3.9–10 (de internationella gränserna). Ett värde
+// bedöms på det som visas (en decimal), samma som sidan: med 10 som övre gräns är 10.0 i mål och 10.1 över.
+// En känning följer inte målområdet: den är alltid minst 15 min under 70 mg/dL (3.9), så att den betyder samma sak
+// oavsett vilket mål man valt. tgtC nollställs när db.json skrivs.
+const okTarget = (lo, hi) => typeof lo === 'number' && typeof hi === 'number' && lo >= 3.9 && lo <= 7 && hi <= 13.9 && hi - lo >= 1;
+let tgtC = null;
+const target = () => tgtC ??= (s => okTarget(s.lo, s.hi) ? { lo: s.lo, hi: s.hi } : { lo: 3.9, hi: 10 })(readDb().settings || {});
+const r1 = v => Math.round(v / 18.016 * 10) / 10, below = v => r1(v) < target().lo, above = v => r1(v) > target().hi;
+
 // ---------- Statistik (tidsvägd, luckor över 15 min räknas inte) ----------
 function stats() {
   const now = Date.now(), a = range(now - 2160 * 36e5, Infinity), out = {};
@@ -200,7 +210,7 @@ function stats() {
     for (let i = 0; i < a.length; i++) {
       if (a[i][0] < from) continue;
       const d = Math.min((a[i + 1] ? a[i + 1][0] : now) - a[i][0], 15 * 6e4), v = a[i][1];
-      w += d; s += v * d; if (v < 70) lo += d; else if (v > 180) hi += d;
+      w += d; s += v * d; if (below(v)) lo += d; else if (above(v)) hi += d;
     }
     out[k] = w ? { avg: s / w, low: lo / w * 100, high: hi / w * 100, tir: (w - lo - hi) / w * 100, cov: Math.min(100, w / (h * 36e5) * 100) } : null;
   }
@@ -270,7 +280,7 @@ function period(a, from, to) {
   let w = 0, s = 0, lo = 0, hi = 0, ev = null, mn = null, mx = null; const lows = [];
   for (let i = 0; i < a.length; i++) {
     const [t, v] = a[i], next = a[i + 1] ? a[i + 1][0] : to, d = Math.min(next - t, 15 * 6e4);
-    w += d; s += v * d; if (v < 70) lo += d; else if (v > 180) hi += d;
+    w += d; s += v * d; if (below(v)) lo += d; else if (above(v)) hi += d;
     if (!mn || v < mn[1]) mn = [t, v]; if (!mx || v > mx[1]) mx = [t, v];
     if (v < 70) { if (!ev) lows.push(ev = { t, dur: 0, min: v }); ev.dur += d; ev.min = Math.min(ev.min, v); }
     if (v >= 70 || next - t > 20 * 6e4) ev = null; // ett värde i mål eller en lucka avslutar känningen
@@ -304,7 +314,7 @@ function dayParts(from, to) {
   const a = range(from, to), acc = [0, 1, 2, 3].map(() => ({ w: 0, lo: 0, hi: 0 })), span = (to - from) / 4;
   for (let i = 0; i < a.length; i++) {
     const [t, v] = a[i], next = a[i + 1] ? a[i + 1][0] : to, d = Math.min(next - t, 15 * 6e4), x = acc[Math.floor(new Date(t).getHours() / 6)];
-    x.w += d; if (v < 70) x.lo += d; else if (v > 180) x.hi += d;
+    x.w += d; if (below(v)) x.lo += d; else if (above(v)) x.hi += d;
   }
   return acc.map(x => x.w >= span * .2 ? { tir: (x.w - x.lo - x.hi) / x.w * 100, low: x.lo / x.w * 100, high: x.hi / x.w * 100 } : null);
 }
@@ -315,9 +325,9 @@ function weekly() {
   for (const m of db.log) {
     if (!(m.t >= now - W && m.t <= now)) continue;
     if (isCorr(m.name)) continue; // korrigeringsdoser är inga måltider
-    const o = outcome(m.t, treatCut(m.t, db.notes)); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
+    const o = outcome(m.t, treatCut(m.t, db.notes)); if (!o.done || !o.b || !o.pk || below(o.b[1]) || above(o.b[1])) continue;
     const k = String(m.name).toLowerCase(), x = meals.get(k) || { name: String(m.name), n: 0, hi: 0, lo: 0, peak: 0 };
-    x.n++; x.hi += o.pk[1] > 180 ? 1 : 0; x.lo += o.lo[1] < 70 ? 1 : 0; x.peak += o.pk[1]; meals.set(k, x);
+    x.n++; x.hi += above(o.pk[1]) ? 1 : 0; x.lo += o.lo[1] < 70 ? 1 : 0; x.peak += o.pk[1]; meals.set(k, x);
   }
   for (const n of db.notes) if (n.t >= now - W && n.t <= now) notes[n.kind] = (notes[n.kind] || 0) + 1;
   const d0 = new Date(now); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - 6);
@@ -328,7 +338,7 @@ function weekly() {
 
 // ---------- Året: tid i mål per dag ----------
 // Från måndagen i veckan med första mätvärdet, men högst ett år bakåt. Per dag: [dagens början, procent i mål eller null
-// (under halva dygnet har värden), antal känningar, och med värden procent under 3.9 och över 10]. Samma uträkning som dagarna i veckan och månaden (perDay).
+// (under halva dygnet har värden), antal känningar, och med värden procent under och över målområdet]. Samma uträkning som dagarna i veckan och månaden (perDay).
 function yearly() {
   const now = Date.now(); if (!S.length) return { days: [] };
   const d0 = new Date(Math.max(S[0][0], now - 364 * 864e5)); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
@@ -358,7 +368,7 @@ const defaultMonth = list => {
   return pref.find(m => monthCov(m) >= 20) || [...list].reverse().find(m => monthCov(m) >= 20) || list[list.length - 1];
 };
 // Höjdpunkter i en period: bästa dagen (minst 70 % täckning), flest dagar i rad utan känning (en dag utan tillräckligt
-// med värden bryter raden, eftersom man inte vet hur den gick) och längsta tiden i följd mellan 3.9 och 10 (en lucka
+// med värden bryter raden, eftersom man inte vet hur den gick) och längsta tiden i följd i målområdet (en lucka
 // över 20 min avslutar den, precis som för en känning). a = värdena, lows = periodens känningar, pd = perDay().
 // Används av veckan (sedan 2026-11-12, så att den börjar med det som gick bra) och månaden.
 function highlights(a, lows, pd) {
@@ -369,7 +379,7 @@ function highlights(a, lows, pd) {
   }
   let inR = null, s = null;
   for (let i = 0; i < a.length; i++) {
-    const [t, v] = a[i], ok = v >= 70 && v <= 180;
+    const [t, v] = a[i], ok = !below(v) && !above(v);
     if (ok && (!s || t - a[i - 1][0] > 20 * 6e4)) s = t;
     if (!ok) s = null; else if (!inR || t - s > inR.min * 6e4) inR = { t: s, min: Math.round((t - s) / 6e4) };
   }
@@ -386,7 +396,7 @@ function monthly(k) {
   for (const m of db.log) {
     if (!(m.t >= from && m.t < to) || isCorr(m.name)) continue;
     const key = String(m.name).toLowerCase(), c = cnt.get(key) || { name: String(m.name), n: 0 }; c.n++; cnt.set(key, c);
-    const o = outcome(m.t, treatCut(m.t, db.notes)); if (!o.done || !o.b || !o.pk || o.b[1] < 70 || o.b[1] > 180) continue;
+    const o = outcome(m.t, treatCut(m.t, db.notes)); if (!o.done || !o.b || !o.pk || below(o.b[1]) || above(o.b[1])) continue;
     const x = calm.get(key) || { name: c.name, n: 0, peak: 0 }; x.n++; x.peak += o.pk[1]; calm.set(key, x);
   }
   const steady = [...calm.values()].filter(x => x.n >= 3).map(x => ({ ...x, peak: x.peak / x.n })).sort((x, y) => x.peak - y.peak)[0] || null;
@@ -488,10 +498,10 @@ function pageGone(c) { pages.delete(String(c)); if (!pages.size) aiRelease(); }
 function aiRelease() { if (!aiWarm) return; aiWarm = 0; aiKeep(0).then(() => console.log('Released the AI model (no dashboard open).'), () => {}); }
 setInterval(() => { for (const [k, t] of pages) if (Date.now() - t > 3 * 6e4) pages.delete(k); if (!pages.size) aiRelease(); }, 6e4).unref();
 function aiContext() {
-  const now = Date.now(), db = readDb(), mm = v => (v / 18.016).toFixed(1), L = [];
-  const sum = p => `average ${mm(p.avg)}, in range ${p.tir.toFixed(0)} %, below 3.9 ${p.low.toFixed(1)} %, above 10 ${p.high.toFixed(0)} %, lows ${p.lows.length}, data ${p.cov.toFixed(0)} %`;
+  const now = Date.now(), db = readDb(), mm = v => (v / 18.016).toFixed(1), L = [], T = target(), std = T.lo === 3.9 && T.hi === 10;
+  const sum = p => `average ${mm(p.avg)}, in range ${p.tir.toFixed(0)} %, below ${T.lo} ${p.low.toFixed(1)} %, above ${T.hi} ${p.high.toFixed(0)} %, lows ${p.lows.length}, data ${p.cov.toFixed(0)} %`;
   L.push(`Now: ${ymd(now)} ${hm(now)} (${new Date(now).toLocaleDateString('en-GB', { weekday: 'long' })}). Current reading: ${last ? `${mm(last.v)} mmol/L at ${hm(last.t)}` : 'none'}.`,
-    'All glucose values are mmol/L. Target range 3.9-10.0. Goals: in range over 70 %, below 3.9 under 4 %, above 10 under 25 %. A "low" is at least 15 minutes below 3.9.');
+    `All glucose values are mmol/L. Target range ${T.lo.toFixed(1)}-${T.hi.toFixed(1)}${std ? '' : ' (chosen by the user; the international standard is 3.9-10.0)'}. Goals: in range over 70 %, below ${T.lo} under 4 %, above ${T.hi} under 25 %. A "low" is at least 15 minutes below 3.9, whatever the target range.`);
   const s = db.settings || {}; if (s.fast || s.long) L.push(`Insulin: mealtime ${s.fast || 'not set'}, basal ${s.long || 'not set'}.`);
   const w = weekly();
   // Dagen med veckodag, och "today"/"yesterday": modellen tog annars ibland fel dag på "igår"
@@ -515,7 +525,7 @@ function aiContext() {
   const lowAfter = (from, to) => { let lo = null; for (let k = Math.ceil(from / 6e4) * 6e4; k <= to; k += 6e4) { const v = R.get(k); if (v !== undefined && (!lo || v < lo[1])) lo = [k, v]; } return lo; };
   for (const m of db.log.filter(m => m.t >= now - 14 * 864e5 && m.t <= now)) {
     const o = outcome(m.t, treatCut(m.t, db.notes)), min = t => Math.round((t - m.t) / 6e4) + ' min', la = o.pk && lowAfter(o.pk[0], m.t + 3 * 36e5);
-    L.push(`${dTag(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.pk ? ` => ${[o.pk[1] > 180 && 'went above 10', la && la[1] < 70 && 'went below 3.9'].filter(Boolean).join(' and ') || 'stayed in range'}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
+    L.push(`${dTag(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.pk ? ` => ${[above(o.pk[1]) && 'went above ' + T.hi, la && la[1] < 70 && 'went below 3.9'].filter(Boolean).join(' and ') || 'stayed in range'}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
   }
   const notes = db.notes.filter(n => n.t >= now - 14 * 864e5 && n.t <= now);
   if (notes.length) L.push('', 'NOTES, last 14 days', ...notes.map(n => `${dTag(n.t)} ${hm(n.t)}${n.dur ? '-' + hm(n.t + n.dur * 6e4) : ''} ${n.kind}${n.text ? ': ' + n.text : ''}`));
@@ -533,7 +543,7 @@ function aiContext() {
     const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(1); d.setMonth(d.getMonth() - i); const from = d.getTime(); d.setMonth(d.getMonth() + 1); const to = Math.min(d.getTime(), now);
     const p = period(range(from, to), from, to); if (p && p.cov >= 20) L.push(`${new Date(from).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}${i === 0 ? ' (so far)' : ''}: ${sum(p)}, ${insIn(from, to)}`);
   }
-  const PN = ['Night 00-06', 'Morning 06-12', 'Afternoon 12-18', 'Evening 18-24'], dp = (a, b) => dayParts(a, b).map((x, i) => `${PN[i]}: ${x ? `in range ${x.tir.toFixed(0)} %, below 3.9 ${x.low.toFixed(1)} %, above 10 ${x.high.toFixed(0)} %` : 'too few readings'}`);
+  const PN = ['Night 00-06', 'Morning 06-12', 'Afternoon 12-18', 'Evening 18-24'], dp = (a, b) => dayParts(a, b).map((x, i) => `${PN[i]}: ${x ? `in range ${x.tir.toFixed(0)} %, below ${T.lo} ${x.low.toFixed(1)} %, above ${T.hi} ${x.high.toFixed(0)} %` : 'too few readings'}`);
   L.push('', 'PARTS OF THE DAY, last 30 days', ...dp(now - 30 * 864e5, now), 'PARTS OF THE DAY, the 30 days before', ...dp(now - 60 * 864e5, now - 30 * 864e5));
   if (sens.starts.length) L.push('', 'SENSOR STARTS (newest last; readings can be less accurate the first day)', sens.starts.slice(-6).map(t => `${ymd(t)} ${hm(t)}`).join(', '));
   const pr = profile(14).b; L.push('', 'TIME OF DAY, last 14 days (typical value and the low end, 5th percentile)');
@@ -546,7 +556,7 @@ function aiContext() {
 const ASK = `You are a friendly, knowledgeable assistant in a personal blood glucose dashboard. The user has type 1 diabetes, wears a FreeStyle Libre sensor, logs meals with their mealtime insulin, sometimes long-acting insulin, and notes. Their data is below.
 How to answer:
 - Base facts and numbers on the data. When the data gives a total or an average, use it as it is. Otherwise you may add up, count, average and compare; say briefly how you got the number.
-- Be exact about the range: 3.9 to 10.0 is in range, a value over 10.0 is high and under 3.9 is low, even for a short time.
+- Be exact about the target range given at the top of the data: a value above its upper limit is high and one below its lower limit is below range, even for a short time. Under 3.9 is low.
 - Explain, don't just list. Point out patterns, compare with earlier periods and say what stands out, good things too.
 - When asked why something happened, name possible contributing factors you can see in the data (when and what they ate, a high before a low, exercise, alcohol, illness or stress notes, a new sensor, gaps in readings) and general, well-known type 1 effects (fat and protein can delay and stretch the rise, exercise can lower glucose for hours, stress and illness can raise it). Check the times: only link something to an event that came before it. Say how sure you are. If the data cannot tell, say so plainly.
 - Be warm and direct, like a knowledgeable friend. Usually 2 to 6 sentences or a few "- " bullet points. Use mmol/L, dates and times.
@@ -1043,7 +1053,7 @@ const readDb = () => {
   return validDb(o) ? { notes: [], settings: {}, rev: 0, ...o } : { meals: [], log: [], notes: [], settings: {}, rev: 0 };
 };
 // Skriv till en temporär fil och byt namn, så att ett avbrott mitt i skrivningen aldrig lämnar en halv db.json
-const writeDb = o => { fs.writeFileSync(DBF + '.tmp', JSON.stringify(o)); fs.renameSync(DBF + '.tmp', DBF); dbRev = o.rev; };
+const writeDb = o => { fs.writeFileSync(DBF + '.tmp', JSON.stringify(o)); fs.renameSync(DBF + '.tmp', DBF); dbRev = o.rev; tgtC = null; };
 // Senaste versionsnumret, så att sidan kan se om db.json ändrats utan att hämta hela filen varje minut
 let dbRev = null;
 const currentRev = () => dbRev ??= readDb().rev;
