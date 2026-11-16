@@ -2052,15 +2052,14 @@ function setView(v) {
   if (v === 'week' && wk) renderWeek(); else if (v === 'month' && mo) renderMonth(); else if (v === 'year' && yr) renderYear();
   return loadIns();
 }
-// Efter ett byte: ryms hela vyn på skärmen om sidan scrollar lite, gör den det (t.ex. året, som är kort). Utrymmet räknas
-// mellan flikraden, som står kvar överst, och skärmens nederkant (på mobilen den fasta flikraden där). Ryms vyn inte ändå
-// scrollar sidan inte alls: förut flyttades knapparna då till skärmens överkant, och sedan flikraden hamnade där
-// (2026-11-17) trycktes de upp mot den med kortets kant bakom.
+// Efter ett byte: syns inte hela vyn scrollar sidan så långt att den gör det, men högst tills kortet står strax under
+// flikraden (som står kvar överst; på mobilen räknas den fasta flikraden nedtill bort). Är vyn högre än skärmen hamnar
+// alltså knapparna högst upp under flikraden, med luft emellan, och så mycket som möjligt av vyn syns.
 function insFit(smooth) {
   const card = $('tab-ins').getBoundingClientRect(), nav = document.querySelector('.tabs').getBoundingClientRect();
   const top = $('tabbar').getBoundingClientRect().height + 12, bottom = (nav.top > innerHeight / 2 ? nav.top : innerHeight) - 12;
   const room = card.top - top, need = card.bottom - bottom;
-  if (need > 1 && need <= room) scrollBy({ top: need, behavior: smooth ? 'smooth' : 'auto' });
+  if (need > 1 && room > 1) scrollBy({ top: Math.min(need, room), behavior: smooth ? 'smooth' : 'auto' });
 }
 // Byte av vy. Den nya vyn tonar in. Är den högre får rutan sin nya höjd direkt, så att sidan redan är lång nog när den
 // scrollar fram vyn (förut växte rutan i en animation, och scrollningen tog slut för tidigt: Month från Year blev
