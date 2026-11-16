@@ -288,6 +288,9 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Patterns: bara en tunn stapel och en lugn rad överst; nyckeltalen finns under Insights */
 .pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
+/* Insights är minst en skärm hög: när en kortare vy visas krymper inte sidan under det man tittar på (då drog
+   webbläsaren upp sidan och allt hoppade), och raden med knapparna kan alltid ligga överst på skärmen. */
+#tab-ins{min-height:calc(100vh - 24px);min-height:calc(100dvh - 24px)}.insbar{scroll-margin-top:12px}
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:640px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
@@ -1855,14 +1858,27 @@ function partsHtml(P, pl, cmp) {
 const loadWeek = () => api('/api/weekly').then(w => { wk = w; renderWeek(); }).catch(() => {});
 const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(() => {});
 const loadYear = () => api('/api/year').then(x => { yr = x; renderYear(); }).catch(() => {});
-function loadIns() { if (iview === 'month') loadMonth(moKey); else if (iview === 'year') loadYear(); else loadWeek(); }
+function loadIns() { return iview === 'month' ? loadMonth(moKey) : iview === 'year' ? loadYear() : loadWeek(); }
+// De andra vyerna hämtas i bakgrunden när Insights öppnas, så att ett byte visar dem direkt i stället för först tomt
+// och sedan fyllt (två höjdändringar). De ritas först när de visas, då bredden går att mäta.
+const preloadIns = () => setTimeout(() => { if (!wk) loadWeek(); if (!mo) loadMonth(moKey); if (!yr) loadYear(); }, 400);
 function setView(v) {
   iview = v; try { localStorage.setItem('insv', v); } catch {}
   document.querySelectorAll('#iseg button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-pressed', b.dataset.v === v); });
   $('wk').hidden = v !== 'week'; $('mo').hidden = v !== 'month'; $('yr').hidden = v !== 'year'; $('monav').hidden = v !== 'month' || !(mo && mo.months && mo.months.length);
-  loadIns();
+  // Redan hämtad: ritas direkt (i rätt bredd nu när den syns) och uppdateras sedan i bakgrunden
+  if (v === 'week' && wk) renderWeek(); else if (v === 'month' && mo) renderMonth(); else if (v === 'year' && yr) renderYear();
+  return loadIns();
 }
-document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => setView(b.dataset.v));
+// Efter ett byte: ryms vyn inte under knapparna flyttas de till överkanten av skärmen, så att man ser vyn utan att scrolla
+function insFit() {
+  const bar = document.querySelector('#tab-ins .insbar'), r = bar.getBoundingClientRect();
+  if ($('tab-ins').getBoundingClientRect().bottom > innerHeight + 1 && r.top > 16) bar.scrollIntoView({ block: 'start', behavior: calm() ? 'auto' : 'smooth' });
+}
+document.querySelectorAll('#iseg button').forEach(b => b.onclick = () => {
+  const had = { week: wk, month: mo, year: yr }[b.dataset.v], p = setView(b.dataset.v);
+  if (had) requestAnimationFrame(insFit); else Promise.resolve(p).then(() => requestAnimationFrame(insFit));
+});
 
 function renderWeek() {
   const el = $('wk'), c = wk && wk.cur, p = wk && wk.prev; if (!wk || iview !== 'week') return;
@@ -2343,7 +2359,7 @@ function showTab(k) {
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'tab-' + k);
   if (k === 'pat') drawProf(); // ritas om i rätt bredd nu när panelen syns
-  if (k === 'ins') setView(iview);
+  if (k === 'ins') { setView(iview); preloadIns(); }
   if (k === 'ask') aiStatus();
   try { localStorage.setItem('tab', k); } catch {}
 }
