@@ -157,7 +157,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .occr{display:grid;grid-template-columns:minmax(120px,1fr) 80px minmax(0,1.3fr) minmax(0,1.7fr);gap:2px 14px;padding:8px 0;border-top:1px solid var(--bd);align-items:baseline}.occr:first-child{border-top:0}
 .occh{color:var(--mut);font-size:.75rem;padding:6px 0}
 /* Ett tillfälle som följdes av en känning: en svag röd ton över hela raden, så att det är det man ser först */
-.occn{margin:8px 2px 0}.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
+.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
 @media(max-width:600px){.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occr.occh{display:none}.occh+.occr{border-top:0}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 
@@ -167,7 +167,12 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 
 /* Måltider, sökruta och listor */
 .subt{margin-top:6px}.cmpall{margin-top:10px;font-size:.8125rem;color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
-#lib .opt .hist{display:inline-flex;align-items:center;font-size:.8125rem;color:var(--mut)}#lib .opt .hist:hover{color:var(--fg)}.hist .chev{margin:0 2px 0 8px}
+#lib .opt .hist{display:inline-flex;align-items:center;font-size:.8125rem;color:var(--mut)}#lib .opt .hist:hover{color:var(--fg)}.hist .chev{margin:0 10px 0 2px}.cmpb[aria-expanded=true] .chev,.hist[aria-expanded=true] .chev{transform:rotate(45deg)}
+.fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}.fold.on{grid-template-rows:1fr}.fold>div{overflow:hidden;min-height:0}
+@media(prefers-reduced-motion:reduce){.fold{transition:none}}
+#cmp tr.cmpd td{padding:0;border:0;text-align:left;font-weight:400}#cmp tr.cmpd .fold{width:0;min-width:100%}#cmp tr.cmpd .foldin{padding:6px 0 14px;border-bottom:1px solid var(--bd)}
+#lib .libocc .foldin{padding:0 0 12px}
+@media(max-width:600px){#cmp tr.cmpd{display:block;padding:0;border:0}#cmp tr.cmpd td{display:block;padding:0}#cmp tr.cmpd td::before{content:none}#cmp tr.cmpd .foldin{padding:0 0 12px}}
 @media(max-width:600px){#lib .opt:has(.hist)>b{flex-basis:100%}}
 .addrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:6px 0 14px}.addrow .fld{flex:1;min-width:170px}.addrow .fld:first-child{flex:2;min-width:200px}
 /* Sparade måltider som rader med avdelare (inte rutor i ett kort); Remove finns i redigeringsläget, inte på varje rad */
@@ -204,9 +209,7 @@ dialog{border:1px solid var(--dlgbd);border-radius:16px;background:var(--card);c
 dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 /* Raspberry Pi: bred dialog med ett kort per avsnitt i pistatus */
 #dpi{width:min(880px,calc(100vw - 24px));max-height:calc(90dvh - 24px);overflow:auto}
-#dtimes{width:min(760px,calc(100vw - 24px));max-height:calc(86dvh - 24px);overflow:auto;margin-top:7vh}#dtimes .dl{gap:10px}#dtimes .dhd{position:sticky;top:0;z-index:2;align-items:flex-start;gap:12px;margin:-18px -20px 0;padding:18px 20px 10px;background:var(--card);border-radius:16px 16px 0 0}
-#dtimes .dhd h2{font-size:1.25rem;overflow-wrap:anywhere}#dtimes .dhd>div{display:flex;flex-direction:column;gap:2px;min-width:0}#dtimes .occn{margin-bottom:0}
-@media(max-width:600px){#dpi{width:100%;max-height:92dvh}#dtimes{width:100%;max-height:88dvh;margin-top:auto}}
+@media(max-width:600px){#dpi{width:100%;max-height:92dvh}}
 .pih{display:flex;gap:6px;align-items:center}.pih button:not(.icon){padding:6px 12px;font-size:.8125rem}
 .pigrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:12px;align-items:start}
 .pis{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:5px;min-width:0}
@@ -491,14 +494,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </form>
 </dialog>
 
-<!-- Varje gång en måltid loggats (Meals: en rad i Compared eller raden under en sparad måltid). En ruta ovanpå sidan,
-     så att inget i listan flyttar sig och man är kvar på samma ställe när den stängs. -->
-<dialog id="dtimes" aria-labelledby="dtimesh">
-  <div class="dl">
-    <div class="dhd"><div><h2 id="dtimesh" tabindex="-1"></h2><span class="mut fine" id="dtimess"></span></div><button class="icon" data-close aria-label="Close">✕</button></div>
-    <div id="dtimesb"></div>
-  </div>
-</dialog>
 <dialog id="dpi" aria-labelledby="dpih">
   <div class="dl">
     <div class="dhd"><div><h2 id="dpih" tabindex="-1">Raspberry Pi</h2><span class="mut fine" id="pisub"></span></div><div class="pih"><button type="button" id="pirf">Refresh</button><button class="icon" data-close aria-label="Close">✕</button></div></div>
@@ -610,7 +605,7 @@ const api = (p, o = {}) => fetch(p, o.body ? { ...o, headers: { 'content-type': 
 // Ritar om en del av sidan bara när innehållet ändrats. Då behåller tangentbordet sitt fokus vid minutuppdateringen
 // (förut hamnade fokus på <body> varje minut), och skärmläsare läser inte upp samma sak igen. Ändras innehållet
 // läggs fokus tillbaka på samma knapp eller markering i den nya versionen.
-const FKEYS = ['data-open', 'data-id', 'data-nid', 'data-keep', 'data-edit', 'data-rm', 'data-libocc'];
+const FKEYS = ['data-open', 'data-id', 'data-nid', 'data-keep', 'data-edit', 'data-rm', 'data-libocc', 'data-cmp', 'data-sort'];
 function setHTML(el, html) {
   if (el._h === html) return; el._h = html;
   const a = document.activeElement, inside = a && a !== el && el.contains(a);
@@ -1155,8 +1150,9 @@ function pastTimes(m) {
   return `<div class="dhist"><h4>Times with ${esc(m.name)}</h4><table><caption class="sr">Times with ${esc(m.name)}, this one marked: glucose at the start, the peak and the lowest within 3 hours</caption><thead><tr><th>When</th><th>Start</th><th>Peak</th><th>Lowest</th></tr></thead><tbody>${rows}</tbody></table>`
     + `<p class="mut">Most recent first. Peak and lowest are within 3 hours after eating.</p></div>`;
 }
+// Raden under en måltid i Compared: en cell över hela bredden med listan i en .fold (on = redan utfälld)
+const cmpRow = (n, on) => `<tr role="row" class="cmpd"><td role="cell" colspan="7">${foldHtml(occList(n), on)}</td></tr>`;
 function renderCmp() {
-  renderTimes();
   const names = [...new Map(db.log.filter(m => !isCorr(m.name)).map(m => [m.name.toLowerCase(), m.name])).values()];
   // Oftast ätna först (förut högsta toppen först, så att avsnittet slutade i en rad dåliga betyg). Kolumnen "Avg units"
   // (snittet av det man själv tog, samma tillfällen som utfallen) lades till på användarens begäran 2026-11-09; tidigare
@@ -1165,7 +1161,7 @@ function renderCmp() {
   const C = CMP_COLS.find(c => c.k === cmpSort.k) || CMP_COLS[1];
   const rows = names.map(n => ({ n, h: hist(n) })).filter(x => x.h.length).map(({ n, h }) => ({ n, s: summ(h) }))
     .sort((a, b) => (C.k === 'meal' ? a.n.localeCompare(b.n) : C.v(a.s) - C.v(b.s)) * cmpSort.dir || b.s.n - a.s.n || a.n.localeCompare(b.n));
-  const once = r => r.s.n < 2, many = rows.filter(r => !once(r)), nOnce = rows.length - many.length;
+  const once = r => r.s.n < 2 && !cmpOpen.has(r.n.toLowerCase()), many = rows.filter(r => !once(r)), nOnce = rows.length - many.length;
   const shown = cmpAll || !many.length ? rows : many;
   const em = c => ` style="color:${c};font-weight:600"`;
   const th = c => { const on = c.k === cmpSort.k; return `<th role="columnheader" aria-sort="${on ? (cmpSort.dir < 0 ? 'descending' : 'ascending') : 'none'}"><button class="cmps${on ? ' on' : ''}" data-sort="${c.k}" title="${c.k === 'meal' ? 'Sort by name' : `Sort by ${c.l.toLowerCase()}, ${on && cmpSort.dir < 0 ? 'lowest' : 'highest'} first`}">${c.l}<span class="sarr${on ? (cmpSort.dir < 0 ? ' dn' : ' up') : ''}" aria-hidden="true"></span></button></th>`; };
@@ -1173,11 +1169,12 @@ function renderCmp() {
   // Uttryckliga roller: på smala skärmar blir raderna rutnät (display:grid), och då tappar webbläsaren annars tabellens
   // betydelse för skärmläsare. Rubrikraden döljs bara visuellt där, så att varje cell fortfarande har sin kolumnrubrik.
   // Namnet är en knapp som fäller ut varje gång måltiden loggats (occList), med en rad under måltiden
-  $('cmp').innerHTML = rows.length ? sortSel + `<table role="table"><thead role="rowgroup"><tr role="row">${CMP_COLS.map(th).join('')}</tr></thead><tbody role="rowgroup">`
+  setHTML($('cmp'), rows.length ? sortSel + `<table role="table"><thead role="rowgroup"><tr role="row">${CMP_COLS.map(th).join('')}</tr></thead><tbody role="rowgroup">`
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
-    + shown.map(({ n, s }) => { const k = n.toLowerCase(); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-haspopup="dialog" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`; }).join('') + '</tbody></table>'
+    + shown.map(({ n, s }) => { const k = n.toLowerCase(); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${cmpOpen.has(k)}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`
+      + (cmpOpen.has(k) ? cmpRow(n, true) : ''); }).join('') + '</tbody></table>'
     + (nOnce && many.length ? `<button class="lk cmpall" id="cmpall" aria-expanded="${cmpAll}">${cmpAll ? 'Hide' : 'Show'} ${nOnce} ${nOnce === 1 ? 'meal' : 'meals'} counted only once</button>` : '')
-    : `<div class="empty">${cmpPer && db.log.some(m => !isCorr(m.name) && !inPer(m.t)) ? `No meals in the last ${cmpPer} days with 3 hours of readings after. Choose <b>All time</b> to see older ones.` : 'Meals show up here once they have 3 hours of readings after them.'}</div>`;
+    : `<div class="empty">${cmpPer && db.log.some(m => !isCorr(m.name) && !inPer(m.t)) ? `No meals in the last ${cmpPer} days with 3 hours of readings after. Choose <b>All time</b> to see older ones.` : 'Meals show up here once they have 3 hours of readings after them.'}</div>`);
 }
 // Kolumnerna i Meals compared och vad de sorteras på. "Above 10" (målområdets övre gräns) och "Below 3.9" sorteras på andelen (2 of 4 före 1 of 4).
 const CMP_COLS = [{ k: 'meal', l: 'Meal' }, { k: 'n', l: 'Times', v: s => s.n }, { k: 'ins', l: 'Avg units', v: s => s.ins }, { k: 'rise', l: 'Avg rise', v: s => s.rise },
@@ -1191,25 +1188,24 @@ function setCmpSort(k, dir) {
 // Varje gång en måltid loggats, nyast först: när, enheter, startvärdet → värdet efter 3 h, och hur det gick (gick högt,
 // gick lågt eller höll sig i mål). Förut visades start → topp, som såg konstigt ut bredvid en känning. Även de som inte räknas
 // i snitten (började utanför målområdet, eller följs fortfarande), nedtonade och med orsaken, så att "Times" går att förstå.
-// timesOf: måltiden (namnet med små bokstäver) vars tillfällen visas i rutan #dtimes, annars null. Förut fälldes listan ut
-// under raden (i Compared) eller under den sparade måltiden; då trycktes resten av listan ner och man fick scrolla upp
-// till namnet för att stänga den. Rutan ritas om med listan, så att nya utfall och Save to Meals syns direkt.
-let timesOf = null;
-function renderTimes() {
-  if (!timesOf || !$('dtimes').open) return;
-  const all = db.log.filter(m => m.name.toLowerCase() === timesOf); if (!all.length) { $('dtimes').close(); return; }
-  const n = all[0].name, h = hist(n), x = h.length ? summ(h) : null, per = cmpPer ? `the last ${cmpPer} days` : 'all time';
-  $('dtimesh').textContent = n;
-  $('dtimess').innerHTML = x ? `${x.n === 1 ? 'Counted once' : 'Counted ' + x.n + ' times'}, ${per} · avg ${units(r1(x.ins))} · avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b>` : `Not counted in ${per}`;
-  setHTML($('dtimesb'), occList(n));
+// Utfällda måltider (namnet med små bokstäver): varje tillfälle visas under raden i Compared (cmpOpen) och under den sparade
+// måltiden i Saved (libOpen). Raden fälls ut och ihop med en kort animation (.fold) direkt i sidan, utan att listan ritas
+// om: förut byttes hela tabellen vid varje klick, och listan i en tabellcell flyttade kolumnerna i sidled. Ett tag
+// (2026-11-16) öppnades de i en ruta ovanpå sidan i stället; användaren ville ha dem i listan.
+const cmpOpen = new Set(), libOpen = new Set();
+const foldHtml = (inner, on) => `<div class="fold${on ? ' on' : ''}"><div><div class="foldin">${inner}</div></div></div>`;
+// Fäll ut: wrap är redan i sidan med en stängd .fold i sig. Fäll ihop: wrap tas bort när animationen är klar.
+// Blir sidan kortare än fönstret når när något fälls ihop (längst ner på sidan) flyttar webbläsaren hela sidan; då hålls
+// rutans (box) höjd uppe så mycket som behövs, se heldBox.
+function foldIn(wrap) { const f = wrap.querySelector('.fold'); void f.offsetHeight; f.classList.add('on'); }
+function foldOut(box, wrap) {
+  const f = wrap.querySelector('.fold'), hf = f.offsetHeight, nat = boxNat(box);
+  const short = scrollY + innerHeight - (document.documentElement.scrollHeight - (box.offsetHeight - nat) - hf);
+  if (short > 0) { if (heldBox && heldBox !== box) unhold(); box.style.minHeight = Math.ceil(nat - hf + short) + 'px'; heldBox = box; }
+  const done = () => { if (wrap.isConnected) wrap.remove(); };
+  if (calm()) return done();
+  f.classList.remove('on'); f.addEventListener('transitionend', e => { if (e.target === f) done(); }); setTimeout(done, 350);
 }
-function openTimes(k) { timesOf = k; $('dtimes').showModal(); renderTimes(); $('dtimes').scrollTop = 0; $('dtimesh').focus({ preventScroll: true }); }
-// Stängd: fokus tillbaka på raden den öppnades från (listan kan ha ritats om under tiden), utan att sidan flyttas
-$('dtimes').addEventListener('close', () => {
-  const k = timesOf && CSS.escape(encodeURIComponent(timesOf)); timesOf = null; if (!k) return;
-  const b = mview === 'lib' ? $('lib').querySelector(`[data-libocc="${k}"]`) : $('cmp').querySelector(`[data-cmp="${k}"]`); if (b) b.focus({ preventScroll: true });
-});
-$('dtimes').addEventListener('click', e => { const km = e.target.closest('[data-keepm]'), lm = km && db.log.find(x => x.id === km.dataset.keepm); if (lm) { keepMeal(lm); renderCmp(); } });
 function occList(n) {
   const k = n.toLowerCase(), all = db.log.filter(m => m.name.toLowerCase() === k).sort((a, b) => b.t - a.t);
   const v = p => `<b style="color:${col(mm(p[1]))}">${f1(mm(p[1]))}</b>`;
@@ -1230,15 +1226,24 @@ function occList(n) {
   };
   return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Glucose</span><span role="columnheader">What happened</span></div>${all.map(row).join('')}</div>`
     + (!libMeal(cleanName(n)) && all[0] ? `<p class="occsv"><button data-keepm="${all[0].id}">Save to Meals</button> <span class="mut fine">with the dose from the last time, ${units(all[0].ins)}</span></p>` : '')
-    + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above ${THI} from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
+;
 }
 $('cmp').addEventListener('click', e => {
+  const km = e.target.closest('[data-keepm]'), lm = km && db.log.find(x => x.id === km.dataset.keepm);
+  if (lm) { keepMeal(lm); renderCmp(); return; }
   if (e.target.closest('#cmpall')) { cmpAll = !cmpAll; steady($('cmp'), cmpAll ? null : '#cmpall', renderCmp); $('cmpall')?.focus({ preventScroll: true }); return; }
   // En kolumnrubrik: första klicket högst först (namn: A–Ö), nästa klick åt andra hållet. Fokus stannar på rubriken.
   const sb = e.target.closest('[data-sort]');
   if (sb) { const k = sb.dataset.sort; setCmpSort(k, k === cmpSort.k ? -cmpSort.dir : k === 'meal' ? 1 : -1); const nb = $('cmp').querySelector(`[data-sort="${k}"]`); if (nb) nb.focus(); return; }
   const b = e.target.closest('[data-cmp]'); if (!b) return;
-  openTimes(decodeURIComponent(b.dataset.cmp));
+  const k = decodeURIComponent(b.dataset.cmp), tr = b.closest('tr'), open = !cmpOpen.has(k);
+  if (open) cmpOpen.add(k); else cmpOpen.delete(k);
+  b.setAttribute('aria-expanded', open);
+  const nx = tr.nextElementSibling, old = nx && nx.classList.contains('cmpd') ? nx : null;
+  if (!open) { if (old) foldOut($('cmp'), old); return; }
+  if (old) old.remove(); // en som höll på att fällas ihop
+  const name = (db.log.find(m => m.name.toLowerCase() === k) || {}).name; if (!name) return;
+  tr.insertAdjacentHTML('afterend', cmpRow(name, false)); foldIn(tr.nextElementSibling);
 });
 $('cmp').addEventListener('change', e => { if (e.target.id !== 'cmpsel') return; const [k, d] = e.target.value.split(':'); setCmpSort(k, +d); $('cmpsel').focus(); });
 
@@ -1345,18 +1350,19 @@ function renderMeals() {
 let act = -1;
 // Egen render för biblioteket, så att en pågående redigering inte skrivs över när sökrutan ritas om
 let editId = null;
-// Under Saved: hur många gånger måltiden räknats i Compared och snittoppen (samma urval som tabellen). Raden öppnar
-// rutan med varje tillfälle (#dtimes), samma som en rad i Compared.
+// Under Saved: hur många gånger måltiden räknats i Compared och snittoppen (samma urval som tabellen). Raden fäller ut
+// varje tillfälle under måltiden, samma lista som i Compared (occList).
 const libHist = name => { const h = hist(name); if (!h.length) return ''; const x = summ(h);
   const k = name.toLowerCase();
-  return `<button class="lk hist" data-libocc="${esc(encodeURIComponent(k))}" aria-haspopup="dialog" title="Show every time"><span>${x.n === 1 ? 'once' : x.n + ' times'}, avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b></span><span class="chev" aria-hidden="true"></span></button>`; };
+  return `<button class="lk hist" data-libocc="${esc(encodeURIComponent(k))}" aria-expanded="${libOpen.has(k)}" title="Show every time"><span class="chev" aria-hidden="true"></span><span>${x.n === 1 ? 'once' : x.n + ' times'}, avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b></span></button>`; };
+const libRow = (name, on) => `<div class="libocc">${foldHtml(occList(name), on)}</div>`;
 function renderLib() {
   $('libn').textContent = db.meals.length || '';
   const cnt = new Map(); for (const x of db.log) { const k = cleanName(x.name).toLowerCase(); cnt.set(k, (cnt.get(k) || 0) + 1); }
   const n = m => cnt.get(m.name.toLowerCase()) || 0;
   setHTML($('lib'), [...db.meals].sort((a, b) => n(b) - n(a) || a.name.localeCompare(b.name)).map(m => m.id === editId
     ? `<div class="opt edit"><input class="en" value="${esc(m.name)}" aria-label="Meal name"><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input class="ei" inputmode="decimal" autocomplete="off" value="${m.ins}" aria-label="Usual dose (units)"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div><button class="p" data-save="1">Save</button><button data-cancel="1">Cancel</button><button class="danger" data-rm="${m.id}">Remove meal</button></div>`
-    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>`).join('')
+    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>${libOpen.has(m.name.toLowerCase()) && hist(m.name).length ? libRow(m.name, true) : ''}`).join('')
     || '<div class="empty">Save the meals you eat often. They show up first when you log a meal.</div>');
 }
 function saveEdit() {
@@ -2393,7 +2399,7 @@ document.addEventListener('keydown', e => {
   if (k === '[') { e.preventDefault(); $('dprev').click(); }
   if (k === ']' && !$('dnext').disabled) { e.preventDefault(); $('dnext').click(); }
 });
-// Fälla ut och ihop utan att sidan hoppar ("Show/Hide meals counted only once"): det man klickade på (sel i box) står kvar på samma ställe på skärmen.
+// Rita om utan att sidan hoppar ("Show/Hide meals counted only once"): det man klickade på (sel i box) står kvar på samma ställe på skärmen.
 // Blir sidan kortare än fönstret når (man fäller ihop något längst ner) flyttar webbläsaren annars hela sidan; då hålls
 // rutans höjd uppe i stället, och släpps i takt med att man scrollar uppåt eller när man byter vy eller flik.
 let heldBox = null;
@@ -2436,7 +2442,14 @@ setCmpPer(cmpPer);
 setMView(mview);
 $('lib').addEventListener('click', e => {
   const b = e.target.closest('[data-libocc]'); if (!b || editId !== null) return;
-  openTimes(decodeURIComponent(b.dataset.libocc));
+  const k = decodeURIComponent(b.dataset.libocc), row = b.closest('.opt'), open = !libOpen.has(k);
+  if (open) libOpen.add(k); else libOpen.delete(k);
+  b.setAttribute('aria-expanded', open);
+  const nx = row.nextElementSibling, old = nx && nx.classList.contains('libocc') ? nx : null;
+  if (!open) { if (old) foldOut($('lib'), old); return; }
+  if (old) old.remove();
+  const m = db.meals.find(x => x.name.toLowerCase() === k); if (!m) return;
+  row.insertAdjacentHTML('afterend', libRow(m.name, false)); foldIn(row.nextElementSibling);
 });
 function showTab(k) {
   unhold();
