@@ -35,12 +35,13 @@ kbd{font-family:inherit;font-size:.6875rem;font-weight:600;line-height:1;padding
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0}
 .brand{display:flex;align-items:center;gap:8px;font-size:.9375rem}.brand h1{font-size:inherit;font-weight:700}.logo{width:20px;height:20px;color:var(--fg);flex:none}
 .hr{display:flex;align-items:center;gap:6px;min-width:0}
-.pill{display:inline-flex;align-items:center;gap:7px;font-size:.75rem;color:var(--mut);padding:4px 10px;border-radius:999px;border:1px solid var(--bd);max-width:min(62vw,460px)}.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:.8125rem;color:var(--mut);padding:4px 10px;border-radius:999px;border:1px solid var(--bd);max-width:min(62vw,460px)}.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--mut)}
 .pill.ok i{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}.pill.stale{color:var(--fg);border-color:color-mix(in srgb,var(--high-fill) 60%,transparent);background:color-mix(in srgb,var(--high-fill) 16%,transparent)}.pill.stale i{background:var(--high-fill)}.pill.err{color:var(--low);border-color:color-mix(in srgb,var(--low) 40%,transparent)}.pill.err i{background:var(--low)}
 .hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px 28px;align-items:center;padding:20px 24px}
-/* Knapparna Log meal, Note och Low treatment kan döljas under Settings (data-btns=hide på <html>): då loggar man bara
-   genom att skriva. Under en känning visas behandlingsknappen ändå, och fritextrutan finns kvar även på låga skärmar. */
-:root[data-btns=hide] .hero .cta>button:not(.lowbtn):not(.lowsec){display:none}:root[data-btns=hide] .hero:not(.is-low) .cta{display:none}
+/* Huvudkortet har bara fritextfältet (2026-11-17); Meal, Note och Low treatment ligger bakom Log-knappen i flikraden.
+   Knapparna i .cta finns kvar för lågt läge: då visas behandlingsknappen här. Log-knappen kan döljas under Settings
+   (data-btns=hide på <html>): då loggar man bara genom att skriva, och fritextrutan finns kvar även på låga skärmar. */
+.hero .cta>button:not(.lowbtn):not(.lowsec){display:none}.hero:not(.is-low) .cta{display:none}:root[data-btns=hide] .logw{display:none}
 @media(max-height:560px){:root[data-btns=hide] .hero:not(.is-low) .ql{display:flex}}
 /* Favoriter: de måltider man loggat mest, i en liten lista under fältet. Ett val fyller i fältet; man ändrar dosen och loggar. */
 .ql{position:relative}.ql #qfav{display:inline-flex;align-items:center;gap:6px;padding-inline:12px}.ql #qfav svg{flex:none;color:var(--mut)}.ql #qfav[aria-expanded=true]{border-color:var(--acc)}
@@ -48,7 +49,7 @@ kbd{font-family:inherit;font-size:.6875rem;font-weight:600;line-height:1;padding
 .favl button{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:8px;font-weight:600}.favl button:hover,.favl button:focus-visible{background:var(--sub)}
 .favl button span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.favl button span:last-child{flex:none;color:var(--mut);font-weight:500;font-size:.8125rem}
 @media(max-width:480px){.ql #qfav span{display:none}}
-.ql{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 8px}.ql label{flex-basis:100%;font-size:.75rem;color:var(--mut);font-weight:500}.ql input{flex:1;min-width:0}.ql button{padding:8px 16px}
+.ql{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 8px}.ql label{flex-basis:100%;font-size:.8125rem;color:var(--mut);font-weight:500}.ql input{flex:1;min-width:0}.ql button{padding:8px 16px}
 .now{display:grid;grid-template-columns:auto 1fr;justify-content:start;align-items:baseline;column-gap:4px}#cur{font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.03em}#arrow{font-size:2.5rem;font-weight:600;line-height:1;color:var(--mut)}
 /* Gammalt värde (över 15 min): siffran dämpas, pilen tas bort och lägesordet byts mot åldern, så att det inte ser aktuellt ut */
 .now.old #cur{color:var(--mut)!important}.hero .now.old .st{background:color-mix(in srgb,var(--high-fill) 24%,var(--card));color:var(--fg);box-shadow:none}
@@ -75,8 +76,9 @@ button.lowbtn,button.lowbtn:hover{background:var(--lbbg);border-color:var(--low)
    sin egen dialog). På mobilen ligger knappen nedtill vid tummen. */
 .hero.is-low #lastmeal,.hero.is-low #tir24,.hero.is-low .ql{display:none}
 @media(max-width:600px){
-  .hero.is-low .cta .lowbtn{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:15;min-height:52px;font-size:1rem;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-  body:has(.cta .lowbtn){padding-bottom:96px}html:has(.cta .lowbtn){scroll-padding-bottom:100px}body:has(.cta .lowbtn) #toast{bottom:88px}
+  .hero.is-low .cta .lowbtn{position:fixed;left:16px;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:15;min-height:52px;font-size:1rem;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+  body:has(.cta .lowbtn){padding-bottom:calc(150px + env(safe-area-inset-bottom))}html:has(.cta .lowbtn){scroll-padding-bottom:154px}body:has(.cta .lowbtn) #toast{bottom:calc(140px + env(safe-area-inset-bottom))}
+  body:has(.cta .lowbtn) .logw{bottom:calc(134px + env(safe-area-inset-bottom))}
 }
 .tirbar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--sub)}.tirbar i{display:block}.tirbar.big{height:12px}
 @media(max-width:900px){.hero{grid-template-columns:auto minmax(0,1fr);gap:14px 18px;padding:16px}.cta{grid-column:1/-1;flex-wrap:wrap}.cta button{flex:1}.cta .lowbtn,.cta .lowsec{flex-basis:100%}.cta .quiet{flex:0 0 auto}.cta button{white-space:nowrap}.hero .lowtip{order:1}.hero .cta{order:2}.hero .ql{order:3}}
@@ -96,7 +98,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* Avläsningen: lodrät linje, punkt i zonfärgen och en etikett med klockslag och värde. pan-y: fingret kan dra i sidled
    över grafen för att läsa av, medan ett lodrätt drag fortfarande scrollar sidan. */
 #chsvg{touch-action:pan-y}#chsvg:focus-visible{outline-offset:4px;border-radius:6px}
-.hvl{stroke:var(--mut);stroke-width:1}.hvc{stroke:var(--card);stroke-width:2}.hvb{fill:var(--card);stroke:var(--field);stroke-width:1}svg text.hvt{fill:var(--fg);font-weight:600;white-space:pre}svg text{fill:var(--mut);font-size:.6875rem}svg .ml{fill:var(--onacc);font-weight:600}.mk{cursor:pointer}.mk:hover .ln,.mk.sel .ln{stroke-width:2.5;stroke-dasharray:none}.mk:focus{outline:none}.mk:focus-visible .ln{stroke-width:3.5;stroke-dasharray:none}.mk:focus-visible circle{stroke-width:4}.mkl.lsel rect{stroke:var(--fg);stroke-width:1.5}#dtitle:focus,#dmealh:focus,#dlowh:focus,#dseth:focus,#dpih:focus{outline:none}
+.hvl{stroke:var(--mut);stroke-width:1}.hvc{stroke:var(--card);stroke-width:2}.hvb{fill:var(--card);stroke:var(--field);stroke-width:1}svg text.hvt{fill:var(--fg);font-weight:600;white-space:pre}svg text{fill:var(--mut);font-size:.75rem}svg .ml{fill:var(--onacc);font-weight:600}.mk{cursor:pointer}.mk:hover .ln,.mk.sel .ln{stroke-width:2.5;stroke-dasharray:none}.mk:focus{outline:none}.mk:focus-visible .ln{stroke-width:3.5;stroke-dasharray:none}.mk:focus-visible circle{stroke-width:4}.mkl.lsel rect{stroke:var(--fg);stroke-width:1.5}#dtitle:focus,#dmealh:focus,#dlowh:focus,#dseth:focus,#dpih:focus{outline:none}
 /* Detaljvyn: ingen egen ram inne i grafkortet (kort i kort), bara en avdelare. Färgen (måltid, anteckning, känning) sitter i en punkt vid rubriken. */
 .det{margin-top:14px;padding-top:14px;border-top:1px solid var(--bd);--dc:var(--acc)}.det.note{--dc:var(--note)}.det.note.lt{--dc:var(--low)}
 .det .dh h3::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--dc);margin-right:8px;vertical-align:1px}.dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.dh h3{margin:0;font-size:1.375rem;color:var(--fg)}
@@ -105,39 +107,48 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .tiles.t3{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:600px){.tiles.t3 b{font-size:1.125rem}}
 
 /* Flikar */
-.tabs{display:flex;gap:2px;margin:22px 0 12px;border-bottom:1px solid var(--bd)}.tabs button{transition:none;border:0;background:none;border-radius:0;padding:10px 14px;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px}.tabs button:hover{background:none;color:var(--fg)}.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
+.tabbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px 16px;margin:0 -16px 14px;padding:0 16px;background:var(--bg);border-bottom:1px solid var(--bd)}
+.tbr{display:flex;align-items:center;gap:10px;padding:6px 0}
+.mini{display:inline-flex;align-items:baseline;gap:6px;border:0;background:none;padding:4px 10px;border-radius:8px;color:var(--mut);font-size:.8125rem;font-weight:600}.mini b{font-size:1.125rem;font-weight:700;line-height:1.2;color:var(--fg)}.mini:hover{background:var(--sub)}.mini[hidden]{display:none}
+.logw{position:relative}#logbtn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px}
+.logmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:210px;padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:2px}.logmenu[hidden]{display:none}
+.logmenu button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-weight:600}.logmenu button:hover,.logmenu button:focus-visible{background:var(--sub)}
+/* Huvudkortet och grafen hör till Activity. Under en känning står huvudkortet kvar på alla flikar, så att behandlingen går att nå. */
+.acttop[hidden]{display:none}.hero.is-low[hidden]{display:grid}body:has(.hero.is-low) .mini{display:none}
+.tabs{display:flex;gap:2px;align-self:flex-end}.tabs button{transition:none;border:0;background:none;border-radius:0;padding:10px 14px;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px}.tabs button:hover{background:none;color:var(--fg)}.tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
 .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .empty{padding:28px 0;text-align:center;color:var(--mut)}
 
 /* Aktivitet */
 .li{display:grid;grid-template-columns:92px minmax(0,1.2fr) 120px minmax(0,1.5fr) 128px;gap:2px 16px;align-items:center;padding:12px 0;border-top:1px solid var(--bd)}
-.li .tm b{display:block;font-weight:600}.li .tm span,.li .ins span{display:block;font-size:.75rem;color:var(--mut)}.li .ins b{font-weight:600}.li .k{color:var(--note);font-weight:600;margin-right:6px}.li .k.kl{color:var(--low)}
+.li .tm b{display:block;font-weight:600}.li .tm span,.li .ins span{display:block;font-size:.8125rem;color:var(--mut)}.li .ins b{font-weight:600}.li .k{color:var(--note);font-weight:600;margin-right:6px}.li .k.kl{color:var(--low)}
 .li .res{font-size:.8125rem;color:var(--mut)}.li .res b{font-weight:600}
 /* Känning efter måltiden: i ord och i rött, på egen rad under toppen så att den inte drunknar i siffrorna */
 .lowres{display:block;margin-top:2px;color:var(--low);font-weight:600;font-size:.8125rem}.lowres b{font-weight:700}
 /* Utfallet efter en måltid: siffrorna med pil och en kort grå etikett */
 .oc{font-size:.9375rem;font-weight:500;color:var(--fg);white-space:nowrap}.oc b{font-weight:700}.oc .ar{color:var(--mut);margin:0 3px}
-.ocn{font-size:.75rem;color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:600px){.ocn{white-space:normal}}
-.acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:.75rem}
+.ocn{font-size:.8125rem;color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:600px){.ocn{white-space:normal}}
+.acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:.8125rem}
 /* ✕ dämpad och ramlös; namnet är en knapp utan knappens utseende som öppnar detaljvyn */
-.acts .rx{border-color:transparent;background:none;color:var(--mut)}.acts .rx:hover{color:var(--low);background:var(--sub)}
+.li .lk{display:inline-flex;align-items:center;gap:8px;text-align:left}.li .lk[aria-expanded=true] .chev{transform:rotate(45deg)}
+.detslot .det{margin:0;padding:6px 0 18px;border-top:0}.detslot .foldin{border-top:1px solid var(--bd)}
 .lk{all:unset;cursor:pointer;display:block;min-width:0;overflow-wrap:anywhere}.lk:hover b,.lk:hover{text-decoration:underline;text-underline-offset:3px}.lk:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
 .li .tm span{white-space:nowrap}.li .lk{padding:2px 0}
-.legend{margin:0 0 8px}.nw{white-space:nowrap}.prog{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:.75rem;color:var(--mut)}.pbar{flex:none;width:40px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}.pbar i{display:block;height:100%;background:var(--acc)}
+.legend{margin:0 0 8px}.nw{white-space:nowrap}.prog{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:.8125rem;color:var(--mut)}.pbar{flex:none;width:40px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}.pbar i{display:block;height:100%;background:var(--acc)}
 .more{display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--bd)}
 /* Pekskärm: ingen ✕ på varje rad (lätt att råka trycka på); tryck på raden öppnar detaljvyn med Remove */
-@media(pointer:coarse){.acts .rx{display:none}.li[data-row]{cursor:pointer}}
+@media(pointer:coarse){.li[data-row]{cursor:pointer}}
 @media(max-width:640px){.li .ins span{display:none}.li{grid-template-columns:72px minmax(0,1fr) auto;align-items:start}.li .tm{grid-row:1/3}.li .ins{grid-column:3;grid-row:1;text-align:right}.li .res{grid-column:2}.li .acts{grid-column:3;grid-row:2}}
 
 /* Mönster */
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.kpi{padding:12px 14px;border-radius:10px;background:var(--sub)}.kpi b{display:block;font-size:1.75rem;line-height:1.2;font-weight:700}.kpi span{font-size:.75rem;color:var(--mut)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.kpi{padding:12px 14px;border-radius:10px;background:var(--sub)}.kpi b{display:block;font-size:1.75rem;line-height:1.2;font-weight:700}.kpi span{font-size:.8125rem;color:var(--mut)}
 @media(max-width:700px){.kpi{padding:10px 12px}.kpi b{font-size:1.375rem}}
 .kpi2{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:10px;font-size:.8125rem;color:var(--mut)}.kpi2 b{color:var(--fg);font-weight:650}
 .facts span b{font-size:inherit;font-weight:650}
-.lgd{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--mut)}.lgd i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 22%,transparent)}
+.lgd{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8125rem;color:var(--mut)}.lgd i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 22%,transparent)}
 .lgd i.b2{background:color-mix(in srgb,var(--fg) 13%,transparent)}.lgd i.b1{background:color-mix(in srgb,var(--fg) 7%,transparent)}
 .lgd i.ln{height:3px;width:20px;vertical-align:2px;box-shadow:none;background:linear-gradient(90deg,var(--low) 0 25%,var(--fg) 25% 75%,var(--high) 75%)}
-.facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.75rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
+.facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.8125rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
 .lowbars{margin:8px 0 4px}
 /* Symbolerna i grafen. Pekar man på, fokuserar eller har valt en händelse markeras den i sin egen färg (--kc): brickan
    tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
@@ -155,17 +166,19 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 
 .occ{border-radius:10px;background:var(--sub);padding:4px 14px;font-size:.8125rem}
 .occr{display:grid;grid-template-columns:minmax(120px,1fr) 80px minmax(0,1.3fr) minmax(0,1.7fr);gap:2px 14px;padding:8px 0;border-top:1px solid var(--bd);align-items:baseline}.occr:first-child{border-top:0}
-.occh{color:var(--mut);font-size:.75rem;padding:6px 0}
+.occh{color:var(--mut);font-size:.8125rem;padding:6px 0}
 /* Ett tillfälle som följdes av en känning: en svag röd ton över hela raden, så att det är det man ser först */
-.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.75rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
+.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.8125rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
 @media(max-width:600px){.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occr.occh{display:none}.occh+.occr{border-top:0}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 
 
 .keyb{display:flex;flex-direction:column;gap:10px;margin-top:10px}svg text.lbn{fill:var(--low);font-weight:650}.facts span.lwk{color:var(--fg);font-size:.875rem}
-#cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.75rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
+#cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.8125rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
 
 /* Måltider, sökruta och listor */
+.obar{display:inline-flex;width:132px;height:10px;border-radius:99px;overflow:hidden;background:var(--sub);vertical-align:middle}.obar i{display:block}.cmplg{margin-top:12px}
+@media(max-width:600px){#cmp td.cmpo{grid-column:1/-1;align-items:center}.cmpo .obar{flex:1;width:auto;margin-left:16px}}
 .subt{margin-top:6px}.cmpall{margin-top:10px;font-size:.8125rem;color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
 #lib .opt .hist{display:inline-flex;align-items:center;font-size:.8125rem;color:var(--mut)}#lib .opt .hist:hover{color:var(--fg)}.hist .chev{margin:0 10px 0 2px}.cmpb[aria-expanded=true] .chev,.hist[aria-expanded=true] .chev{transform:rotate(45deg)}
 .fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}.fold.on{grid-template-rows:1fr}.fold>div{overflow:hidden;min-height:0}
@@ -178,8 +191,8 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* Sparade måltider som rader med avdelare (inte rutor i ett kort); Remove finns i redigeringsläget, inte på varje rad */
 #lib{gap:0}#lib .opt{border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px 0}
 #lib .opt.edit{border-top-color:transparent;border-radius:10px;padding:12px;background:var(--sub);margin:4px 0}#lib .opt.edit .danger{margin-left:auto}
-.mlist{display:flex;flex-direction:column;gap:6px}.opt>b{flex:1 1 9em}.opt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;cursor:pointer}.opt .dose{margin-left:auto}.opt.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}.opt .rm{padding:4px 9px;font-size:.75rem}#lib .opt{cursor:default}
-.dose{display:inline-flex;align-items:baseline;gap:6px;padding:3px 10px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--bd);font-size:.75rem;white-space:nowrap}.dose b{color:var(--fg);font-size:.875rem}
+.mlist{display:flex;flex-direction:column;gap:6px}.opt>b{flex:1 1 9em}.opt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;cursor:pointer}.opt .dose{margin-left:auto}.opt.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}.opt .rm{padding:4px 9px;font-size:.8125rem}#lib .opt{cursor:default}
+.dose{display:inline-flex;align-items:baseline;gap:6px;padding:3px 10px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--bd);font-size:.8125rem;white-space:nowrap}.dose b{color:var(--fg);font-size:.875rem}
 .opt.free{border-style:dashed}.opt.free .dose{background:none;color:var(--mut)}
 .opt.edit{flex-wrap:wrap;cursor:default;border-color:var(--acc)}.opt.edit .en{flex:2;min-width:160px}.opt.edit .step{flex:1;min-width:170px}
 #mlist{display:none;position:absolute;left:0;right:0;top:100%;z-index:10;margin-top:4px;padding:6px;max-height:280px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3)}#mlist.open{display:flex}#mlist .opt{border-color:transparent}#mlist .opt.act{outline:2px solid var(--acc);outline-offset:-2px}
@@ -187,7 +200,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 #msearch{font-size:1rem;padding:11px 12px}#msearch.picked{border-color:var(--ok);font-weight:600;padding-right:34px;background:var(--card) no-repeat right 12px center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='%2308745f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 
 /* Formulär och dialoger */
-.fld{display:flex;flex-direction:column;gap:5px;min-width:0}.fld label,.lab{font-size:.75rem;color:var(--mut);font-weight:500}.fld input,.fld select{width:100%}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}.fld label,.lab{font-size:.8125rem;color:var(--mut);font-weight:500}.fld input,.fld select{width:100%}
 .tw{display:flex;flex-wrap:wrap;gap:6px}.tw input{flex:1}
 /* Ändringsläget: datumet på en egen rad, så att det aldrig kortas till "2026-11" */
 .tw input[type=date]{flex:1 1 100%}
@@ -253,32 +266,32 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:1rem;font-weight:600;color:var(--fg)}
 .ghc svg{display:block;max-width:100%;height:auto}.ghc.mut{padding:24px 0}
 .gh .ghv{stroke:var(--mut);opacity:.5;stroke-width:1.5;fill:none}.gh:hover .ghv{stroke:var(--meal);opacity:1;stroke-width:2.5}
-.ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.75rem;color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
+.ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8125rem;color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
 .ghlg i.l1{border-top:3px solid var(--fg)}.ghlg i.l2{opacity:.6}.ghlg i.l3{border-top:2px dashed var(--fg);opacity:.75}
 /* Året under Insights: en ruta per dag */
 .yrw{overflow-x:auto;padding-bottom:4px}.yrw svg{display:block}
-.yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8125rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
 .yrlg b{color:var(--fg);font-weight:600;margin-right:2px}.yrlg.yrtop{margin:0 0 8px}
 .yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:.8125rem;color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
 .dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--fg)}
 .dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
-.dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:.75rem}
+.dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:.8125rem}
 .lowv{color:var(--low)}#mwarn:empty,#mhint:empty{display:none}#mhint{margin:0;font-size:.8125rem}#mwarn{font-size:.8125rem}#mwarn>div+div{margin-top:4px}
 .warn{padding:10px 14px;border-radius:10px;border:1px solid var(--high);background:color-mix(in srgb,var(--high) 12%,transparent)}.warn.low{border-color:var(--low);background:color-mix(in srgb,var(--low) 12%,transparent)}
 .login{max-width:440px;margin:12px auto}.login .dl{padding:4px}.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:24px}.chk input{width:16px;height:16px;margin:0}
 #toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;bottom:24px;transform:translateY(16px);opacity:0;pointer-events:none;background:var(--tbg);color:var(--tfg);padding:10px 16px;border-radius:10px;font-size:.8125rem;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .2s,transform .2s,visibility 0s .2s;visibility:hidden;max-width:calc(100vw - 32px);z-index:20}#toast.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
-#toast button{margin-left:12px;padding:2px 10px;font-size:.75rem;background:none;color:inherit;border-color:currentColor}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
-.disc{margin:-6px 0 12px;font-size:.75rem;line-height:1.4;color:var(--mut);text-wrap:pretty}@media(max-height:560px){.disc{margin:-4px 0 8px}}
-.fine{font-size:.75rem}.sm{font-size:.8125rem}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}.todh{margin:20px 0 8px}.todh .grp{margin:0}.todsvg{display:block}
-.foot{margin:8px 0 0;font-size:.75rem}#lmsg{margin:0;font-size:.75rem}#aist{font-size:.75rem}#cmp{overflow-x:auto}.lgband{fill:var(--ok)}
+#toast button{margin-left:12px;padding:2px 10px;font-size:.8125rem;background:none;color:inherit;border-color:currentColor}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
+.disc{margin:-6px 0 12px;font-size:.8125rem;line-height:1.4;color:var(--mut);text-wrap:pretty}@media(max-height:560px){.disc{margin:-4px 0 8px}}
+.fine{font-size:.8125rem}.sm{font-size:.8125rem}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}.todh{margin:20px 0 8px}.todh .grp{margin:0}.todsvg{display:block}
+.foot{margin:8px 0 0;font-size:.8125rem}#lmsg{margin:0;font-size:.8125rem}#aist{font-size:.8125rem}#cmp{overflow-x:auto}.lgband{fill:var(--ok)}
 p{text-wrap:pretty}.warnq:empty{display:none}.warnq{color:var(--fg)}
 /* Hjälp under fritextrutan: vad man kan skriva och kortkommandona, utfällbar så att den inte tar plats */
-.qlerr{flex-basis:100%;margin:0;font-size:.8125rem;color:var(--high);font-weight:600}.help{flex-basis:100%;font-size:.75rem;color:var(--mut)}.help summary{cursor:pointer;display:inline-flex;align-items:center;width:max-content;font-weight:500}.help summary:hover{color:var(--fg)}
+.qlerr{flex-basis:100%;margin:0;font-size:.8125rem;color:var(--high);font-weight:600}.help{flex-basis:100%;font-size:.8125rem;color:var(--mut)}.help summary{cursor:pointer;display:inline-flex;align-items:center;width:max-content;font-weight:500}.help summary:hover{color:var(--fg)}
 .help[open]{padding:10px 12px;border-radius:10px;background:var(--sub);color:var(--fg)}.help[open] summary{margin-bottom:6px;color:var(--mut)}
 .help dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:0}.help dt{font-weight:600}.help dd{margin:0}.help i{font-style:normal;font-weight:600}.help p{margin:8px 0 0}
 #lq{width:min(220px,100%);padding:6px 10px}.ahead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-bottom:6px}
 #dlive{color:var(--acc);font-weight:600;white-space:nowrap}input[type=search]::-webkit-search-cancel-button{display:none}
-.skip{position:absolute;left:16px;top:-60px;z-index:30;padding:8px 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600}.skip:focus{top:8px}.insi .lk{color:var(--acc);font-weight:600;padding:2px 0;text-decoration:underline;text-underline-offset:3px}#aichk{margin-left:6px;padding:2px 10px;font-size:.75rem}
+.skip{position:absolute;left:16px;top:-60px;z-index:30;padding:8px 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600}.skip:focus{top:8px}.insi .lk{color:var(--acc);font-weight:600;padding:2px 0;text-decoration:underline;text-underline-offset:3px}#aichk{margin-left:6px;padding:2px 10px;font-size:.8125rem}
 @media(pointer:coarse){.skip{min-height:44px;display:inline-flex;align-items:center}#flow .dft [data-close]{display:none}#flow #ladd{flex:1}#aichk{min-height:44px}.insi .lk{padding:12px 0}.seg button{min-width:44px}.help .keys{display:none}}
 .phelp{margin-top:12px}.kl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;margin:0;font-size:.8125rem}.kl dd{margin:0}.kl kbd{margin:0}html.nokeys button kbd{display:none}@media(pointer:coarse){#keysec{display:none}}.help kbd{margin:0}.help summary kbd{margin-left:8px}.help .keys{margin-top:8px}
 button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var(--bd));font-weight:600}
@@ -291,7 +304,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Pekarrutan under Insights: syns direkt (webbläsarens egen title-ruta väntar ungefär en sekund) */
 #itip{position:fixed;z-index:30;pointer-events:none;background:var(--tbg);color:var(--tfg);border-radius:8px;padding:5px 9px;font-size:.8125rem;line-height:1.35;max-width:min(320px,calc(100vw - 16px));opacity:0;transition:opacity .06s}#itip.on{opacity:1}
 /* Värmekartan och dygnets delar under Insights */
-.hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:.75rem}svg text.rt.td{font-weight:650}
+.hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:.8125rem}svg text.rt.td{font-weight:650}
 .parts{margin:8px 0 0}@media(min-width:641px){.parts{margin-left:1.875rem;margin-right:8px}}.prof2{font-size:.8125rem;color:var(--mut)}@media(max-width:640px){.parts .pspan{display:block}}.parts .tirbar{margin:6px 0 6px}.parts .pspan{opacity:.8;font-variant-numeric:tabular-nums}.pdl{font-size:.8125rem;font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
 /* Patterns: bara en tunn stapel och en lugn rad överst; nyckeltalen finns under Insights */
 .pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
@@ -302,15 +315,27 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Medan rutan krymper ligger den gamla vyn kvar under den nya och tonar ut, så att rutan aldrig är tom */
 #iviews{position:relative}#iviews>div:not([hidden]){display:flow-root}.iover{position:absolute;top:0;left:0;right:0;z-index:1;background:var(--card)}.iout{animation:iout .25s ease-out forwards;pointer-events:none}@keyframes iout{to{opacity:0}}
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
-.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi .ss{display:none}
+.kpi .kgoal{display:block;opacity:.75}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi .ss{display:none}
 /* Smal skärm: rutorna fyra i bredd och tätare (förut två och två), så att veckan och månaden ryms på en skärm */
 @media(max-width:640px){.kpis.k4{gap:6px}.kpis.k4 .kpi{padding:8px 7px}.kpis.k4 .kpi b{font-size:1.125rem}.kpis.k4 .kpi span{font-size:.6875rem;line-height:1.3}.kpis.k4 .pdl{font-size:.625rem;margin-left:2px;vertical-align:2px;white-space:nowrap}.kpis.k4 .pspan{white-space:nowrap}.kpis.k4 .tirbar{height:6px}.kpi .sl{display:none}.kpi .ss{display:inline}}
 @media(max-width:359px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.75rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
-@media(max-width:440px){.tabs button{padding-inline:9px}}
+.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.8125rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
+@media(max-width:600px){
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}html{scroll-padding-bottom:84px}
+  .tabbar{display:block;margin:0 -16px;padding:0 16px;border-bottom:0}.tbr{display:block;padding:0}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;gap:0;padding:0 6px env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--bd)}
+  .tabs button{flex:1;min-width:0;min-height:54px;margin:0;padding:6px 2px;border-bottom:0;border-top:2px solid transparent;font-size:.8125rem;font-weight:600}
+  .tabs button[aria-selected=true]{border-top-color:var(--acc)}
+  .mini{display:flex;justify-content:center;width:100%;padding:8px;margin-bottom:10px;border-radius:0;border-bottom:1px solid var(--bd)}
+  .logw{position:fixed;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:26}
+  #logbtn{width:56px;height:56px;justify-content:center;padding:0;border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,.35)}#logbtn svg{width:24px;height:24px}
+  #logbtn span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .logmenu{top:auto;bottom:calc(100% + 10px)}.logmenu button{padding:14px 14px}
+  #toast{bottom:calc(72px + env(safe-area-inset-bottom))}
+}
 .stack{display:flex;flex-direction:column;gap:4px}
 .lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
-.grp{margin:20px 0 8px;font-size:.75rem;font-weight:600;color:var(--mut);letter-spacing:.02em}
+.grp{margin:20px 0 8px;font-size:.8125rem;font-weight:600;color:var(--mut);letter-spacing:.02em}
 .chat{display:flex;flex-direction:column;gap:10px}.chat:not(:empty){margin-bottom:12px}
 .msg{padding:10px 14px;border-radius:12px;max-width:min(680px,92%)}.msg.u{align-self:flex-end;background:color-mix(in srgb,var(--acc) 14%,transparent)}.msg.a{align-self:flex-start;background:var(--sub)}
 .msg p{margin:0 0 6px}.msg p:last-child{margin:0}.msg ul{margin:4px 0 6px;padding-left:20px}
@@ -322,7 +347,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   #cmp table{min-width:0}#cmp thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   #cmp tr{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;padding:10px 0;border-bottom:1px solid var(--bd)}
   #cmp td{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border:0}
-  #cmp td::before{content:attr(data-label);content:attr(data-label) / "";color:var(--mut);font-size:.75rem;font-weight:400}
+  #cmp td::before{content:attr(data-label);content:attr(data-label) / "";color:var(--mut);font-size:.8125rem;font-weight:400}
   #cmp td:first-child{grid-column:1/-1;display:block;text-align:left;font-weight:600;font-size:.9375rem}
 }
 /* Pekskärm: tryckytor minst 44 px och inga kortkommandotips (det finns inget tangentbord att trycka L på).
@@ -337,7 +362,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 </style>
 </head>
 <body>
-<a class="skip" href="#t-act" id="skip">Skip to Activity, Patterns and Meals</a>
+<a class="skip" href="#t-act" id="skip">Skip to the sections</a>
 <header class="top">
   <div class="brand"><svg class="logo" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect class="lgband" x="0" y="7" width="20" height="6" rx="1.5" opacity=".28"/><path d="M1.5 9.5c3 0 3.2 6 6.2 6S10.6 3.5 14 3.5s3.4 5.8 4.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><h1>Glucose</h1></div>
   <div class="hr"><span class="pill" id="status"><i></i><span>Connecting…</span></span>
@@ -347,6 +372,24 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 </header>
 <!-- Överst, så att den syns i alla flikar utan att man scrollar (förut stod den sist på sidan) -->
 <p class="disc">Information tool only. It gives no dosing advice and does not replace the Libre app or its alarms.</p>
+
+<!-- Flikraden: överst och kvar när man scrollar (på mobilen en fast rad nedtill). Till höger det aktuella värdet på andra
+     flikar än Activity (där står det stort i huvudkortet) och Log-knappen, som öppnar Meal, Note och Low treatment. -->
+<div class="tabbar" id="tabbar">
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="t-act" aria-controls="tab-act" data-tab="act" aria-selected="true">Activity</button>
+    <button role="tab" id="t-ins" aria-controls="tab-ins" data-tab="ins" aria-selected="false" tabindex="-1">Insights</button>
+    <button role="tab" id="t-lib" aria-controls="tab-lib" data-tab="lib" aria-selected="false" tabindex="-1">Meals</button>
+    <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
+  </div>
+  <div class="tbr">
+    <button class="mini" id="mini" title="Show the chart" hidden><b id="mcur"></b><span id="marr" aria-hidden="true"></span><span id="mst"></span></button>
+    <div class="logw">
+      <button class="p" id="logbtn" aria-haspopup="true" aria-expanded="false" aria-controls="logmenu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Log</span></button>
+      <div class="logmenu" id="logmenu" role="group" aria-label="Log" hidden><button data-log="meal" aria-keyshortcuts="L">Meal<kbd aria-hidden="true">L</kbd></button><button data-log="note" aria-keyshortcuts="N">Note<kbd aria-hidden="true">N</kbd></button><button data-log="low" aria-keyshortcuts="T">Low treatment<kbd aria-hidden="true">T</kbd></button></div>
+    </div>
+  </div>
+</div>
 
 <main>
 <form class="card login" id="login" hidden>
@@ -361,7 +404,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </div>
 </form>
 
-<section class="card hero" id="hero">
+<section class="card hero acttop" id="hero">
   <div class="now" id="nowbox" role="group" aria-label="Current glucose"><span id="cur">–</span><span id="arrow" aria-hidden="true"></span><span id="state" class="st" hidden></span></div>
   <div id="srlive" class="sr" aria-live="polite"></div>
   <div class="meta">
@@ -373,27 +416,20 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </div>
   <div class="cta"><button class="p" id="openMeal" aria-keyshortcuts="L">Log meal<kbd aria-hidden="true">L</kbd></button><button id="openNote" aria-keyshortcuts="N">Note<kbd aria-hidden="true">N</kbd></button><button class="quiet" id="openLow" aria-keyshortcuts="T">Low treatment<kbd aria-hidden="true">T</kbd></button></div>
   <p class="lowtip" id="lowtip" hidden>Treat it first. You can log it afterwards.</p>
-  <form class="ql" id="ql"><label for="qlt" id="qll">Or log it in your own words</label><input id="qlt" aria-describedby="qlerr" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-haspopup="true" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><button id="qlb">Log<kbd aria-hidden="true">/</kbd></button>
+  <form class="ql" id="ql"><label for="qlt" id="qll">Log in your own words</label><input id="qlt" aria-describedby="qlerr" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-haspopup="true" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><button id="qlb">Log<kbd aria-hidden="true">/</kbd></button>
     <p class="qlerr" id="qlerr" role="alert" hidden></p>
 </form>
 </section>
 
-<section class="card">
+<section class="card acttop">
   <div class="bar2">
     <div class="seg" id="rng" role="group" aria-label="Time shown in the chart"><button data-h="3" title="Last 3 hours (key 1)" aria-keyshortcuts="1" aria-pressed="false">3 h</button><button data-h="6" title="Last 6 hours (key 2)" class="on" aria-keyshortcuts="2" aria-pressed="true">6 h</button><button data-h="12" title="Last 12 hours (key 3)" aria-keyshortcuts="3" aria-pressed="false">12 h</button><button data-h="24" title="Last 24 hours (key 4)" aria-keyshortcuts="4" aria-pressed="false">24 h</button></div>
     <div class="nav"><button id="dlive" aria-label="Back to now" hidden><span class="nlg">Back to now</span><span class="nsm">Now</span></button><button id="dprev" aria-label="Previous day" title="Previous day ([)" aria-keyshortcuts="[">‹</button><input id="dpick" type="date" aria-label="Show a day"><button id="dnext" aria-label="Next day" title="Next day (])" aria-keyshortcuts="]" disabled>›</button></div>
   </div>
   <div id="chart"></div><div id="hvsr" class="sr" aria-live="polite"></div>
   <p class="mut fine hvhint" id="hvhint"><span class="ptr-fine">Hover over the curve, or focus it and use the arrow keys,</span><span class="ptr-coarse">Drag a finger across the curve</span> to read the exact value.</p>
-  <div id="mdet"></div>
+  <div id="dethome"><div id="mdet"></div></div>
 </section>
-
-<div class="tabs" role="tablist" aria-label="Sections">
-  <button role="tab" id="t-act" aria-controls="tab-act" data-tab="act" aria-selected="true">Activity</button>
-  <button role="tab" id="t-ins" aria-controls="tab-ins" data-tab="ins" aria-selected="false" tabindex="-1">Insights</button>
-  <button role="tab" id="t-lib" aria-controls="tab-lib" data-tab="lib" aria-selected="false" tabindex="-1">Meals</button>
-  <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
-</div>
 
 <section class="card panel" id="tab-act" role="tabpanel" aria-labelledby="t-act">
   <h2 class="sr">Activity</h2>
@@ -509,7 +545,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
     <section class="sgw" aria-labelledby="sg1"><h3 class="slab" id="sg1">Appearance</h3><div class="sg">
       <div class="srow wide"><span class="sname" id="thl">Theme</span><div class="seg" id="theme" role="group" aria-labelledby="thl"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div></div>
       <div class="srow wide"><span class="sname" id="evsl">Chart events</span><div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="lane" aria-pressed="true">One row</button><button data-ev="tracks" aria-pressed="false">Food, insulin, other</button></div></div>
-      <div class="srow"><label class="sname" for="btnsw">Log buttons<span class="sd">Log meal, Note and Low treatment</span></label><input class="swi" id="btnsw" type="checkbox" role="switch" checked></div>
+      <div class="srow"><label class="sname" for="btnsw">Log button<span class="sd">Opens Meal, Note and Low treatment</span></label><input class="swi" id="btnsw" type="checkbox" role="switch" checked></div>
     </div></section>
     <section class="sgw" aria-labelledby="sg2"><h3 class="slab" id="sg2">Your insulin</h3><div class="sg">
       <div class="srow"><label class="sname" for="ifast">Mealtime</label><div class="sctl"><select id="ifast"></select><input id="ifasto" placeholder="Name of your insulin" aria-label="Name of your mealtime insulin" hidden></div></div>
@@ -637,6 +673,13 @@ const ARROWS = ['', '↓', '↘', '→', '↗', '↑'], TREND = ['', 'falling qu
 // alltid under 3.9; med ett eget målområde som börjar högre är värdena däremellan "Below range", utan känningsläget.
 const zone = v => (v = r1(v)) < 3 ? ['Very low', 'var(--low)', 'is-low is-vlow'] : v < 3.9 ? ['Low', 'var(--low)', 'is-low']
   : v < TLO ? ['Below range', 'var(--low)', ''] : v <= THI ? ['In range', 'var(--ok)', ''] : v <= 13.9 ? ['High', 'var(--high)', ''] : ['Very high', 'var(--high)', 'is-vhigh'];
+// Värdet i flikraden (#mini): på andra flikar än Activity, när det finns ett värde
+let tabNow = 'act', miniOn = false;
+const syncMini = () => { $('mini').hidden = !miniOn || tabNow === 'act'; };
+// Syns elementet? (offsetParent duger inte: Log-knappen ligger fast, position: fixed, på mobilen)
+const shown = el => !!(el && el.getClientRects().length);
+// Dit fokus går när det inte finns något bättre ställe: Log-knappen, eller fritextfältet om den är dold under Settings
+const logBack = () => shown($('logbtn')) ? $('logbtn') : $('qlt');
 let lastOld = false, lastZone = null, editLog = null, editNid = null, logLimit = 15; // editNid: id för en anteckning som ändras // editLog: id för en loggad måltid som ändras i dialogen
 let db = { meals: [], log: [], notes: [] }, rd = [], out = {}, st = {}, hrs = 6, selId = null, day = null;
 const dur = ms => { const n = Math.round(ms / 6e4); return n < 60 ? n + ' min' : n < 1440 ? Math.floor(n / 60) + ' h' + (n % 60 ? ' ' + p2(n % 60) + ' min' : '') : Math.floor(n / 1440) + (n < 2880 ? ' day' : ' days') + (Math.floor(n % 1440 / 60) ? ' ' + Math.floor(n % 1440 / 60) + ' h' : ''); };
@@ -745,7 +788,10 @@ async function refresh() {
       $('arrow').textContent = old ? '' : ARROWS[n.last.trend] || ''; $('arrow').style.color = col(v);
       $('state').hidden = false; $('state').textContent = old ? `${zw}, ${dur(age * 6e4)} old` : zw + (TREND[n.last.trend] ? ' · ' + TREND[n.last.trend] : ''); // riktningen i ord, inte bara som pil
       $('state').style.setProperty('--sc', zc);
-      $('hero').className = 'card hero ' + zcls; lowMode(zcls.startsWith('is-low'));
+      $('mcur').textContent = f1(v); $('mcur').style.color = old ? '' : col(v); $('marr').textContent = old ? '' : ARROWS[n.last.trend] || '';
+      $('mst').textContent = old ? dur(age * 6e4) + ' old' : zw; $('mini').setAttribute('aria-label', `Glucose ${f1(v)} mmol/L, ${old ? dur(age * 6e4) + ' old' : zw.toLowerCase()}. Show the chart.`);
+      miniOn = true; syncMini();
+      $('hero').className = 'card hero acttop ' + zcls; lowMode(zcls.startsWith('is-low'));
       $('age').textContent = old ? 'last reading at ' + hhmm(n.last.t) + (new Date(n.last.t).toDateString() === new Date().toDateString() ? '' : ', ' + dmid(n.last.t)) : age < 1 ? 'just now' : age + ' min ago';
       $('nowbox').setAttribute('aria-label', `Glucose ${f1(v)} mmol/L, ${zw.toLowerCase()}${!old && TREND[n.last.trend] ? ', ' + TREND[n.last.trend] : ''}, ${old ? 'no new reading for ' + dur(age * 6e4) : age < 1 ? 'just now' : age + (age === 1 ? ' minute ago' : ' minutes ago')}`);
       // Läses upp när läget ändras och när värdet blir gammalt (båda om de händer samtidigt)
@@ -788,10 +834,13 @@ function zoneTrace(id, segs, Y, x0, x1, sw) {
     + `<g clip-path="url(#${id}h)" style="fill:var(--high)" opacity=".16">${area(yh)}</g><g clip-path="url(#${id}l)" style="fill:var(--low)" opacity=".2">${area(yl)}</g>`
     + `<path fill="none" stroke="url(#${id}g)" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" d="${d}"/>`;
 }
+// Graferna börjar vid 2 mmol/L i stället för 0 (2026-11-17): sensorn visar inget under 2.2, så en fjärdedel av höjden stod
+// tom. Värden under 2 ritas på nederkanten.
+const YMIN = 2;
 // Y-axelns etiketter: jämna tal, men målområdets gränser utskrivna (och jämna tal som skulle krocka med dem utelämnade)
 const yAxis = (Y, ym, x, z) => {
-  const st = Y(0) - Y(2) < 15 * z ? 4 : 2; // låg graf: var 4:e i stället för varannan
-  let s = ''; for (let v = 0; v <= ym; v += st) if ([TLO, THI].every(t => Math.abs(Y(v) - Y(t)) >= 12 * z)) s += `<text x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${v}</text>`;
+  const st = Y(4) - Y(6) < 15 * z ? 4 : 2; // låg graf: var 4:e i stället för varannan
+  let s = ''; for (let v = YMIN; v <= ym; v += st) if ([TLO, THI].every(t => Math.abs(Y(v) - Y(t)) >= 12 * z)) s += `<text x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${v}</text>`;
   return s + [[LOW, TLO], [HIGH, THI]].map(([v, t]) => `<text class="thr" x="${x}" y="${Y(v) + 4 * z}" text-anchor="end">${t}</text>`).join('');
 };
 // Graferna ritas i pixlar. chartScale följer webbläsarens textstorlek (1 = 16 px), coarse = pekskärm.
@@ -833,7 +882,7 @@ function drawChart() {
   const X = t => l + (t - t0) / (t1 - t0) * (w - l - r);
   const marks = [...db.log.map(m => ({ m })), ...db.notes.map(m => ({ m, note: true }))].filter(({ m }) => m.t >= t0 && (day === null || m.t < t1)).sort((a, b) => a.m.t - b.m.t);
   const T = 10 * z, pb = h - B - laneH, lt = pb + 10 * z; // grafens topp och botten, spårets överkant
-  const Y = v => pb - v / ym * (pb - T);
+  const Y = v => pb - (Math.max(v, YMIN) - YMIN) / (ym - YMIN) * (pb - T);
   let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
   // Ny sensor: det första dygnet får ett svagt fält (värdena kan vara mindre exakta då) och en streckad linje vid starten
   let snl = '';
@@ -1006,6 +1055,9 @@ function renderLog() {
   $('lastmeal').innerHTML = lm && ago < 1440 ? `<span aria-hidden="true">${evIcon(EVK[lc ? 'corr' : 'meal'], 8, 8, 16)}</span><span class="sr">${lc ? 'Last dose' : 'Last meal'}: </span>`
     + (lc ? `<b class="nw">${units(lm.ins)}</b> <span class="mut">correction</span>` : `<b>${esc(lm.name)}</b> <span class="mut nw">${units(lm.ins)}</span>`) + ` <span class="mut nw">· ${agoTxt}</span>` : '';
   $('ins24').innerHTML = `Mealtime insulin, last 24 h: <b style="color:var(--fg)">${units(ins24)}</b>`;
+  // Raden vars detaljer är utfällda under den, och platsen dit detaljvyn flyttas (samma text varje gång, så att listan inte
+  // ritas om i onödan; klassen "on" sätts i placeDet)
+  const isOpen = id => id === selId && detFrom === selId, slot = id => isOpen(id) ? `<div class="detslot" id="detslot">${foldHtml('', false)}</div>` : '';
   const tm = (t, dur) => `<div class="tm"><b>${hhmm(t)}${dur ? '–' + hhmm(t + dur * 6e4) : ''}</b><span>${dshort(t)}</span></div>`;
   // Filtret: namn, typ eller text innehåller det man skrivit ("pizza", "low", "walk")
   const q = $('lq').value.trim().toLowerCase(), hit = s => !q || String(s || '').toLowerCase().includes(q);
@@ -1013,14 +1065,14 @@ function renderLog() {
   const tags = m => { const o = out[m.id] || {}; return [m.name, o.lo && o.lo[1] < 70 ? lowWord(o.lo[1]) : '', o.pk && tHi(o.pk[1]) ? 'high' : '', dshort(m.t)].join(' '); };
   const all = [...db.log.filter(m => hit(tags(m))).map(m => ({ t: m.t, m })), ...db.notes.filter(n => hit([kindLabel(n.kind), n.text, dshort(n.t)].join(' '))).map(n => ({ t: n.t, n }))].sort((a, b) => b.t - a.t);
   const rows = all.slice(0, logLimit).map(({ m, n }) => {
-    // Namnet är en knapp som öppnar detaljvyn (där Remove finns); på pekskärm räcker ett tryck på raden
+    // Namnet är en knapp som fäller ut detaljerna under raden (där Edit och Remove finns); på pekskärm räcker ett tryck på raden
     // Behandlad känning: värdet då och när det var tillbaka över 3.9 (samma uppgifter som i detaljvyn)
     // Samma form som måltiderna: värdet då och en etikett. Första värdet tillbaka
     // är alltid ungefär 3.9, så det visas som tid i etiketten i stället för som en siffra efter en pil.
     const lt = n && n.kind === LOWT && out[n.id], up = lt && lt.up;
     const ltRes = !lt || !lt.b ? '' : `<span class="oc"><span style="color:${col(mm(lt.b[1]))}">${f1(mm(lt.b[1]))}</span></span> `
       + `<span class="ocn">${up ? `when treated, back above 3.9 after ${dur(up[0] - n.t)}` : lt.lo && lt.lo[1] >= 70 ? 'when treated, stayed above 3.9' : lt.done ? 'not back above 3.9 within 3 h' : 'when treated, waiting to be back above 3.9'}</span>`;
-    if (n) return `<div class="li" data-row="${n.id}">${tm(n.t, n.dur)}<div><button class="lk" data-open="${n.id}"><span class="sr">${esc(kindLabel(n.kind))}: </span><b>${esc(n.text || kindLabel(n.kind))}</b><span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="ins" aria-hidden="true">${n.text ? `<b class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</b>` : ''}</div><div class="res">${ltRes}</div><div class="acts"><button class="rx" data-nid="${n.id}" title="Remove" aria-label="Remove note ${esc(kindLabel(n.kind))}${n.text ? ' ' + esc(n.text) : ''}">✕</button></div></div>`;
+    if (n) return `<div class="li" data-row="${n.id}">${tm(n.t, n.dur)}<div><button class="lk" data-open="${n.id}" aria-expanded="${isOpen(n.id)}"><span class="chev" aria-hidden="true"></span><span class="sr">${esc(kindLabel(n.kind))}: </span><b>${esc(n.text || kindLabel(n.kind))}</b><span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="ins" aria-hidden="true">${n.text ? `<b class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</b>` : ''}</div><div class="res">${ltRes}</div><div class="acts"></div></div>${slot(n.id)}`;
     // Utfallet: start → topp, och en känning inom 3 h när det blev en. Förut syntes bara toppen, så en måltid som
     // slutade på 2.7 såg ut som en av de bästa. "→" läses som "to" av skärmläsare, inte "rightwards arrow".
     // Correction (insulin utan mat): start → lägsta, eftersom det är sänkningen som spelar roll, inte en topp.
@@ -1036,13 +1088,14 @@ function renderLog() {
       : `${b[1] < 70 ? 'started low, ' : ''}peak${live ? ' so far' : ''}`;
     const res = !b ? '' : `<span class="oc">${sNum}${end ? ` ${arrow} <b style="color:${col(mm(end[1]))}">${f1(mm(end[1]))}</b>` : ''}</span> <span class="ocn">${lab}</span>`
       + (low ? `<span class="lowres">${lowWord(lo[1])} <b>${f1(mm(lo[1]))}</b> <span class="nw">after ${dur(lo[0] - m.t)}</span></span>` : '');
-    return `<div class="li" data-row="${m.id}">${tm(m.t)}<div><button class="lk" data-open="${m.id}"><b>${esc(m.name)}</b><span class="sr">, ${dshort(m.t)} ${hhmm(m.t)}</span></button></div><div class="ins"><b>${units(m.ins)}</b>${m.type ? `<span>${esc(m.type)}</span>` : ''}</div><div class="res">${res}</div><div class="acts">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : `<button data-keep="${m.id}" title="Add to your saved meals with this dose">Save to Meals</button>`}<button class="rx" data-id="${m.id}" title="Remove" aria-label="Remove ${esc(m.name)}, ${units(m.ins)} at ${hhmm(m.t)}">✕</button></div></div>`;
+    return `<div class="li" data-row="${m.id}">${tm(m.t)}<div><button class="lk" data-open="${m.id}" aria-expanded="${isOpen(m.id)}"><span class="chev" aria-hidden="true"></span><b>${esc(m.name)}</b><span class="sr">, ${dshort(m.t)} ${hhmm(m.t)}</span></button></div><div class="ins"><b>${units(m.ins)}</b>${m.type ? `<span>${esc(m.type)}</span>` : ''}</div><div class="res">${res}</div><div class="acts">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : `<button data-keep="${m.id}" title="Add to your saved meals with this dose">Save to Meals</button>`}</div></div>${slot(m.id)}`;
   });
   // Fler än som visas: en knapp för äldre (förut tog listan slut vid 15 rader, och äldre gick bara att nå via grafens datum)
   const more = all.length > logLimit ? `<div class="more"><button id="more">Show older</button><span class="mut fine">${all.length - logLimit} more</span></div>` : '';
   renderTreat();
   setHTML($('log'), rows.join('') + more || (q ? `<div class="empty">Nothing matches “${esc($('lq').value.trim())}”. <button id="lqclear">Clear filter</button></div>`
-    : `<div class="empty">Nothing logged yet. ${btnsHidden() ? 'Write what you ate in the field at the top, e.g. <b>pizza 7.5 units</b>.' : 'Use <b>Log meal</b> at the top to log your first meal.'}</div>`));
+    : `<div class="empty">Nothing logged yet. ${btnsHidden() ? 'Write what you ate in the field at the top, e.g. <b>pizza 7.5 units</b>.' : 'Use <b>Log</b> to log your first meal.'}</div>`));
+  placeDet();
 }
 
 // Tidigare tillfällen med en måltid, nyast först. Bara de som började i målområdet och har 3 h mätvärden efteråt,
@@ -1055,7 +1108,8 @@ const hist = name => db.log.filter(m => m.name.toLowerCase() === name.toLowerCas
 const summ = hs => {
   const avg = (a, f) => a.reduce((s, e) => s + f(e), 0) / a.length;
   const H = hs.filter(e => tHi(e.o.pk[1])), L = hs.filter(e => e.o.lo[1] < 70);
-  return { n: hs.length, hi: H.length, lo: L.length, peak: avg(hs, e => e.o.pk[1]), rise: avg(hs, e => e.o.pk[1] - e.o.b[1]), ins: avg(hs, e => +e.m.ins || 0) };
+  // hiOnly: gick högt utan att bli lågt. Stapeln i Compared har tre delar som inte överlappar: lågt, i mål, högt.
+  return { n: hs.length, hi: H.length, lo: L.length, hiOnly: H.filter(e => !(e.o.lo[1] < 70)).length, peak: avg(hs, e => e.o.pk[1]), rise: avg(hs, e => e.o.pk[1] - e.o.b[1]), ins: avg(hs, e => +e.m.ins || 0) };
 };
 // Dialogen där dosen skrivs: bara skrivfelskontrollen beror på dosen i fältet. Förut visades hur det gått med just den
 // dosen, så att man kunde stega −/+ och läsa av utfallet (i praktiken en doseringsguide, och skärmläsaren läste upp varje
@@ -1113,9 +1167,9 @@ function ghostHTML(m) {
   }
   const me = curv[m.id], others = hs.filter(x => x.id !== m.id && curv[x.id] && curv[x.id].pts.length > 3);
   if (!me || !others.length || me.pts.length < 2) return `<div class="ghost">${head}<div class="ghc mut fine">${need.length ? 'Drawing the curves…' : 'Not enough readings after this meal to draw the curves.'}</div></div>`;
-  const z = chartScale(), w = Math.round(Math.min(760, Math.max(280, $('mdet').clientWidth || 600))), h = Math.round(190 * z), l = 30 * z, r = 12 * z, T = 10 * z, B = 20 * z;
+  const z = chartScale(), w = Math.round(Math.min(760, Math.max(280, mdetEl.clientWidth || 600))), h = Math.round(190 * z), l = 30 * z, r = 12 * z, T = 10 * z, B = 20 * z;
   const vals = [me, ...others.map(x => curv[x.id])].flatMap(c => c.pts.map(p => mm(p[1])));
-  const ym = Math.max(14, Math.ceil(Math.max(...vals) + 1)), X = t => l + Math.max(0, Math.min(180, t)) / 180 * (w - l - r), Y = v => T + (1 - Math.min(v, ym) / ym) * (h - T - B);
+  const ym = Math.max(14, Math.ceil(Math.max(...vals) + 1)), X = t => l + Math.max(0, Math.min(180, t)) / 180 * (w - l - r), Y = v => T + (1 - (Math.min(Math.max(v, YMIN), ym) - YMIN) / (ym - YMIN)) * (h - T - B);
   // En linje genom punkterna, med ett avbrott där det saknas värden i mer än 20 min (äldre värden kommer var 15:e minut)
   const path = ps => { let d = '', pt = null; for (const [t, v] of ps) { if (t < -4 || t > 181) continue; d += (pt === null || t - pt > 20 ? 'M' : 'L') + X(t).toFixed(1) + ',' + Y(mm(v)).toFixed(1); pt = t; } return d; };
   let sv = `<rect x="${l}" y="${Y(THI).toFixed(1)}" width="${(w - l - r).toFixed(1)}" height="${(Y(TLO) - Y(THI)).toFixed(1)}" style="fill:color-mix(in srgb,var(--ok) 9%,transparent)"/>`;
@@ -1151,7 +1205,7 @@ function pastTimes(m) {
     + `<p class="mut">Most recent first. Peak and lowest are within 3 hours after eating.</p></div>`;
 }
 // Raden under en måltid i Compared: en cell över hela bredden med listan i en .fold (on = redan utfälld)
-const cmpRow = (n, on) => `<tr role="row" class="cmpd"><td role="cell" colspan="7">${foldHtml(occList(n), on)}</td></tr>`;
+const cmpRow = (n, on) => `<tr role="row" class="cmpd"><td role="cell" colspan="6">${foldHtml(occList(n), on)}</td></tr>`;
 function renderCmp() {
   const names = [...new Map(db.log.filter(m => !isCorr(m.name)).map(m => [m.name.toLowerCase(), m.name])).values()];
   // Oftast ätna först (förut högsta toppen först, så att avsnittet slutade i en rad dåliga betyg). Kolumnen "Avg units"
@@ -1164,21 +1218,27 @@ function renderCmp() {
   const once = r => r.s.n < 2 && !cmpOpen.has(r.n.toLowerCase()), many = rows.filter(r => !once(r)), nOnce = rows.length - many.length;
   const shown = cmpAll || !many.length ? rows : many;
   const em = c => ` style="color:${c};font-weight:600"`;
-  const th = c => { const on = c.k === cmpSort.k; return `<th role="columnheader" aria-sort="${on ? (cmpSort.dir < 0 ? 'descending' : 'ascending') : 'none'}"><button class="cmps${on ? ' on' : ''}" data-sort="${c.k}" title="${c.k === 'meal' ? 'Sort by name' : `Sort by ${c.l.toLowerCase()}, ${on && cmpSort.dir < 0 ? 'lowest' : 'highest'} first`}">${c.l}<span class="sarr${on ? (cmpSort.dir < 0 ? ' dn' : ' up') : ''}" aria-hidden="true"></span></button></th>`; };
-  const sortSel = `<label class="cmpsel">Sort by <select id="cmpsel">${CMP_COLS.flatMap(c => c.k === 'meal' ? [['meal:1', 'Name']] : [[c.k + ':-1', c.l + ', highest first'], [c.k + ':1', c.l + ', lowest first']]).map(([v, l]) => `<option value="${v}"${v === cmpSort.k + ':' + cmpSort.dir ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
+  const th = c => { const on = c.k === cmpSort.k; return `<th role="columnheader" aria-sort="${on ? (cmpSort.dir < 0 ? 'descending' : 'ascending') : 'none'}"><button class="cmps${on ? ' on' : ''}" data-sort="${c.k}" title="${c.k === 'meal' ? 'Sort by name' : `Sort by ${c.d || c.l.toLowerCase()}, ${on && cmpSort.dir < 0 ? 'lowest' : 'highest'} first`}">${c.l}<span class="sarr${on ? (cmpSort.dir < 0 ? ' dn' : ' up') : ''}" aria-hidden="true"></span></button></th>`; };
+  const sortSel = `<label class="cmpsel">Sort by <select id="cmpsel">${CMP_COLS.flatMap(c => c.k === 'meal' ? [['meal:1', 'Name']] : [[c.k + ':-1', (c.o || c.l) + ', highest first'], [c.k + ':1', (c.o || c.l) + ', lowest first']]).map(([v, l]) => `<option value="${v}"${v === cmpSort.k + ':' + cmpSort.dir ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
   // Uttryckliga roller: på smala skärmar blir raderna rutnät (display:grid), och då tappar webbläsaren annars tabellens
   // betydelse för skärmläsare. Rubrikraden döljs bara visuellt där, så att varje cell fortfarande har sin kolumnrubrik.
   // Namnet är en knapp som fäller ut varje gång måltiden loggats (occList), med en rad under måltiden
   setHTML($('cmp'), rows.length ? sortSel + `<table role="table"><thead role="rowgroup"><tr role="row">${CMP_COLS.map(th).join('')}</tr></thead><tbody role="rowgroup">`
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
-    + shown.map(({ n, s }) => { const k = n.toLowerCase(); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${cmpOpen.has(k)}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`
+    + shown.map(({ n, s }) => { const k = n.toLowerCase(); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${cmpOpen.has(k)}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" class="cmpo" data-label="How it went">${outBar(s)}</td></tr>`
       + (cmpOpen.has(k) ? cmpRow(n, true) : ''); }).join('') + '</tbody></table>'
+    + `<div class="yrlg cmplg" aria-hidden="true"><span><i style="background:var(--low)"></i>Went low</span><span><i style="background:var(--ok)"></i>Stayed in range</span><span><i style="background:var(--high-fill)"></i>Went high</span></div>`
     + (nOnce && many.length ? `<button class="lk cmpall" id="cmpall" aria-expanded="${cmpAll}">${cmpAll ? 'Hide' : 'Show'} ${nOnce} ${nOnce === 1 ? 'meal' : 'meals'} counted only once</button>` : '')
     : `<div class="empty">${cmpPer && db.log.some(m => !isCorr(m.name) && !inPer(m.t)) ? `No meals in the last ${cmpPer} days with 3 hours of readings after. Choose <b>All time</b> to see older ones.` : 'Meals show up here once they have 3 hours of readings after them.'}</div>`);
 }
-// Kolumnerna i Meals compared och vad de sorteras på. "Above 10" (målområdets övre gräns) och "Below 3.9" sorteras på andelen (2 of 4 före 1 of 4).
+// Kolumnerna i Meals compared och vad de sorteras på. "How it went" är en tredelad stapel (gick lågt, höll sig i mål, gick
+// högt; 2026-11-17, förut två kolumner "Above 10" och "Below 3.9" med "10 of 12") och sorteras på andelen som höll sig i mål.
 const CMP_COLS = [{ k: 'meal', l: 'Meal' }, { k: 'n', l: 'Times', v: s => s.n }, { k: 'ins', l: 'Avg units', v: s => s.ins }, { k: 'rise', l: 'Avg rise', v: s => s.rise },
-  { k: 'peak', l: 'Avg peak', v: s => s.peak }, { k: 'hi', get l() { return 'Above ' + THI; }, v: s => s.hi / s.n + s.hi * 1e-6 }, { k: 'lo', l: 'Below 3.9', v: s => s.lo / s.n + s.lo * 1e-6 }];
+  { k: 'peak', l: 'Avg peak', v: s => s.peak }, { k: 'out', l: 'How it went', d: 'share that stayed in range', o: 'Stayed in range', v: s => (s.n - s.hiOnly - s.lo) / s.n + (s.n - s.hiOnly - s.lo) * 1e-6 }];
+const outBar = s => {
+  const hi = s.hiOnly, lo = s.lo, ok = s.n - hi - lo, pc = x => (x / s.n * 100).toFixed(1), say = [ok && `${ok} stayed in range`, hi && `${hi} went high`, lo && `${lo} went low`].filter(Boolean).join(', ');
+  return `<span class="obar" role="img" aria-label="Of ${s.n}: ${say}" title="Of ${s.n}: ${say}"><i style="width:${pc(lo)}%;background:var(--low)"></i><i style="width:${pc(ok)}%;background:var(--ok)"></i><i style="width:${pc(hi)}%;background:var(--high-fill)"></i></span>`;
+};
 let cmpSort = { k: 'n', dir: -1 };
 try { const s = JSON.parse(localStorage.getItem('cmpSort')); if (s && CMP_COLS.some(c => c.k === s.k) && (s.dir === 1 || s.dir === -1)) cmpSort = s; } catch {}
 function setCmpSort(k, dir) {
@@ -1198,11 +1258,12 @@ const foldHtml = (inner, on) => `<div class="fold${on ? ' on' : ''}"><div><div c
 // Blir sidan kortare än fönstret når när något fälls ihop (längst ner på sidan) flyttar webbläsaren hela sidan; då hålls
 // rutans (box) höjd uppe så mycket som behövs, se heldBox.
 function foldIn(wrap) { const f = wrap.querySelector('.fold'); void f.offsetHeight; f.classList.add('on'); }
-function foldOut(box, wrap) {
+function foldOut(box, wrap, after) {
   const f = wrap.querySelector('.fold'), hf = f.offsetHeight, nat = boxNat(box);
   const short = scrollY + innerHeight - (document.documentElement.scrollHeight - (box.offsetHeight - nat) - hf);
   if (short > 0) { if (heldBox && heldBox !== box) unhold(); box.style.minHeight = Math.ceil(nat - hf + short) + 'px'; heldBox = box; }
-  const done = () => { if (wrap.isConnected) wrap.remove(); };
+  let fin = false;
+  const done = () => { if (fin) return; fin = true; if (after) after(); else if (wrap.isConnected) wrap.remove(); };
   if (calm()) return done();
   f.classList.remove('on'); f.addEventListener('transitionend', e => { if (e.target === f) done(); }); setTimeout(done, 350);
 }
@@ -1259,7 +1320,7 @@ function profHtml(el, prof, per, parts = '') {
   const z = chartScale(), B = 22 * z;
   const w = Math.max(300, Math.round(el.clientWidth) || 900), h = (w < 600 ? 220 : 260) + Math.round((z - 1) * 60), l = 30 * z, r = 8;
   const ym = Math.max(14, Math.ceil(Math.max(...ok.map(([, q]) => q[4])) + 1));
-  const X = i => l + (i + .5) / 48 * (w - l - r), Y = v => h - B - v / ym * (h - B - 18 * z);
+  const X = i => l + (i + .5) / 48 * (w - l - r), Y = v => h - B - (Math.max(v, YMIN) - YMIN) / (ym - YMIN) * (h - B - 18 * z);
   const line = k => ok.map(([i, q]) => X(i).toFixed(1) + ',' + Y(q[k]).toFixed(1));
   const band = (a, b) => [...line(a), ...line(b).reverse()].join(' ');
   let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
@@ -1417,20 +1478,31 @@ function save(fn) {
     .finally(() => { if (--saving) return; if (base) db = clone(base); renderAll(); loadOut(); });
 }
 
+// Detaljvyn (#mdet) är ett och samma element. Öppnad från grafen står den under grafen (#dethome). Öppnad från listan
+// (detFrom === selId) flyttas den in under raden, i en plats som renderLog ritar (#detslot, en .fold som fälls ut med en
+// kort animation): förut scrollade sidan upp till grafen och "Back to list" tillbaka ner. detOn = redan utfälld.
+const mdetEl = $('mdet');
+let detOn = false;
+function placeDet() {
+  const slot = $('detslot'), target = slot ? slot.querySelector('.foldin') : $('dethome');
+  if (slot && detOn) slot.querySelector('.fold').classList.add('on');
+  if (mdetEl.parentNode === target) return;
+  const a = document.activeElement, fid = mdetEl.contains(a) && a.id;
+  target.append(mdetEl); if (fid && $(fid)) $(fid).focus({ preventScroll: true });
+}
 function showDet() {
-  const el = $('mdet'), m = db.log.find(x => x.id === selId), nt = !m && db.notes.find(x => x.id === selId);
-  if (!m && !nt) { selId = null; setHTML(el, ''); return; }
+  const el = mdetEl, m = db.log.find(x => x.id === selId), nt = !m && db.notes.find(x => x.id === selId);
+  if (!m && !nt) { selId = null; setHTML(el, ''); if (detFrom) { detFrom = null; detOn = false; renderLog(); } return; }
   // Rubriken kan få fokus (tabindex -1), så att den som öppnar detaljvyn från listan hamnar där den visas
   const head = (title, x) => `<div class="dh"><div><h3 id="dtitle" tabindex="-1">${esc(title)}</h3><span class="mut">${dshort(x.t)} ${spanTxt(x)}</span></div><button class="icon" id="dclose" aria-label="Close details">✕</button></div>`;
   const { b, pk, lo, done } = m && out[m.id] || {}, live = !done;
   const tile = (lab, val, sub, c) => `<div class="tile"><span class="mut">${lab}</span><b${c ? ` style="color:${c}"` : ''}>${val}</b><span class="mut">${sub}</span></div>`;
-  const back = detFrom === selId ? '<button id="dback">Back to list</button>' : '';
   // Behandlad känning: hur det gick efteråt (värdet då, lägsta, när det var tillbaka över 3.9). Historik, inga råd.
   const lt = nt && nt.kind === LOWT ? out[nt.id] || {} : null;
   const ltTiles = lt ? `<div class="tiles t3">${lt.b ? tile('When treated', f1(mm(lt.b[1])), 'mmol/L', col(mm(lt.b[1]))) : tile('When treated', '–', 'no reading')}`
     + (lt.lo ? tile('Lowest after', f1(mm(lt.lo[1])), lt.lo[0] > nt.t ? 'after ' + dur(lt.lo[0] - nt.t) : 'at treatment', col(mm(lt.lo[1]))) : '')
     + tile('Back above 3.9', lt.up ? dur(lt.up[0] - nt.t) : '–', lt.up ? 'after treatment' : lt.lo && lt.lo[1] >= 70 ? 'it stayed above 3.9' : lt.done ? 'not within 3 hours' : 'not yet') + '</div>' : '';
-  setHTML(el, nt ? `<div class="det note${nt.kind === LOWT ? ' lt' : ''}">${head(kindLabel(nt.kind), nt)}${nt.text ? `<p>${esc(nt.text)}</p>` : ''}${ltTiles}<div class="da">${back}<button id="dedit">Edit</button><button id="ddel">${nt.kind === LOWT ? 'Remove treatment' : 'Remove note'}</button></div></div>`
+  setHTML(el, nt ? `<div class="det note${nt.kind === LOWT ? ' lt' : ''}">${head(kindLabel(nt.kind), nt)}${nt.text ? `<p>${esc(nt.text)}</p>` : ''}${ltTiles}<div class="da"><button id="dedit">Edit</button><button id="ddel">${nt.kind === LOWT ? 'Remove treatment' : 'Remove note'}</button></div></div>`
     : `<div class="det">
     ${head(m.name, m)}
     <div class="tiles">
@@ -1441,15 +1513,10 @@ function showDet() {
     </div>
     ${isCorr(m.name) ? '' : ghostHTML(m)}
     ${pastTimes(m)}
-    <div class="da">${back}${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : '<button id="dkeep" title="Add to your saved meals with this dose">Save to Meals</button>'}<button id="dedit">Edit</button><button id="ddel">Remove meal</button></div></div>`);
+    <div class="da">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : '<button id="dkeep" title="Add to your saved meals with this dose">Save to Meals</button>'}<button id="dedit">Edit</button><button id="ddel">Remove meal</button></div></div>`);
   if ($('dkeep')) $('dkeep').onclick = () => keepMeal(m);
   $('dedit').onclick = () => nt ? editNote(nt) : editMeal(m);
-  if ($('dback')) $('dback').onclick = () => { // tillbaka till samma rad i listan (på mobilen ligger den långt ned)
-    const r = document.querySelector(`#log [data-row="${CSS.escape(selId)}"]`);
-    closeDet();
-    if (r) { r.scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'center' }); r.querySelector('.lk').focus({ preventScroll: true }); }
-  };
-  $('dclose').onclick = () => { closeDet(); $('chsvg') && $('chsvg').focus({ preventScroll: true }); };
+  $('dclose').onclick = () => { if (detFrom === selId) return closeFold(true); closeDet(); $('chsvg') && $('chsvg').focus({ preventScroll: true }); };
   $('ddel').onclick = () => { const kb = kbFocus(); closeDet(); removeWithUndo(nt ? 'notes' : 'log', nt || m, kb); };
 }
 // Ta bort direkt, med Undo i meddelanderutan i stället för en bekräftelseruta: snabbare, och inget går förlorat av misstag
@@ -1462,10 +1529,11 @@ function removeWithUndo(list, item, kb = kbFocus()) {
   restores.set(rid, { list, copy });
   save(d => { d[list] = d[list].filter(x => x.id !== item.id); });
   toast(`Removed ${what}${list === 'meals' ? ' from your saved meals' : ''}.<button data-restore="${rid}">Undo</button>`, 8000);
-  focusUndo(kb, list === 'meals' ? $('mn') : $('openMeal'));
+  focusUndo(kb, list === 'meals' ? $('mn') : logBack());
 }
 $('chart').onclick = e => {
-  const g = e.target.closest('.mk'); selId = g && g.dataset.id !== selId ? g.dataset.id : null;
+  const g = e.target.closest('.mk'), inList = !!detFrom; selId = g && g.dataset.id !== selId ? g.dataset.id : null; detFrom = null; detOn = false;
+  if (inList) renderLog();
   drawChart(); showDet(); const k = $('chart').querySelector('.mk.sel[tabindex]'); if (k) k.focus();
   if (k) $('srlive').textContent = 'Details shown below the chart.';
 };
@@ -1545,7 +1613,7 @@ $('fmeal').onsubmit = ev => {
   if (editLog) { // ändra en loggad måltid: samma rad får nytt namn, ny dos, ny dag och ny tid
     const id = editLog; $('dmeal').close(); selId = id;
     undoableEdit('log', id, `Updated: <b>${esc(name)}</b>, ${units(ins)}, ${dmid(t)} at ${hhmm(t)}.`,
-      d => { const x = d.log.find(x => x.id === id); if (x) Object.assign(x, { name, ins, t }); }, kb, () => $('dedit') || $('openMeal'));
+      d => { const x = d.log.find(x => x.id === id); if (x) Object.assign(x, { name, ins, t }); }, kb, () => $('dedit') || logBack());
     return;
   }
   const type = (db.settings || {}).fast;
@@ -1569,7 +1637,7 @@ let tReturn = null;
 // Öppnades dialogen med ett kortkommando fanns inget fokus att gå tillbaka till; då huvudknappen i stället för <body>
 // Fokus i en stängd dialog (t.ex. Log-knappen) går inte att återvända till; då knappen som öppnar samma sak.
 const canFocus = el => el && el.isConnected && el !== document.body && !el.closest('dialog:not([open])');
-function focusUndo(kb, back = $('openMeal')) {
+function focusUndo(kb, back = logBack()) {
   const u = kb && $('toast').querySelector('[data-undo],[data-restore]');
   if (u) { const a = document.activeElement; tReturn = canFocus(a) && a.id !== 'dedit' ? a : back; u.focus(); }
 }
@@ -1589,16 +1657,35 @@ let detFrom = null; // id när detaljvyn öppnats från listan: då får den "Ba
 // grafen på den dagen, utan valt intervall). Bläddrar man själv under tiden gäller det man valt.
 let detPrev = null;
 function closeDet() {
-  selId = null; showDet(); drawChart();
+  const inList = !!detFrom;
+  selId = null; detFrom = null; detOn = false; showDet(); drawChart(); if (inList) renderLog();
   if (detPrev) { const p = detPrev; detPrev = null; setDay(p.day); }
 }
+// Fäller ihop detaljerna under raden med animationen och stänger sedan; back = fokus tillbaka på radens knapp
+function closeFold(back) {
+  const slot = $('detslot'), id = selId;
+  const done = () => { closeDet(); const b = back && document.querySelector(`#log [data-open="${CSS.escape(id)}"]`); if (b) b.focus({ preventScroll: true }); };
+  if (!slot) return done();
+  const b = document.querySelector(`#log [data-open="${CSS.escape(id)}"]`); if (b) b.setAttribute('aria-expanded', 'false');
+  foldOut($('log'), slot, done);
+}
 function openDetail(id, fromList) {
-  detFrom = fromList ? id : null;
   const x = db.log.find(m => m.id === id) || db.notes.find(n => n.id === id); if (!x) return;
+  if (fromList && selId === id && detFrom === id) return closeFold(true); // samma rad igen: fäll ihop
+  // En annan rad kan vara utfälld ovanför: den stängs direkt, och raden man klickade på hålls kvar på samma ställe på skärmen
+  const rowAt = () => { const r = fromList && document.querySelector(`#log [data-row="${CSS.escape(id)}"]`); return r ? r.getBoundingClientRect().top : null; }, y0 = rowAt();
+  detFrom = fromList ? id : null; detOn = false;
   const [t0, t1] = view(); if (x.t < t0 || x.t > t1) { const p = detPrev || { day }; setDay(new Date(x.t).setHours(0, 0, 0, 0), true); detPrev = p; }
-  selId = id; showDet(); drawChart(); $('dtitle').focus({ preventScroll: true });
-  // Hela grafkortet överst, så att markeringen på kurvan syns ovanför detaljerna (förut skrollades kurvan bort)
-    $('chart').closest('.card').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'start' });
+  selId = id; renderLog(); showDet(); drawChart();
+  const slot = fromList && $('detslot');
+  if (slot) {
+    const y1 = rowAt(); if (y0 !== null && y1 !== null && y1 !== y0) scrollBy({ top: y1 - y0, behavior: 'instant' });
+    if (calm()) slot.querySelector('.fold').classList.add('on'); else foldIn(slot);
+    detOn = true; $('dtitle').focus({ preventScroll: true }); return;
+  }
+  $('dtitle').focus({ preventScroll: true });
+  // Öppnad från grafen: hela grafkortet överst, så att markeringen på kurvan syns ovanför detaljerna
+  $('chart').closest('.card').scrollIntoView({ behavior: calm() ? 'auto' : 'smooth', block: 'start' });
 }
 // Fritextrutan döljs i lågt läge (behandlingen har sin egen dialog); exemplet kortas på smala skärmar
 let lowOn = false;
@@ -1617,15 +1704,12 @@ $('qlt').addEventListener('input', () => { if (!$('qlerr').hidden) { $('qlerr').
 $('lq').addEventListener('input', () => { logLimit = 15; renderLog(); });
 $('lq').addEventListener('keydown', e => { if (e.key === 'Escape' && $('lq').value) { e.stopPropagation(); $('lq').value = ''; renderLog(); } });
 $('log').onclick = e => {
-  const btn = e.target.closest('button'), ds = btn ? btn.dataset : {}, { id, nid, keep } = ds;
+  const btn = e.target.closest('button'), ds = btn ? btn.dataset : {}, { keep } = ds;
   if (btn && btn.id === 'more') { logLimit += 30; renderLog(); return; }
   if (btn && btn.id === 'lqclear') { $('lq').value = ''; renderLog(); $('lq').focus(); return; }
-  // Namnknappen öppnar detaljvyn; på pekskärm även ett tryck var som helst på raden (utom på en annan knapp)
+  // Namnknappen fäller ut detaljerna (och ihop igen); på pekskärm även ett tryck var som helst på raden (utom på en annan knapp)
   const row = !btn && coarse() && e.target.closest('[data-row]'), open = ds.open || (row && row.dataset.row);
   if (open) { openDetail(open, true); return; }
-  const lm = id && db.log.find(m => m.id === id), ln = nid && db.notes.find(n => n.id === nid);
-  if (lm) removeWithUndo('log', lm);
-  if (ln) removeWithUndo('notes', ln);
   const m = keep && db.log.find(x => x.id === keep);
   if (m) keepMeal(m);
 };
@@ -1639,7 +1723,7 @@ function keepMeal(m) {
   const ids = old !== name ? db.log.filter(x => x.name === old).map(x => x.id) : [], rid = uid(), kb = kbFocus();
   restores.set(rid, { fn: d => { d.meals = d.meals.filter(x => x.id !== nm.id); for (const x of d.log) if (ids.includes(x.id)) x.name = old; } });
   toast(`Saved <b>${esc(name)}</b> to Meals with usual dose ${units(m.ins)}. Change it under Meals.<button data-restore="${rid}">Undo</button>`, 8000);
-  focusUndo(kb, () => $('openMeal'));
+  focusUndo(kb, () => logBack());
   save(d => {
     if (!d.meals.some(x => x.name.toLowerCase() === name.toLowerCase())) d.meals.push({ ...nm });
     if (old !== name) d.log.forEach(x => { if (x.name === old) x.name = name; });
@@ -1765,14 +1849,14 @@ $('fnote').onsubmit = e => {
   $('nt').value = ''; $('ndur').value = ''; nclock.reset();
   $('dnote').close();
   toast(`Added <b>${esc(nkind)}</b>${text ? ': ' + esc(text) : ''}, ${whenSpan(t, mins)}.<button data-undo="${e2.id}">Undo</button>`, 8000);
-  focusUndo(kb, $('openNote'));
+  focusUndo(kb, logBack());
   save(d => d.notes.push({ ...e2 }));
 };
 // Ändra en anteckning: samma dialog som när den lades till, ifylld och med datumfältet synligt
 function saveNote(id, t, kind, text, mins, kb) {
   selId = id;
   undoableEdit('notes', id, `Updated: <b>${esc(kindLabel(kind))}</b>${text ? ': ' + esc(text) : ''}, ${dmid(t)} ${spanTxt({ t, dur: mins })}.`,
-    d => { const x = d.notes.find(x => x.id === id); if (!x) return; Object.assign(x, { t, kind }); if (text) x.text = text; else delete x.text; if (mins) x.dur = mins; else delete x.dur; }, kb, () => $('dedit') || $('openMeal'));
+    d => { const x = d.notes.find(x => x.id === id); if (!x) return; Object.assign(x, { t, kind }); if (text) x.text = text; else delete x.text; if (mins) x.dur = mins; else delete x.dur; }, kb, () => $('dedit') || logBack());
 }
 function editNote(n) {
   if (n.kind === LOWT) {
@@ -1814,7 +1898,7 @@ $('flow').onsubmit = e => {
   const e2 = { id: uid(), t, kind: LOWT, ...(text && { text }) };
   $('lg').value = ''; $('lt').value = ''; lclock.reset(); $('dlow').close();
   toast(`Logged low treatment${text ? ` (${esc(text)})` : ''} ${when(t)}.<button data-undo="${e2.id}">Undo</button>`, 8000);
-  focusUndo(kb, $('openLow'));
+  focusUndo(kb, shown($('openLow')) ? $('openLow') : logBack());
   save(d => d.notes.push({ ...e2 }));
 };
 // Efter en behandlad känning: en rad i huvudkortet som följer värdet tills det varit tillbaka över 3.9 i en timme, så att
@@ -1886,7 +1970,7 @@ try { const v = localStorage.getItem('insv'); if (v === 'month' || v === 'year')
 const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
-const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${String(val).replace(/ %$/, '&nbsp;%')}</b><span>${sub}</span></div>`;
+const ikpi = (lab, val, sub, c, goal) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${String(val).replace(/ %$/, '&nbsp;%')}</b><span>${sub}</span>${goal ? `<span class="kgoal">${goal}</span>` : ''}</div>`;
 // De fyra nyckeltalen. p = perioden före (eller null), pl = vad den heter ("Week before", "September").
 // Med en jämförelse står den under talet; utan står målet, som under Patterns.
 // Jämförelsen i en ruta: "October: 86 %" på en rad, på mobilen på två rader ("October:" / "86 %") och "Last week" i
@@ -1894,10 +1978,14 @@ const ikpi = (lab, val, sub, c) => `<div class="kpi"><span>${lab}</span><b${c ? 
 const cmpTxt = (pl, val) => { val = String(val).replace(/ %$/, '&nbsp;%'); return `<span class="sl">${pl}: ${val}</span><span class="ss">${pl === 'Week before' ? 'Last&nbsp;week' : pl}:<br>${val}</span>`; };
 function ikpis(c, p, pl, lowsCur, lowsPrev) {
   const was = (v, f) => p ? cmpTxt(pl, f(v)) : '';
-  return `<div class="kpis k4">${ikpi('In range', c.tir.toFixed(0) + ' %', p ? was(p.tir, v => v.toFixed(0) + ' %') : 'goal over&nbsp;70&nbsp;%', c.tir >= 70 ? 'var(--ok)' : 'var(--high)')}
+  // Målen (internationella, för 3.9–10): under talet när det inte finns någon jämförelse, annars på en egen rad under den.
+  // Med ett eget målområde gäller de inte; då står området där i stället.
+  const std = stdTarget(), own = `${TLO}–${THI}&nbsp;mmol/L`, g = (long, short) => `<span class="sl">${long}</span><span class="ss">${short}</span>`;
+  const gIn = g('goal over&nbsp;70&nbsp;%', 'goal 70&nbsp;%+'), gHi = g('goal under&nbsp;25&nbsp;%', 'goal &lt;25&nbsp;%');
+  return `<div class="kpis k4">${ikpi('In range', c.tir.toFixed(0) + ' %', p ? was(p.tir, v => v.toFixed(0) + ' %') : std ? gIn : own, c.tir >= 70 ? 'var(--ok)' : 'var(--high)', p && std ? gIn : '')}
     ${ikpi('Lows', lowsCur, lowsPrev != null ? cmpTxt(pl, lowsPrev) : '<span class="sl">15 min or more below 3.9</span><span class="ss">15+ min under 3.9</span>', c.low >= 4 ? 'var(--low)' : '')}
     ${ikpi('Average', f1(mm(c.avg)), p ? was(p.avg, v => f1(mm(v))) : 'mmol/L', col(mm(c.avg)))}
-    ${ikpi('Above ' + THI, c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : 'goal under&nbsp;25&nbsp;%', c.high >= 25 ? 'var(--high)' : '')}</div>`;
+    ${ikpi('Above ' + THI, c.high.toFixed(0) + ' %', p ? was(p.high, v => v.toFixed(0) + ' %') : std ? gHi : '', c.high >= 25 ? 'var(--high)' : '', p && std ? gHi : '')}</div>`;
 }
 // Värmekartan (vecka och månad). q = [[dagens början, 96 kvartsvärden i mg/dL eller null]], äldst först.
 const qLab = (t, last) => last && new Date(t).toDateString() === new Date().toDateString() ? 'Today' : new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
@@ -2263,14 +2351,13 @@ function setTheme(t) {
 }
 setTheme(document.documentElement.dataset.theme || '');
 $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setTheme(b.dataset.th); };
-// Knapparna Log meal, Note och Low treatment: visa eller dölj (sparat i webbläsaren, per enhet). Dolda: man loggar genom
-// att skriva, och rubriken över fältet är "Log it in your own words" i stället för "Or log it …".
+// Log-knappen (menyn med Meal, Note och Low treatment): visa eller dölj (sparat i webbläsaren, per enhet). Dold: man
+// loggar genom att skriva i fritextfältet.
 function setBtns(v) {
   const hide = v === 'hide';
   if (hide) document.documentElement.dataset.btns = 'hide'; else delete document.documentElement.dataset.btns;
   try { if (hide) localStorage.setItem('btns', 'hide'); else localStorage.removeItem('btns'); } catch {}
   $('btnsw').checked = !hide;
-  $('qll').textContent = hide ? 'Log it in your own words' : 'Or log it in your own words';
 }
 const btnsHidden = () => document.documentElement.dataset.btns === 'hide';
 setBtns(btnsHidden() ? 'hide' : 'show');
@@ -2384,7 +2471,7 @@ $('dlow').addEventListener('close', () => {
   lclock.plain();
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && selId && !document.querySelector('dialog[open]') && !(e.target.closest && e.target.closest('input,select,textarea'))) { const kb = kbFocus() || document.activeElement === $('dtitle'), row = detFrom === selId && document.querySelector(`#log [data-open="${CSS.escape(selId)}"]`); closeDet(); if (kb) (row || $('chsvg')).focus({ preventScroll: !row }); return; }
+  if (e.key === 'Escape' && selId && !document.querySelector('dialog[open]') && !(e.target.closest && e.target.closest('input,select,textarea'))) { const kb = kbFocus() || document.activeElement === $('dtitle'), inList = detFrom === selId; if (inList) { closeFold(kb); return; } closeDet(); if (kb && $('chsvg')) $('chsvg').focus(); return; }
   if (!keysOn()) return; // avstängda under Settings (WCAG 2.1.4: enkeltangenter ska gå att stänga av)
   if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || document.querySelector('dialog[open]') || (e.target.closest && e.target.closest('input,select,textarea'))) return;
   const k = e.key.toLowerCase();
@@ -2453,6 +2540,10 @@ $('lib').addEventListener('click', e => {
 });
 function showTab(k) {
   unhold();
+  const changed = k !== tabNow; tabNow = k;
+  document.querySelectorAll('.acttop').forEach(e => e.hidden = k !== 'act'); syncMini();
+  if (k === 'act') drawChart(); // ritas om i rätt bredd nu när den syns
+  if (changed) scrollTo({ top: 0, behavior: 'instant' });
   // Bara den valda fliken ligger i tabbordningen; piltangenterna flyttar mellan flikarna (WAI-ARIA tabs)
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'tab-' + k);
@@ -2461,6 +2552,23 @@ function showTab(k) {
   try { localStorage.setItem('tab', k); } catch {}
 }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+$('mini').onclick = () => { showTab('act'); $('t-act').focus({ preventScroll: true }); };
+// Log-knappen öppnar en liten meny med Meal, Note och Low treatment (samma dialoger som kortkommandona L, N och T).
+// Fokus läggs på Log-knappen innan dialogen öppnas, så att det hamnar där när dialogen stängs.
+const logMenu = on => { $('logmenu').hidden = !on; $('logbtn').setAttribute('aria-expanded', on); };
+$('logbtn').onclick = () => { const on = $('logmenu').hidden, kb = kbFocus(); logMenu(on); if (on && kb) $('logmenu').querySelector('button').focus(); };
+$('logmenu').onclick = e => {
+  const b = e.target.closest('[data-log]'); if (!b) return;
+  logMenu(false); $('logbtn').focus({ preventScroll: true });
+  ({ meal: () => openMeal(), note: () => openNote(), low: () => openLow() })[b.dataset.log]();
+};
+document.addEventListener('click', e => { if (!$('logmenu').hidden && !e.target.closest('.logw')) logMenu(false); });
+$('logmenu').parentNode.addEventListener('keydown', e => {
+  if ($('logmenu').hidden) return;
+  if (e.key === 'Escape') { e.stopPropagation(); logMenu(false); $('logbtn').focus(); return; }
+  const bs = [...$('logmenu').querySelectorAll('button')], i = bs.indexOf(document.activeElement), j = { ArrowDown: (i + 1) % bs.length, ArrowUp: (i + bs.length - 1) % bs.length, Home: 0, End: bs.length - 1 }[e.key];
+  if (j !== undefined) { e.preventDefault(); bs[j].focus(); }
+});
 document.querySelector('.tabs').addEventListener('keydown', e => {
   const tabs = [...document.querySelectorAll('.tabs button')], i = tabs.indexOf(e.target); if (i < 0) return;
   const j = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
