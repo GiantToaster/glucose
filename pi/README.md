@@ -47,6 +47,26 @@ enheterna på det andra nätet får "403".
 `data` innehåller mätvärden, måltider, inloggningsnyckeln till LibreLinkUp och Telegram-boten. Inget lösenord
 finns i mappen. Kopiera aldrig `raspberry.txt`.
 
+## Logga in på Pi:n från datorn
+
+Datorn har en SSH-nyckel (`C:\Users\me\.ssh\id_ed25519`, utan lösenfras) som Pi:n känner igen, och
+`C:\Users\me\.ssh\config` ger Pi:n det korta namnet `pi`. I PowerShell:
+
+```powershell
+ssh pi                                   # ett skal på Pi:n, "exit" för att gå ut
+ssh pi "systemctl is-active glucose-dashboard"   # ett enstaka kommando
+```
+
+Inget lösenord behövs för att logga in, bara för `sudo` på Pi:n. Ny dator? Skapa en nyckel och lägg in den en gång
+(den gången frågar Pi:n efter lösenordet):
+
+```powershell
+ssh-keygen -t ed25519
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh pi@raspberrypi "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+```
+
+Ta bort datorns nyckel från Pi:n: raden som slutar med `glucose-pc` i `~/.ssh/authorized_keys`.
+
 ## Bra kommandon (på Pi:n)
 
 ```bash
@@ -60,8 +80,8 @@ sudo systemctl status glucose-dashboard     # körs den?
 `index.html` läses vid varje sidladdning, så den räcker att kopiera. Ändras `server.js` behövs en omstart:
 
 ```powershell
-scp index.html server.js pi@raspberrypi:glucose/
-ssh pi@raspberrypi "sudo systemctl restart glucose-dashboard"
+scp index.html server.js pi:glucose/
+ssh -t pi "sudo systemctl restart glucose-dashboard"   # -t: så att sudo kan fråga efter lösenordet
 ```
 
 ## Nätverket
