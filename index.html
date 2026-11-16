@@ -250,7 +250,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 /* Året under Insights: en ruta per dag */
 .yrw{overflow-x:auto;padding-bottom:4px}.yrw svg{display:block}
 .yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
-.yrk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:baseline;margin-top:10px}.yrk .yrlg{margin:0}.yrh{font-size:.75rem;font-weight:600}.yrsc{display:inline-flex;align-items:center;gap:7px}.yrsc span{display:inline-flex;gap:2px}.yrsc i{margin:0}
+.yrlg b{color:var(--fg);font-weight:600;margin-right:2px}.yrlg.yrtop{margin:0 0 8px}
 .yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:.8125rem;color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
 .dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--fg)}
 .dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
@@ -455,7 +455,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <dialog id="dnote" aria-labelledby="dnoteh">
   <form class="dl" id="fnote">
     <div class="dhd"><h2 id="dnoteh">Add a note</h2><button type="button" class="icon" data-close aria-label="Close">✕</button></div>
-    <div class="chips" id="nk" role="group" aria-label="Type"><button type="button" class="on" data-k="Exercise" aria-pressed="true">Exercise</button><button type="button" data-k="Alcohol" aria-pressed="false">Alcohol</button><button type="button" data-k="Illness" aria-pressed="false">Illness</button><button type="button" data-k="Stress" aria-pressed="false">Stress</button><button type="button" data-k="Other" aria-pressed="false">Other</button></div>
+    <div class="chips" id="nk" role="group" aria-label="Type"><button type="button" class="on" data-k="Exercise" aria-pressed="true">Exercise</button><button type="button" data-k="Alcohol" aria-pressed="false">Alcohol</button><button type="button" data-k="Illness" aria-pressed="false">Illness</button><button type="button" data-k="Stress" aria-pressed="false">Stress</button><button type="button" data-k="Long-acting" aria-pressed="false">Long-acting insulin</button><button type="button" data-k="Other" aria-pressed="false">Other</button></div>
     <div class="fld"><label for="nt">Note (optional)</label><input id="nt" placeholder="e.g. Walk, 5 km" autocomplete="off"></div>
     <div class="grid2">
       <div class="fld"><label for="ntime">Time</label><div class="tw"><input id="nday" type="date" aria-label="Day" hidden><input id="ntime" type="time"><button type="button" id="nnow">Now</button></div></div>
@@ -543,8 +543,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 // Gränserna är de internationella i mg/dL (<70 lågt, >180 högt), samma som statistiken i server.js.
 // 70 mg/dL visas som 3.9 och räknas inte som lågt; 3.9 * 18.016 = 70.3 skulle annars färga 70 rött.
 const LOW = 70 / 18.016, HIGH = 180 / 18.016, $ = id => document.getElementById(id);
-const mm = v => v / 18.016, f1 = v => v.toFixed(1), LOWT = 'Low treated'; // anteckningstypen för det man tog mot en känning (så heter den i datan, för servern och AI:n)
-const kindLabel = k => k === LOWT ? 'Low treatment' : k; // så heter den på skärmen, samma som knappen
+const mm = v => v / 18.016, f1 = v => v.toFixed(1), LOWT = 'Low treated', BASAL = 'Long-acting'; // anteckningstypen för det man tog mot en känning (så heter den i datan, för servern och AI:n)
+const kindLabel = k => k === LOWT ? 'Low treatment' : k === BASAL ? 'Long-acting insulin' : k; // så heter den på skärmen, samma som knappen
 const lowWord = mg => mg < 54 ? 'Very low' : 'Low'; // ett ord för känningar överallt: under 3.0 = Very low
 // Insulin utan mat loggas som en rad med namnet Correction (servern gör så med "1,5 enheter ingen mat"). Den räknas i
 // insulinsumman men är ingen måltid: inte i jämförelsen och ingen "Save to Meals".
@@ -775,9 +775,10 @@ const EVK = {
   ex: { fill: 'var(--note)', vb: '0 0 320 512', solid: true, icon: '<path d="M160 48a48 48 0 1 1 96 0 48 48 0 1 1-96 0zM126.5 199.3c-1 .4-1.9.8-2.9 1.2l-8 3.5c-16.4 7.3-29 21.2-34.7 38.2l-2.6 7.8c-5.6 16.8-23.7 25.8-40.5 20.2s-25.8-23.7-20.2-40.5l2.6-7.8c11.4-34.1 36.6-61.9 69.4-76.5l8-3.5c20.8-9.2 43.3-14 66.1-14 44.6 0 84.8 26.8 101.9 67.9L281 232.7l21.4 10.7c15.8 7.9 22.2 27.1 14.3 42.9s-27.1 22.2-42.9 14.3L247 287.3c-10.3-5.2-18.4-13.8-22.8-24.5l-9.6-23-19.3 65.5 49.5 54c5.4 5.9 9.2 13 11.2 20.8l23 92.1c4.3 17.1-6.1 34.5-23.3 38.8s-34.5-6.1-38.8-23.3l-22-88.1-70.7-77.1c-14.8-16.1-20.3-38.6-14.7-59.7l16.9-63.5zM68.7 398l25-62.4c2.1 3 4.5 5.8 7 8.6l40.7 44.4-14.5 36.2c-2.4 6-6 11.5-10.6 16.1L54.6 502.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L68.7 398z"/>' },
   note: { fill: 'var(--note)', icon: '<path d="M6 3h9l4 4v14H6Z"/><path d="M9 12h6M9 16h6"/>' },
   low: { fill: 'var(--lbbg)', icon: '<path d="M6 8.5h12l-1.5 11.2a1.8 1.8 0 0 1-1.8 1.6H9.3a1.8 1.8 0 0 1-1.8-1.6Z"/><path d="M12.5 8.5 14 2.5h3M7.2 14.5c1.6-.8 3.2-.8 4.8 0s3.2.8 4.8 0"/>' } };
-const evKind = (m, note) => note ? (m.kind === LOWT ? 'low' : m.kind === 'Exercise' ? 'ex' : 'note') : isCorr(m.name) ? 'corr' : 'meal';
+EVK.basal = { ...EVK.corr, fill: 'var(--sys)' }; // långverkande insulin: samma spruta, i en annan färg än måltidsinsulinet
+const evKind = (m, note) => note ? (m.kind === LOWT ? 'low' : m.kind === BASAL ? 'basal' : m.kind === 'Exercise' ? 'ex' : 'note') : isCorr(m.name) ? 'corr' : 'meal';
 // Texten i brickan: dosen, för en anteckning längden, för en lågbehandling mängden (t.ex. "20 g"), annars kort text
-const evText = (m, note) => !note ? r1(m.ins) + ' u' : m.dur ? dur(m.dur * 6e4) : m.kind === LOWT ? ((String(m.text || '').match(/\d+(?:[.,]\d+)?\s*g\b/) || [])[0] || 'Low') : cut(m.text || kindLabel(m.kind), 14);
+const evText = (m, note) => !note ? r1(m.ins) + ' u' : m.kind === BASAL ? ((String(m.text || '').match(/(\d+(?:[.,]\d+)?)\s*units?\b/) || [])[1] || 'Basal') + (/\d\s*units?\b/.test(m.text || '') ? ' u' : '') : m.dur ? dur(m.dur * 6e4) : m.kind === LOWT ? ((String(m.text || '').match(/\d+(?:[.,]\d+)?\s*g\b/) || [])[0] || 'Low') : cut(m.text || kindLabel(m.kind), 14);
 // Symbolen (s px stor, centrerad i x, y) i sin färg
 const evIcon = (K, x, y, s) => `<svg x="${(x - s / 2).toFixed(1)}" y="${(y - s / 2).toFixed(1)}" width="${s.toFixed(1)}" height="${s.toFixed(1)}" viewBox="${K.vb || '0 0 24 24'}" overflow="visible" style="color:${K.fill}" ${K.solid ? `fill="${K.fill}"` : `fill="none" stroke="${K.fill}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`}>${K.icon}</svg>`;
 // I en bricka med text: bara symbolen. Ensam: symbolen på en tonad rund platta med diametern d; ringen (halo) syns när
@@ -1679,7 +1680,7 @@ let nkind = 'Exercise';
 function setKind(k) {
   nkind = k;
   $('nk').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); });
-  $('nt').placeholder = k === 'Alcohol' ? 'e.g. Two beers' : 'e.g. Walk, 5 km';
+  $('nt').placeholder = k === 'Alcohol' ? 'e.g. Two beers' : k === BASAL ? `e.g. ${(db.settings && db.settings.long) || 'Lantus'} 14 units` : 'e.g. Walk, 5 km';
 }
 $('nk').onclick = e => { const b = e.target.closest('button'); if (b) setKind(b.dataset.k); };
 const field = (el, ok, msg) => { el.setCustomValidity(ok ? '' : msg); return ok || (el.reportValidity(), false); };
@@ -1916,12 +1917,13 @@ function renderYear() {
   const since = D[0][0] > Date.now() - 360 * 864e5 ? `Each day since ${new Date(yr.first).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}` : 'Each day, last 12 months';
   const lowDays = D.filter(d => d[2]).length;
   const say = `Time in range per day, with a red dot on days with a low, and below it one bar per week split into under 3.9, in range and over 10. ${good} of ${have.length} days with readings were at 70 % or more, and ${lowDays} ${lowDays === 1 ? 'day' : 'days'} had a low.`;
+  // Förklaringarna står intill det de förklarar: färgerna för dagarna ovanför rutnätet, staplarnas under dem.
+  // Varje färg har en egen etikett (förut en skala med text bara i ändarna, som var svår att läsa).
+  const sw = (bg, t, dot) => `<span><i style="background:${bg}${dot ? ';border-radius:50%;width:9px;height:9px' : ''}"></i>${t}</span>`;
+  const dayLg = `<div class="yrlg yrtop" aria-hidden="true"><b>In range each day</b>${sw(yrFill(60), 'Under 70 %')}${sw(yrFill(75), '70–79 %')}${sw(yrFill(85), '80–89 %')}${sw(yrFill(95), '90 % or more')}${sw('var(--low)', 'A low', 1)}</div>`;
+  const weekLg = `<div class="yrlg" aria-hidden="true"><b>Each week</b>${sw('var(--high-fill)', 'Over 10')}${sw('var(--ok)', 'In range')}${sw('var(--low)', 'Under 3.9')}</div>`;
   const yc = yr.cur && yr.cur.cov >= 20 ? yr.cur : null; // nyckeltalen för hela perioden, mot målen
-  el.innerHTML = (yc ? ikpis(yc, null, '', yc.lows, null) : '') + `<h3 class="grp">${since}</h3><div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
-    // Förklaringen: en rad för dagarna (en skala från under 70 % till 90 % eller mer, och pricken för känning) och en för
-    // veckostaplarna, i samma ordning som färgerna ligger i stapeln. 70 %-linjen har sin etikett vid axeln.
-    + `<div class="yrk" aria-hidden="true"><span class="yrh">Each day</span><span class="yrlg"><span class="yrsc">Under 70 %<span>${[60, 75, 85, 95].map(v => `<i style="background:${yrFill(v)}"></i>`).join('')}</span>90 % or more in range</span><span><i style="background:var(--low);border-radius:50%;width:9px;height:9px"></i>A low that day</span></span>`
-    + `<span class="yrh">Each week</span><span class="yrlg"><span><i style="background:var(--high-fill)"></i>Over 10</span><span><i style="background:var(--ok)"></i>In range</span><span><i style="background:var(--low)"></i>Under 3.9</span></span></div>`
+  el.innerHTML = (yc ? ikpis(yc, null, '', yc.lows, null) : '') + `<h3 class="grp">${since}</h3>${dayLg}<div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>${weekLg}`
     + `<div class="yrst"><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
   const yw = el.querySelector('.yrw'); if (yw) yw.scrollLeft = yw.scrollWidth; // de senaste veckorna syns först
 }
