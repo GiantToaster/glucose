@@ -166,7 +166,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 #cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.75rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
 
 /* Måltider, sökruta och listor */
-.subt{margin-top:6px}.cmpnote{margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
+.subt{margin-top:6px}.cmpall{margin-top:10px;font-size:.8125rem;color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.cmpnote{margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
 #lib .opt .hist{font-size:.8125rem;color:var(--mut);text-decoration:underline;text-decoration-color:var(--bd);text-underline-offset:3px}#lib .opt .hist:hover{color:var(--fg);text-decoration-color:currentColor}
 #cmp tr.flash td{animation:flash 1.6s ease-out}@keyframes flash{from{background:color-mix(in srgb,var(--acc) 18%,transparent)}to{background:transparent}}
 @media(prefers-reduced-motion:reduce){#cmp tr.flash td{animation:none}}
@@ -266,7 +266,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 #toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;bottom:24px;transform:translateY(16px);opacity:0;pointer-events:none;background:var(--tbg);color:var(--tfg);padding:10px 16px;border-radius:10px;font-size:.8125rem;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .2s,transform .2s,visibility 0s .2s;visibility:hidden;max-width:calc(100vw - 32px);z-index:20}#toast.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
 #toast button{margin-left:12px;padding:2px 10px;font-size:.75rem;background:none;color:inherit;border-color:currentColor}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
 .disc{margin:-6px 0 12px;font-size:.75rem;line-height:1.4;color:var(--mut);text-wrap:pretty}@media(max-height:560px){.disc{margin:-4px 0 8px}}
-.fine{font-size:.75rem}.sm{font-size:.8125rem}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}
+.fine{font-size:.75rem}.sm{font-size:.8125rem}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}.todh{margin:20px 0 8px}.todh .grp{margin:0}.todsvg{display:block}
 .foot{margin:8px 0 0;font-size:.75rem}#lmsg{margin:0;font-size:.75rem}#aist{font-size:.75rem}#cmp{overflow-x:auto}.lgband{fill:var(--ok)}
 p{text-wrap:pretty}.warnq:empty{display:none}.warnq{color:var(--fg)}
 /* Hjälp under fritextrutan: vad man kan skriva och kortkommandona, utfällbar så att den inte tar plats */
@@ -387,7 +387,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 
 <div class="tabs" role="tablist" aria-label="Sections">
   <button role="tab" id="t-act" aria-controls="tab-act" data-tab="act" aria-selected="true">Activity</button>
-  <button role="tab" id="t-pat" aria-controls="tab-pat" data-tab="pat" aria-selected="false" tabindex="-1">Patterns</button>
   <button role="tab" id="t-ins" aria-controls="tab-ins" data-tab="ins" aria-selected="false" tabindex="-1">Insights</button>
   <button role="tab" id="t-lib" aria-controls="tab-lib" data-tab="lib" aria-selected="false" tabindex="-1">Meals</button>
   <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
@@ -400,19 +399,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="log"></div>
 </section>
 
-<section class="card panel" id="tab-pat" role="tabpanel" aria-labelledby="t-pat" hidden>
-  <div class="ph"><h2 id="pdh">Last 14 days</h2><div class="seg" id="prng" role="group" aria-label="Period"><button data-pd="7" aria-pressed="false">7 d</button><button data-pd="14" class="on" aria-pressed="true">14 d</button><button data-pd="30" aria-pressed="false">30 d</button><button data-pd="90" aria-pressed="false">90 d</button></div></div>
-  <div id="sum"></div>
-  <div class="ph subh"><h3 class="m0">Time of day</h3><span class="lgd"><span><i class="ln"></i>Typical</span><span><i class="b2"></i>Half of readings</span><span><i class="b1"></i>9 in 10 readings</span></span></div>
-  <div id="prof"></div>
-  <div id="psum"></div>
-  <details class="help phelp"><summary>How these are counted</summary><dl>
-    <dt>In range</dt><dd id="tgdd">3.9 to 10.0 mmol/L. The goals are the international targets for CGM.</dd>
-    <dt>A low</dt><dd>At least 15 minutes below 3.9. Very low = below 3.0.</dd>
-    <dt>Typical curve</dt><dd>The middle value for each half hour. The darker band holds half of the readings, the lighter band 9 in 10.</dd>
-  </dl></details>
-</section>
-
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
   <div id="itip" aria-hidden="true"></div>
   <h2 class="sr">Insights</h2>
@@ -423,6 +409,11 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="iviews"><div id="wk"></div>
   <div id="mo" hidden></div>
   <div id="yr" hidden></div></div>
+  <details class="help phelp"><summary>How these are counted</summary><dl>
+    <dt>In range</dt><dd id="tgdd">3.9 to 10.0 mmol/L. The goals are the international targets for CGM.</dd>
+    <dt>A low</dt><dd>At least 15 minutes below 3.9. Very low = below 3.0.</dd>
+    <dt>Typical curve</dt><dd>The middle value for each half hour. The darker band holds half of the readings, the lighter band 9 in 10.</dd>
+  </dl></details>
 </section>
 
 <section class="card panel" id="tab-ask" role="tabpanel" aria-labelledby="t-ask" hidden>
@@ -439,14 +430,15 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 
 <section class="card panel" id="tab-lib" role="tabpanel" aria-labelledby="t-lib" hidden>
   <h2 class="sr">Meals</h2>
-  <div class="ph"><div class="seg" id="mseg" role="group" aria-label="Show"><button data-mv="cmp" class="on" aria-pressed="true">Compared</button><button data-mv="lib" aria-pressed="false">Saved<span class="segn" id="libn"></span></button></div></div>
+  <div class="ph"><div class="seg" id="mseg" role="group" aria-label="Show"><button data-mv="cmp" class="on" aria-pressed="true">Compared</button><button data-mv="lib" aria-pressed="false">Saved<span class="segn" id="libn"></span></button></div>
+    <div class="seg" id="cper" role="group" aria-label="Period"><button data-per="90" class="on" aria-pressed="true">90 days</button><button data-per="0" aria-pressed="false">All time</button></div></div>
   <div id="mv-cmp">
     <p class="mut m0 subt">How glucose went after each meal. Open a meal to see every time.</p>
     <div id="cmp"></div>
     <p class="mut fine cmpnote">Counts meals that started in range and have 3 hours of readings after. Insulin without food (Correction) is left out.</p>
   </div>
   <div id="mv-lib" hidden>
-  <p class="mut m0 subt">Saved meals and their usual dose. They show up first when you log a meal.</p>
+  <p class="mut m0 subt">Saved meals and their usual dose, most eaten first. They show up first when you log a meal.</p>
   <div class="addrow">
     <div class="fld"><label for="mn">Meal name</label><input id="mn" placeholder="e.g. Pizza"></div>
     <div class="fld"><label for="mi">Usual dose (units)</label><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input id="mi" inputmode="decimal" autocomplete="off" placeholder="e.g. 6"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div></div>
@@ -773,7 +765,7 @@ async function refresh() {
     const d = s['24h'];
     $('tir24').innerHTML = !d ? '' : d.cov < 50 ? `<span class="mut">Readings cover <b style="color:var(--fg)">${d.cov.toFixed(0)} %</b> of the last 24 h, too few for time in range</span>`
       : `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>`;
-    drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); if (editId === null) renderLib(); mealWarn(); syncFav();
+    drawChart(); renderLog(); showDet(); nowTime(); renderCmp(); if (editId === null) renderLib(); mealWarn(); syncFav();
     if (!$('tab-ins').hidden && iview === 'week') loadWeek();
   } catch { setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; }
 }
@@ -1053,7 +1045,10 @@ function renderLog() {
 
 // Tidigare tillfällen med en måltid, nyast först. Bara de som började i målområdet och har 3 h mätvärden efteråt,
 // så att en hög start inte skylls på dosen. Samma målområde som statistiken i server.js.
-const hist = name => db.log.filter(m => m.name.toLowerCase() === name.toLowerCase()).map(m => ({ m, o: out[m.id] || {} }))
+let cmpPer = 90, cmpAll = false; // cmpAll: visa även måltider som bara räknats en gång
+try { if (localStorage.getItem('cmpPer') === 'all') cmpPer = 0; } catch {}
+const inPer = t => !cmpPer || t >= Date.now() - cmpPer * 864e5;
+const hist = name => db.log.filter(m => m.name.toLowerCase() === name.toLowerCase() && inPer(m.t)).map(m => ({ m, o: out[m.id] || {} }))
   .filter(({ o }) => o.done && o.b && o.pk && tIn(o.b[1]));
 const summ = hs => {
   const avg = (a, f) => a.reduce((s, e) => s + f(e), 0) / a.length;
@@ -1162,6 +1157,8 @@ function renderCmp() {
   const C = CMP_COLS.find(c => c.k === cmpSort.k) || CMP_COLS[1];
   const rows = names.map(n => ({ n, h: hist(n) })).filter(x => x.h.length).map(({ n, h }) => ({ n, s: summ(h) }))
     .sort((a, b) => (C.k === 'meal' ? a.n.localeCompare(b.n) : C.v(a.s) - C.v(b.s)) * cmpSort.dir || b.s.n - a.s.n || a.n.localeCompare(b.n));
+  const once = r => r.s.n < 2 && !cmpOpen.has(r.n.toLowerCase()), many = rows.filter(r => !once(r)), nOnce = rows.length - many.length;
+  const shown = cmpAll || !many.length ? rows : many;
   const em = c => ` style="color:${c};font-weight:600"`;
   const th = c => { const on = c.k === cmpSort.k; return `<th role="columnheader" aria-sort="${on ? (cmpSort.dir < 0 ? 'descending' : 'ascending') : 'none'}"><button class="cmps${on ? ' on' : ''}" data-sort="${c.k}" title="${c.k === 'meal' ? 'Sort by name' : `Sort by ${c.l.toLowerCase()}, ${on && cmpSort.dir < 0 ? 'lowest' : 'highest'} first`}">${c.l}<span class="sarr${on ? (cmpSort.dir < 0 ? ' dn' : ' up') : ''}" aria-hidden="true"></span></button></th>`; };
   const sortSel = `<label class="cmpsel">Sort by <select id="cmpsel">${CMP_COLS.flatMap(c => c.k === 'meal' ? [['meal:1', 'Name']] : [[c.k + ':-1', c.l + ', highest first'], [c.k + ':1', c.l + ', lowest first']]).map(([v, l]) => `<option value="${v}"${v === cmpSort.k + ':' + cmpSort.dir ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
@@ -1170,9 +1167,10 @@ function renderCmp() {
   // Namnet är en knapp som fäller ut varje gång måltiden loggats (occList), med en rad under måltiden
   $('cmp').innerHTML = rows.length ? sortSel + `<table role="table"><thead role="rowgroup"><tr role="row">${CMP_COLS.map(th).join('')}</tr></thead><tbody role="rowgroup">`
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
-    + rows.map(({ n, s }) => { const k = n.toLowerCase(), open = cmpOpen.has(k); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${open}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`
+    + shown.map(({ n, s }) => { const k = n.toLowerCase(), open = cmpOpen.has(k); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${open}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" data-label="Above 10"${s.hi / s.n >= .5 ? em('var(--high)') : ''}>${s.hi} of ${s.n}</td><td role="cell" data-label="Below 3.9"${s.lo / s.n >= .25 ? em('var(--low)') : ''}>${s.lo} of ${s.n}</td></tr>`
       + (open ? `<tr role="row" class="cmpd"><td role="cell" colspan="7">${occList(n)}</td></tr>` : ''); }).join('') + '</tbody></table>'
-    : '<div class="empty">Meals show up here once they have 3 hours of readings after them.</div>';
+    + (nOnce && many.length ? `<button class="lk cmpall" id="cmpall" aria-expanded="${cmpAll}">${cmpAll ? 'Hide' : 'Show'} ${nOnce} ${nOnce === 1 ? 'meal' : 'meals'} counted only once</button>` : '')
+    : `<div class="empty">${cmpPer && db.log.some(m => !isCorr(m.name) && !inPer(m.t)) ? `No meals in the last ${cmpPer} days with 3 hours of readings after. Choose <b>All time</b> to see older ones.` : 'Meals show up here once they have 3 hours of readings after them.'}</div>`;
 }
 // Kolumnerna i Meals compared och vad de sorteras på. "Above 10" (målområdets övre gräns) och "Below 3.9" sorteras på andelen (2 of 4 före 1 of 4).
 const CMP_COLS = [{ k: 'meal', l: 'Meal' }, { k: 'n', l: 'Times', v: s => s.n }, { k: 'ins', l: 'Avg units', v: s => s.ins }, { k: 'rise', l: 'Avg rise', v: s => s.rise },
@@ -1191,9 +1189,9 @@ function occList(n) {
   const k = n.toLowerCase(), all = db.log.filter(m => m.name.toLowerCase() === k).sort((a, b) => b.t - a.t);
   const v = p => `<b style="color:${col(mm(p[1]))}">${f1(mm(p[1]))}</b>`;
   const row = m => {
-    const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = o.done && b && pk && tIn(b[1]);
+    const o = out[m.id] || {}, b = o.b, pk = o.pk, lo = o.lo, low = lo && lo[1] < 70, counted = inPer(m.t) && o.done && b && pk && tIn(b[1]);
     const sl = b && b[1] < 70; // åt under en känning: det står först i resultatet, aldrig "In range"
-    const why = !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : sl ? 'Not' : tHi(b[1]) ? 'Started above ' + THI : tLo(b[1]) ? 'Started below ' + TLO : '';
+    const why = !inPer(m.t) ? `Older than ${cmpPer} days` : !b ? 'No reading at the meal' : !o.done ? 'Still being followed' : !pk ? 'Too few readings after' : sl ? 'Not' : tHi(b[1]) ? 'Started above ' + THI : tLo(b[1]) ? 'Started below ' + TLO : '';
     // Startvärdet och sedan det som hände: högt (måltidens egen topp över målområdet) och/eller lågt (under 3.9), med hur lång
     // tid det tog. Höll det sig i mål: värdet efter 3 h (saknas värden precis där står när, t.ex. "after 2 h 30 min").
     const high = pk && tHi(pk[1]), end = o.end, after = t => 'after ' + dur(t - m.t), steps = [], res = [];
@@ -1206,9 +1204,13 @@ function occList(n) {
       + `<span role="cell">${res.join('<span class="mut">, then </span>')}${why ? `<span class="ncw">${why === 'Not' ? 'Not in the averages' : why + ', not in the averages'}</span>` : ''}</span></div>`;
   };
   return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Glucose</span><span role="columnheader">What happened</span></div>${all.map(row).join('')}</div>`
+    + (!libMeal(cleanName(n)) && all[0] ? `<p class="occsv"><button data-keepm="${all[0].id}">Save to Meals</button> <span class="mut fine">with the dose from the last time, ${units(all[0].ins)}</span></p>` : '')
     + `<p class="mut fine occn">Glucose at the meal, then the high or low it reached, or where it was after 3 hours if it stayed in range. High = above ${THI} from the meal itself (sugar taken against a low does not count). Low = below 3.9.</p>`;
 }
 $('cmp').addEventListener('click', e => {
+  if (e.target.closest('#cmpall')) { cmpAll = !cmpAll; renderCmp(); $('cmpall')?.focus(); return; }
+  const km = e.target.closest('[data-keepm]'), lm = km && db.log.find(x => x.id === km.dataset.keepm);
+  if (lm) { keepMeal(lm); renderCmp(); return; }
   // En kolumnrubrik: första klicket högst först (namn: A–Ö), nästa klick åt andra hållet. Fokus stannar på rubriken.
   const sb = e.target.closest('[data-sort]');
   if (sb) { const k = sb.dataset.sort; setCmpSort(k, k === cmpSort.k ? -cmpSort.dir : k === 'meal' ? 1 : -1); const nb = $('cmp').querySelector(`[data-sort="${k}"]`); if (nb) nb.focus(); return; }
@@ -1218,22 +1220,13 @@ $('cmp').addEventListener('click', e => {
 });
 $('cmp').addEventListener('change', e => { if (e.target.id !== 'cmpsel') return; const [k, d] = e.target.value.split(':'); setCmpSort(k, +d); $('cmpsel').focus(); });
 
-// Mönster: tid i målområdet m.m. för vald period. Målen är de internationella riktvärdena för CGM.
-let pdays = 14, prof = null;
-function renderSum() {
-  const x = st[pdays + 'd'];
-  if (!x) { $('sum').innerHTML = '<div class="empty">No readings for this period yet.</div>'; return; }
-  // Bara en tunn stapel och en lugn rad, så att man ser vilken period kurvan bygger på. Nyckeltalen (med jämförelse) finns under Insights.
-  $('sum').innerHTML = `<div class="pstir">${tirbar(x, 'big')}<div class="kpi2"><span><b style="color:var(${x.tir >= 70 ? '--ok' : '--high'})">${x.tir.toFixed(0)} %</b> in range</span>`
-    + `<span><b${x.low >= 4 ? ' style="color:var(--low)"' : ''}>${x.low.toFixed(1)} %</b> under ${TLO}</span><span><b>${x.high.toFixed(0)} %</b> over ${THI}</span>`
-    + `<span>Sensor active <b${x.cov < 70 ? ' style="color:var(--high)"' : ''}>${x.cov.toFixed(0)} %</b> of the period</span></div></div>`
-    + (x.cov < 70 ? '<p class="mut foot">Less than 70 % of this period has readings, so treat these numbers with caution.</p>' : '');
-}
-const loadProf = () => api('/api/profile?days=' + pdays).then(p => { prof = p; drawProf(); }).catch(() => {});
-function drawProf() {
-  if (!prof) return;
-  const el = $('prof'), ok = prof.b.map((q, i) => q && [i, q.map(mm)]).filter(Boolean);
-  if (!ok.length) { el.innerHTML = '<div class="empty">Not enough readings yet.</div>'; $('psum').textContent = ''; return; }
+// Dygnskurvan och när känningarna börjar, under Insights (veckan och månaden). Låg förut under en egen flik, Patterns,
+// med 7–90 dagar bakåt; flyttad 2026-11-16, eftersom resten av den fliken var samma siffror som Insights.
+// prof = { days, starts, b } från servern (profileRange), per = perioden i text ("the last 7 days", "in November").
+function profHtml(el, prof, per) {
+  if (!prof || !prof.b) return '';
+  const ok = prof.b.map((q, i) => q && [i, q.map(mm)]).filter(Boolean);
+  if (!ok.length) return '';
   const z = chartScale(), B = 22 * z;
   const w = Math.max(300, Math.round(el.clientWidth) || 900), h = (w < 600 ? 220 : 260) + Math.round((z - 1) * 60), l = 30 * z, r = 8;
   const ym = Math.max(14, Math.ceil(Math.max(...ok.map(([, q]) => q[4])) + 1));
@@ -1246,25 +1239,25 @@ function drawProf() {
   for (let k = 0; k < 24; k += step) s += `<text x="${l + k / 24 * (w - l - r)}" y="${h - 6 * z}" text-anchor="${k ? 'middle' : 'start'}">${p2(k)}:00</text>`;
   // Spridningen i neutral ton, och den typiska kurvan med samma zonfärger som huvudgrafen
   s += `<polygon points="${band(0, 4)}" style="fill:var(--fg)" opacity=".07"/><polygon points="${band(1, 3)}" style="fill:var(--fg)" opacity=".13"/>`;
-  s += zoneTrace('zp', [ok.map(([i, q]) => [X(i), Y(q[2])])], Y, l, w - r, 2.6);
+  s += zoneTrace('zp' + el.id, [ok.map(([i, q]) => [X(i), Y(q[2])])], Y, l, w - r, 2.6);
   const t = i => p2(i >> 1) + ':' + (i % 2 ? '30' : '00'), med = ok.map(([i, q]) => [i, q[2]]);
   const hi = med.reduce((a, b) => b[1] > a[1] ? b : a), lo = med.reduce((a, b) => b[1] < a[1] ? b : a);
   // Skärmläsare får kurvan i ord: högst, lägst och var den typiska kurvan ligger utanför målområdet
   const outT = med.filter(([, v]) => v > HIGH).map(([i]) => i), outL = med.filter(([, v]) => v < LOW).map(([i]) => i);
   const rng = is => { const r = []; for (const i of is) { const e = r[r.length - 1]; if (e && i === e[1] + 1) e[1] = i; else r.push([i, i]); } return r.map(([a, b]) => `${t(a)} to ${t((b + 1) % 48)}`).join(', '); };
-  const said = `Typical glucose by time of day, last ${pdays} days. Highest ${f1(hi[1])} at ${t(hi[0])}, lowest ${f1(lo[1])} at ${t(lo[0])}.`
+  const said = `Typical glucose by time of day, ${per}. Highest ${f1(hi[1])} at ${t(hi[0])}, lowest ${f1(lo[1])} at ${t(lo[0])}.`
     + (outT.length ? ` Typically above ${THI}: ${rng(outT)}.` : ` The typical curve stays below ${THI}.`) + (outL.length ? ` Typically below ${TLO}: ${rng(outL)}.` : '');
-  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(said)}">${s}</svg>`;
+  const svg = `<svg class="todsvg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(said)}">${s}</svg>`;
   // När börjar känningarna? Samma definition och samma tvåtimmarsfönster som i Insikter (lowWhen), med perioden i
   // rubriken. Förut räknade Mönster andelen värden under 3.9 och Insikter starttider, och de gav olika svar.
   // Staplarna visar samma mått som rubriken: hur många känningar som började i varje halvtimme. Halvtimmarna i rubrikens
   // tvåtimmarsfönster är röda, resten dämpade. Förut var det en remsa med ett annat mått (tid under 3.9), som krävde en
   // lång förklaring och gick att läsa som att den motsade rubriken.
-  const dd = `${prof.days} ${prof.days === 1 ? 'day' : 'days'}`, starts = prof.starts || [], lw = lowWhen(starts), cnt = Array(48).fill(0);
+  const starts = prof.starts || [], lw = lowWhen(starts), cnt = Array(48).fill(0);
   for (const ts of starts) { const d = new Date(ts); cnt[d.getHours() * 2 + (d.getMinutes() >= 30 ? 1 : 0)]++; }
   const inWin = i => !lw || lw.all || ((i * 30 - lw.from + 1440) % 1440) < 120;
   const lowBars = () => {
-    const bw0 = Math.max(280, ($('psum').clientWidth || 600) - 24), h = Math.round(84 * z), B = 18 * z, top = 16 * z, bw = bw0 / 48, mx = Math.max(1, ...cnt), Y = c => h - B - c / mx * (h - B - top);
+    const bw0 = Math.max(280, (el.clientWidth || 600) - 24), h = Math.round(84 * z), B = 18 * z, top = 16 * z, bw = bw0 / 48, mx = Math.max(1, ...cnt), Y = c => h - B - c / mx * (h - B - top);
     let s = '';
     if (lw && !lw.all) cnt.forEach((c, i) => { if (inWin(i)) s += `<rect x="${(i * bw).toFixed(1)}" y="0" width="${bw.toFixed(2)}" height="${h - B}" style="fill:var(--low)" opacity=".08"/>`; });
     cnt.forEach((c, i) => {
@@ -1281,22 +1274,19 @@ function drawProf() {
       if (k % every === 0) s += `<text x="${x.toFixed(1)}" y="${h - 3 * z}" text-anchor="${k === 0 ? 'start' : k === 24 ? 'end' : 'middle'}">${p2(k)}</text>`;
     }
     const top3 = cnt.map((c, i) => [i, c]).filter(([, c]) => c).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    const say = `Lows that started in each half hour of the day, last ${dd}. Most: ` + top3.map(([i, c]) => `${t(i)}–${t((i + 1) % 48)}, ${c}`).join('; ') + '.';
+    const say = `Lows that started in each half hour of the day, ${per}. Most: ` + top3.map(([i, c]) => `${t(i)}–${t((i + 1) % 48)}, ${c}`).join('; ') + '.';
     return `<svg class="lowbars" viewBox="0 0 ${bw0} ${h}" role="img" aria-label="${esc(say)}">${s}</svg>`;
   };
-  const lowsFact = `<div class="wide"><span>When lows start, last ${dd}</span>` + (lw
+  const lowsFact = `<div class="wide"><span>When lows start, ${per}</span>` + (lw
     ? `<b style="color:var(--low)">${lw.all ? lw.text : `${dayPart(lw.from)}, ${hm2(lw.from)}–${hm2(lw.from + 120)}`}</b>`
       + `<span class="lwk">${lw.all ? `${lw.n === 1 ? '1 low' : lw.n + ' lows'} in total.` : `<b>${lw.k} of ${lw.n}</b> lows started then.`}</span>`
       + lowBars()
     : `<b>No lows</b><span>No time with 15 minutes or more below 3.9.</span>`) + '</div>';
   // Känningarna som en hel rad (med remsan), högst/lägst som en lugn textrad under profilen i stället för två halvtomma rutor
-  $('psum').innerHTML = `<p class="kpi2 prof2"><span>Typical curve highest at <b>${t(hi[0])}</b> (<b style="color:${col(hi[1])}">${f1(hi[1])}</b>)</span><span>and lowest at <b>${t(lo[0])}</b> (<b style="color:${col(lo[1])}">${f1(lo[1])}</b>)</span></p>
+  return `<div class="ph todh"><h3 class="grp">Time of day</h3><span class="lgd"><span><i class="ln"></i>Typical</span><span><i class="b2"></i>Half of readings</span><span><i class="b1"></i>9 in 10 readings</span></span></div>${svg}
+    <p class="kpi2 prof2"><span>Typical curve highest at <b>${t(hi[0])}</b> (<b style="color:${col(hi[1])}">${f1(hi[1])}</b>)</span><span>and lowest at <b>${t(lo[0])}</b> (<b style="color:${col(lo[1])}">${f1(lo[1])}</b>)</span></p>
     <div class="facts">${lowsFact}</div>`;
 }
-document.querySelectorAll('#prng button').forEach(b => b.onclick = () => {
-  pdays = +b.dataset.pd; $('pdh').textContent = `Last ${pdays} days`; document.querySelectorAll('#prng button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); renderSum(); loadProf();
-});
-
 let selMeal = null, ddOpen = false;
 // Senast loggade först (det man äter ofta och nyss hamnar överst), sedan i bokstavsordning
 const lastT = name => { const k = name.toLowerCase(), x = db.log.find(m => m.name.toLowerCase() === k); return x ? x.t : 0; };
@@ -1335,7 +1325,9 @@ const libHist = name => { const h = hist(name); if (!h.length) return ''; const 
   return `<button class="lk hist" data-cmpgo="${esc(encodeURIComponent(name.toLowerCase()))}" title="Show in Compared">${x.n === 1 ? 'once' : x.n + ' times'}, avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b></button>`; };
 function renderLib() {
   $('libn').textContent = db.meals.length || '';
-  setHTML($('lib'), [...db.meals].sort((a, b) => a.name.localeCompare(b.name)).map(m => m.id === editId
+  const cnt = new Map(); for (const x of db.log) { const k = cleanName(x.name).toLowerCase(); cnt.set(k, (cnt.get(k) || 0) + 1); }
+  const n = m => cnt.get(m.name.toLowerCase()) || 0;
+  setHTML($('lib'), [...db.meals].sort((a, b) => n(b) - n(a) || a.name.localeCompare(b.name)).map(m => m.id === editId
     ? `<div class="opt edit"><input class="en" value="${esc(m.name)}" aria-label="Meal name"><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input class="ei" inputmode="decimal" autocomplete="off" value="${m.ins}" aria-label="Usual dose (units)"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div><button class="p" data-save="1">Save</button><button data-cancel="1">Cancel</button><button class="danger" data-rm="${m.id}">Remove meal</button></div>`
     : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>`).join('')
     || '<div class="empty">Save the meals you eat often. They show up first when you log a meal.</div>');
@@ -1848,7 +1840,7 @@ function saveTarget(lo = num($('tlo').value), hi = num($('thi').value)) {
   const std = lo === 3.9 && hi === 10;
   save(d => { const x = { ...d.settings }; if (std) { delete x.lo; delete x.hi; } else Object.assign(x, { lo, hi }); d.settings = x; });
   renderTarget(); toast(`Target range ${f1(TLO)}–${f1(THI)} mmol/L.`);
-  queue.then(() => { refresh(); loadProf(); if (wk) loadWeek(); if (mo) loadMonth(moKey); if (yr) loadYear(); });
+  queue.then(() => { refresh(); reloadIns(); });
 }
 for (const id of ['tlo', 'thi']) $(id).onchange = () => saveTarget();
 $('tstd').onclick = () => { saveTarget(3.9, 10); $('thi').focus(); };
@@ -1909,11 +1901,11 @@ function heatSvg(el, q, rhFit) {
 }
 const qViews = (el, q) => q && q.length ? `<h3 class="grp">Hour by hour</h3>${heatSvg(el, q)}` : '';
 // Ryms inte vyn på skärmen med knapparna överst (mobilen, låga datorskärmar) blir värmekartans rader lägre, så att hela
-// vyn syns utan att man scrollar: ner till 7 px per dag för en månad och 16 px för en vecka. Annars som förut.
+// vyn ner till värmekartan syns utan att man scrollar: ner till 7 px per dag för en månad och 16 px för en vecka. Annars som förut.
 function fitHeat(el, q) {
   const svg = el.querySelector('svg.hmap'), bar = document.querySelector('#tab-ins .insbar'); if (!svg || !q || !q.length || el.hidden) return;
   const z = chartScale(), n = q.length, rh0 = (n <= 7 ? 26 : 14) * z, min = (n <= 7 ? 16 : 7) * z;
-  const need = el.getBoundingClientRect().bottom - bar.getBoundingClientRect().top + parseFloat(getComputedStyle($('tab-ins')).paddingBottom) + 24, over = need - innerHeight;
+  const need = (svg.nextElementSibling || svg).getBoundingClientRect().bottom - bar.getBoundingClientRect().top + parseFloat(getComputedStyle($('tab-ins')).paddingBottom) + 24, over = need - innerHeight;
   if (!(el.getBoundingClientRect().height > 0) || over <= 0) return;
   const rh = Math.max(min, rh0 - over / n); if (rh0 - rh < .5) return;
   svg.outerHTML = heatSvg(el, q, rh).split('<div class="yrlg"')[0];
@@ -1939,6 +1931,7 @@ const loadYear = () => api('/api/year').then(x => { yr = x; renderYear(); }).cat
 function loadIns() { return iview === 'month' ? loadMonth(moKey) : iview === 'year' ? loadYear() : loadWeek(); }
 // De andra vyerna hämtas i bakgrunden när Insights öppnas, så att ett byte visar dem direkt i stället för först tomt
 // och sedan fyllt (två höjdändringar). De ritas först när de visas, då bredden går att mäta.
+const reloadIns = () => { if (wk) loadWeek(); if (mo) loadMonth(moKey); if (yr) loadYear(); }; // efter en import eller ett nytt målområde
 const preloadIns = () => setTimeout(() => { if (!wk) loadWeek(); if (!mo) loadMonth(moKey); if (!yr) loadYear(); }, 400);
 function setView(v) {
   iview = v; try { localStorage.setItem('insv', v); } catch {}
@@ -1992,7 +1985,7 @@ function renderWeek() {
   const both = p && p.cov >= 50 && c.cov >= 50, days = wk.days || [];
   const bars = partsHtml(wk.parts, 'Week before', both) + qViews(el, wk.q);
   // Bara nyckeltalen och graferna (Highlights, Lows och Meals togs bort 2026-11-14); en varning om veckan har för lite värden
-  el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars
+  el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars + profHtml(el, wk.prof, 'the last 7 days')
     + (c.cov < 70 ? `<div class="ifoot"><span>Readings cover ${c.cov.toFixed(0)} % of the week. Treat these numbers with caution.</span></div>` : '');
   fitHeat(el, wk.q);
 }
@@ -2059,7 +2052,7 @@ function renderMonth() {
   const p = x.prev, pn = p && monthName(p.m).split(' ')[0];
   const bars = partsHtml(x.parts, pn, !!p) + qViews(el, x.q);
   // Bara nyckeltalen, dygnets delar och värmekartan; Highlights och Meals and activity togs bort 2026-11-14 (finns kvar i bilden)
-  el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
+  el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars + profHtml(el, x.prof, 'in ' + monthName(x.m).split(' ')[0] + (x.partial ? ' so far' : ''))
     + (c.cov < 70 ? `<div class="ifoot"><span>The sensor was active ${c.cov.toFixed(0)} % of the month. Treat these numbers with caution.</span></div>` : '');
   fitHeat(el, x.q);
 }
@@ -2390,11 +2383,19 @@ document.addEventListener('keydown', e => {
 let mview = 'cmp';
 try { if (localStorage.getItem('mealv') === 'lib') mview = 'lib'; } catch {}
 function setMView(v) {
-  mview = v; $('mv-cmp').hidden = v !== 'cmp'; $('mv-lib').hidden = v !== 'lib';
+  mview = v; $('mv-cmp').hidden = v !== 'cmp'; $('mv-lib').hidden = v !== 'lib'; $('cper').hidden = v !== 'cmp';
   document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.mv === v); b.setAttribute('aria-pressed', b.dataset.mv === v); });
   try { localStorage.setItem('mealv', v); } catch {}
 }
 document.querySelectorAll('#mseg button').forEach(b => b.onclick = () => setMView(b.dataset.mv));
+// Compared: de senaste 90 dagarna (förvalt, så att gamla doser och vanor inte blandas in) eller all tid. Valet sparas.
+function setCmpPer(d) {
+  cmpPer = d; try { localStorage.setItem('cmpPer', d ? String(d) : 'all'); } catch {}
+  document.querySelectorAll('#cper button').forEach(b => { b.classList.toggle('on', +b.dataset.per === d); b.setAttribute('aria-pressed', +b.dataset.per === d); });
+  renderCmp(); if (editId === null) renderLib();
+}
+document.querySelectorAll('#cper button').forEach(b => b.onclick = () => setCmpPer(+b.dataset.per));
+setCmpPer(cmpPer);
 setMView(mview);
 $('lib').addEventListener('click', e => {
   const b = e.target.closest('[data-cmpgo]'); if (!b) return;
@@ -2407,7 +2408,6 @@ function showTab(k) {
   // Bara den valda fliken ligger i tabbordningen; piltangenterna flyttar mellan flikarna (WAI-ARIA tabs)
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== 'tab-' + k);
-  if (k === 'pat') drawProf(); // ritas om i rätt bredd nu när panelen syns
   if (k === 'ins') { setView(iview); preloadIns(); }
   if (k === 'ask') aiStatus();
   try { localStorage.setItem('tab', k); } catch {}
@@ -2439,13 +2439,13 @@ $('imfile').onchange = async () => {
     $('imsg').textContent = `Uploading ${rows.length} readings…`;
     const r = await api('/api/import', { method: 'POST', body: JSON.stringify(rows) });
     $('imsg').textContent = r.error ? 'Import failed: ' + r.error : `Done. ${r.added} new readings added, ${r.skipped} already there or not valid.`;
-    refresh(); loadProf();
+    refresh(); reloadIns();
   } catch { $('imsg').textContent = 'Import failed. Is the server running?'; } finally { $('imfile').value = ''; }
 };
 nowTime();
 try { const k = localStorage.getItem('tab'); if (k && $('tab-' + k)) showTab(k); } catch {}
-api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { setTarget(db.settings); renderMeals(); renderLib(); renderInsulin(); renderTarget(); syncNav(); refresh(); loadProf(); });
-let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); drawProf(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); renderYear(); } }, 150); });
+api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { setTarget(db.settings); renderMeals(); renderLib(); renderInsulin(); renderTarget(); syncNav(); refresh(); });
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); renderYear(); } }, 150); });
 setInterval(refresh, 6e4);
 </script>
 </body>

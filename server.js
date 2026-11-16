@@ -257,16 +257,18 @@ function treated(t) {
 
 // ---------- Dygnsprofil: percentiler per halvtimme ----------
 // Ett värde per 15 min, så att dagar med minutdata inte väger tyngre än nätter som bara har 15-minutersvärden.
-function profile(days) {
-  const from = Date.now() - days * 864e5, slot = new Map(), dates = new Set(), b = Array.from({ length: 48 }, () => []);
-  for (const [t, v] of range(from, Infinity)) { const k = Math.floor(t / 9e5); if (!slot.has(k)) slot.set(k, [t, v]); }
+// [from, to): veckan och månaden under Insights (sedan Patterns-fliken togs bort 2026-11-16); profile(days) = senaste dagarna.
+const profile = days => profileRange(Date.now() - days * 864e5, Date.now());
+function profileRange(from, to) {
+  const slot = new Map(), dates = new Set(), b = Array.from({ length: 48 }, () => []);
+  for (const [t, v] of range(from, to)) { const k = Math.floor(t / 9e5); if (!slot.has(k)) slot.set(k, [t, v]); }
   for (const [t, v] of slot.values()) { const d = new Date(t); dates.add(d.toDateString()); b[d.getHours() * 2 + (d.getMinutes() >= 30 ? 1 : 0)].push(v); }
   // Ett fönster på 14 dygn räknat från nu berör 15 kalenderdagar; visa aldrig fler dagar än perioden
   // lo = andel värden under 70 mg/dL per halvtimme (null = för få värden), till remsan "när känningar händer"
   // starts = när varje känning (minst 15 min under 70) började under perioden: samma definition som veckosammanfattningen,
   // så att Mönster och Insikter ger samma svar på "när blir jag låg?"
-  const now = Date.now(), pr = period(sorted(from, now), from, now);
-  return { days: Math.min(days, dates.size), starts: pr ? pr.lows.map(l => l[0]) : [], lo: b.map(a => a.length < 5 ? null : a.filter(v => v < 70).length / a.length), b: b.map(a => {
+  const pr = period(sorted(from, to), from, to);
+  return { days: Math.min(Math.ceil((to - from) / 864e5), dates.size), starts: pr ? pr.lows.map(l => l[0]) : [], lo: b.map(a => a.length < 5 ? null : a.filter(v => v < 70).length / a.length), b: b.map(a => {
     if (a.length < 5) return null;
     a.sort((x, y) => x - y);
     return [.05, .25, .5, .75, .95].map(p => a[Math.min(a.length - 1, Math.floor(p * a.length))]);
@@ -402,11 +404,8 @@ function monthly(k) {
   const steady = [...calm.values()].filter(x => x.n >= 3).map(x => ({ ...x, peak: x.peak / x.n })).sort((x, y) => x.peak - y.peak)[0] || null;
   const notes = {}; let exMin = 0;
   for (const n of db.notes) if (n.t >= from && n.t < to) { notes[n.kind] = (notes[n.kind] || 0) + 1; if (n.kind === 'Exercise' && n.dur) exMin += n.dur; }
-  // Typisk dag: ett värde per kvart (som i dygnsprofilen), median och mittersta hälften per halvtimme
-  const slot = new Map(), b = Array.from({ length: 48 }, () => []);
-  for (const [t, v] of a) { const q = Math.floor(t / 9e5); if (!slot.has(q)) slot.set(q, [t, v]); }
-  for (const [t, v] of slot.values()) { const x = new Date(t); b[x.getHours() * 2 + (x.getMinutes() >= 30 ? 1 : 0)].push(v); }
-  const prof = b.map(x => { if (x.length < 4) return null; x.sort((u, w) => u - w); return [.25, .5, .75].map(q => x[Math.min(x.length - 1, Math.floor(q * x.length))]); });
+  // Typisk dag och när känningarna börjar: samma profil som veckan
+  const prof = profileRange(from, to);
   const sum = x => x && { tir: x.tir, low: x.low, high: x.high, avg: x.avg, cov: x.cov, lows: x.lows.length };
   return { m: k, from, to, partial: mnext(k) > now, n: a.length, cur: sum(p), prev: pp && pp.cov >= 20 ? { m: mkey(pf), ...sum(pp) } : null,
     days, best, noLow, inR, top: [...cnt.values()].sort((x, y) => y.n - x.n).slice(0, 3), meals: [...cnt.values()].reduce((x, y) => x + y.n, 0), steady, notes, exMin, prof };
@@ -1285,7 +1284,7 @@ function route(req, res) {
   if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false, piw: tg.piw !== false });
   if (u.pathname === '/api/weekly') {
     const w = weekly(), n = Date.now(), W = 7 * 864e5;
-    return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], n) : [], parts: { cur: dayParts(n - W, n), prev: dayParts(n - 2 * W, n - W) } });
+    return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], n) : [], prof: profileRange(n - W, n), parts: { cur: dayParts(n - W, n), prev: dayParts(n - 2 * W, n - W) } });
   }
   if (u.pathname === '/api/year') return send(res, yearly());
   // Kurvan efter en måltid (spökkurvorna i detaljvyn): [minuter efter måltiden, mg/dL] från 4 min före till 3 h efter,
