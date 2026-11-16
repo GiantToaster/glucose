@@ -289,7 +289,7 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 #itip{position:fixed;z-index:30;pointer-events:none;background:var(--tbg);color:var(--tfg);border-radius:8px;padding:5px 9px;font-size:.8125rem;line-height:1.35;max-width:min(320px,calc(100vw - 16px));opacity:0;transition:opacity .06s}#itip.on{opacity:1}
 /* Värmekartan och dygnets delar under Insights */
 .hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:.75rem}svg text.rt.td{font-weight:650}
-.parts{margin-top:0}.parts .tirbar{margin:6px 0 6px}.parts .pspan{opacity:.8;font-variant-numeric:tabular-nums}.pdl{font-size:.8125rem;font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
+.parts{margin:8px 0 0}@media(min-width:641px){.parts{margin-left:1.875rem;margin-right:8px}}.prof2{font-size:.8125rem;color:var(--mut)}@media(max-width:640px){.parts .pspan{display:block}}.parts .tirbar{margin:6px 0 6px}.parts .pspan{opacity:.8;font-variant-numeric:tabular-nums}.pdl{font-size:.8125rem;font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
 /* Patterns: bara en tunn stapel och en lugn rad överst; nyckeltalen finns under Insights */
 .pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
@@ -1223,10 +1223,12 @@ $('cmp').addEventListener('change', e => { if (e.target.id !== 'cmpsel') return;
 // Dygnskurvan och när känningarna börjar, under Insights (veckan och månaden). Låg förut under en egen flik, Patterns,
 // med 7–90 dagar bakåt; flyttad 2026-11-16, eftersom resten av den fliken var samma siffror som Insights.
 // prof = { days, starts, b } från servern (profileRange), per = perioden i text ("the last 7 days", "in November").
-function profHtml(el, prof, per) {
-  if (!prof || !prof.b) return '';
-  const ok = prof.b.map((q, i) => q && [i, q.map(mm)]).filter(Boolean);
-  if (!ok.length) return '';
+// Tre avsnitt som svarar på var sin fråga (2026-11-16; förut "Parts of the day", "Hour by hour" och "Time of day", där två
+// hette nästan samma sak): A typical day = kurvan med dygnets fyra delar (parts, från partsHtml) direkt under, i samma
+// ordning som tidsaxeln; When lows start; och sist Day by day (värmekartan, qViews).
+function profHtml(el, prof, per, parts = '') {
+  const ok = prof && prof.b ? prof.b.map((q, i) => q && [i, q.map(mm)]).filter(Boolean) : [];
+  if (!ok.length) return parts ? '<h3 class="grp">A typical day</h3>' + parts : '';
   const z = chartScale(), B = 22 * z;
   const w = Math.max(300, Math.round(el.clientWidth) || 900), h = (w < 600 ? 220 : 260) + Math.round((z - 1) * 60), l = 30 * z, r = 8;
   const ym = Math.max(14, Math.ceil(Math.max(...ok.map(([, q]) => q[4])) + 1));
@@ -1236,6 +1238,7 @@ function profHtml(el, prof, per) {
   let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
   let step = 3; while ((w - l - r) / (24 / step) < 46 * z) step *= 2;
   // 00:00 längst till vänster börjar vid axeln i stället för att centreras ovanpå y-axelns "0"
+  for (const k of [6, 12, 18]) { const x = (l + k / 24 * (w - l - r)).toFixed(1); s += `<line x1="${x}" x2="${x}" y1="${Y(ym).toFixed(1)}" y2="${h - B}" style="stroke:var(--bd)" stroke-dasharray="2 4"/>`; }
   for (let k = 0; k < 24; k += step) s += `<text x="${l + k / 24 * (w - l - r)}" y="${h - 6 * z}" text-anchor="${k ? 'middle' : 'start'}">${p2(k)}:00</text>`;
   // Spridningen i neutral ton, och den typiska kurvan med samma zonfärger som huvudgrafen
   s += `<polygon points="${band(0, 4)}" style="fill:var(--fg)" opacity=".07"/><polygon points="${band(1, 3)}" style="fill:var(--fg)" opacity=".13"/>`;
@@ -1277,15 +1280,15 @@ function profHtml(el, prof, per) {
     const say = `Lows that started in each half hour of the day, ${per}. Most: ` + top3.map(([i, c]) => `${t(i)}–${t((i + 1) % 48)}, ${c}`).join('; ') + '.';
     return `<svg class="lowbars" viewBox="0 0 ${bw0} ${h}" role="img" aria-label="${esc(say)}">${s}</svg>`;
   };
-  const lowsFact = `<div class="wide"><span>When lows start, ${per}</span>` + (lw
+  const lowsFact = `<div class="wide">` + (lw
     ? `<b style="color:var(--low)">${lw.all ? lw.text : `${dayPart(lw.from)}, ${hm2(lw.from)}–${hm2(lw.from + 120)}`}</b>`
       + `<span class="lwk">${lw.all ? `${lw.n === 1 ? '1 low' : lw.n + ' lows'} in total.` : `<b>${lw.k} of ${lw.n}</b> lows started then.`}</span>`
       + lowBars()
     : `<b>No lows</b><span>No time with 15 minutes or more below 3.9.</span>`) + '</div>';
   // Känningarna som en hel rad (med remsan), högst/lägst som en lugn textrad under profilen i stället för två halvtomma rutor
-  return `<div class="ph todh"><h3 class="grp">Time of day</h3><span class="lgd"><span><i class="ln"></i>Typical</span><span><i class="b2"></i>Half of readings</span><span><i class="b1"></i>9 in 10 readings</span></span></div>${svg}
+  return `<div class="ph todh"><h3 class="grp">A typical day</h3><span class="lgd"><span><i class="ln"></i>Typical</span><span><i class="b2"></i>Half of readings</span><span><i class="b1"></i>9 in 10 readings</span></span></div>${svg}${parts}
     <p class="kpi2 prof2"><span>Typical curve highest at <b>${t(hi[0])}</b> (<b style="color:${col(hi[1])}">${f1(hi[1])}</b>)</span><span>and lowest at <b>${t(lo[0])}</b> (<b style="color:${col(lo[1])}">${f1(lo[1])}</b>)</span></p>
-    <div class="facts">${lowsFact}</div>`;
+    <h3 class="grp">When lows start</h3><div class="facts">${lowsFact}</div>`;
 }
 let selMeal = null, ddOpen = false;
 // Senast loggade först (det man äter ofta och nyss hamnar överst), sedan i bokstavsordning
@@ -1899,23 +1902,13 @@ function heatSvg(el, q, rhFit) {
   return `<svg class="hmap" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Glucose every 15 minutes, one row per day, coloured by value: red under ${TLO}, green ${TLO} to ${THI}, ochre over ${THI}.">${sv}${qHours(z, i => l + i * cw, h - 5 * z)}</svg>`
     + `<div class="yrlg" aria-hidden="true"><span><i style="background:${HZ[0][1]}"></i>Under ${TLO}</span><span><i style="background:linear-gradient(90deg,${HZ[2][1]},${HZ[5][1]})"></i>${TLO}–${THI}</span><span><i style="background:linear-gradient(90deg,${HZ[6][1]},${HZ[8][1]})"></i>Over ${THI}</span><span><i style="background:var(--sub)"></i>No readings</span></div>`;
 }
-const qViews = (el, q) => q && q.length ? `<h3 class="grp">Hour by hour</h3>${heatSvg(el, q)}` : '';
-// Ryms inte vyn på skärmen med knapparna överst (mobilen, låga datorskärmar) blir värmekartans rader lägre, så att hela
-// vyn ner till värmekartan syns utan att man scrollar: ner till 7 px per dag för en månad och 16 px för en vecka. Annars som förut.
-function fitHeat(el, q) {
-  const svg = el.querySelector('svg.hmap'), bar = document.querySelector('#tab-ins .insbar'); if (!svg || !q || !q.length || el.hidden) return;
-  const z = chartScale(), n = q.length, rh0 = (n <= 7 ? 26 : 14) * z, min = (n <= 7 ? 16 : 7) * z;
-  const need = (svg.nextElementSibling || svg).getBoundingClientRect().bottom - bar.getBoundingClientRect().top + parseFloat(getComputedStyle($('tab-ins')).paddingBottom) + 24, over = need - innerHeight;
-  if (!(el.getBoundingClientRect().height > 0) || over <= 0) return;
-  const rh = Math.max(min, rh0 - over / n); if (rh0 - rh < .5) return;
-  svg.outerHTML = heatSvg(el, q, rh).split('<div class="yrlg"')[0];
-}
+const qViews = (el, q) => q && q.length ? `<h3 class="grp">Day by day</h3>${heatSvg(el, q)}` : '';
 // Dygnets fyra delar: tid i mål, en stapel låg / i mål / hög och perioden före (pl = vad den heter, som under nyckeltalen).
 // Pilen visas från 2 procentenheters skillnad: upp = mer tid i mål. Jämförelsen bara när cmp (båda perioderna har värden).
 const PARTN = [['Night', '00–06'], ['Morning', '06–12'], ['Afternoon', '12–18'], ['Evening', '18–24']];
 function partsHtml(P, pl, cmp) {
   if (!P || !P.cur || !P.cur.some(Boolean)) return '';
-  return `<h3 class="grp">Parts of the day</h3><div class="kpis k4 parts">` + P.cur.map((c, i) => {
+  return `<div class="kpis k4 parts">` + P.cur.map((c, i) => {
     const [n, span] = PARTN[i], head = `<span>${n} <span class="pspan">${span}</span></span>`;
     if (!c) return `<div class="kpi">${head}<b class="mut">–</b><span>Too few readings</span></div>`;
     const p = cmp && P.prev && P.prev[i], d = p ? Math.round(c.tir) - Math.round(p.tir) : 0;
@@ -1983,11 +1976,10 @@ function renderWeek() {
   // Med nästan ingen data (t.ex. första timmen efter ett uppehåll) blir "100 % in range, no lows" missvisande
   if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">Too few readings in the last 7 days to sum up${c ? ` (${c.cov.toFixed(0)} % of the week has readings)` : ''}. They build up while the server runs.</div>`; return; }
   const both = p && p.cov >= 50 && c.cov >= 50, days = wk.days || [];
-  const bars = partsHtml(wk.parts, 'Week before', both) + qViews(el, wk.q);
+  const bars = profHtml(el, wk.prof, 'the last 7 days', partsHtml(wk.parts, 'Week before', both)) + qViews(el, wk.q);
   // Bara nyckeltalen och graferna (Highlights, Lows och Meals togs bort 2026-11-14); en varning om veckan har för lite värden
-  el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars + profHtml(el, wk.prof, 'the last 7 days')
+  el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars
     + (c.cov < 70 ? `<div class="ifoot"><span>Readings cover ${c.cov.toFixed(0)} % of the week. Treat these numbers with caution.</span></div>` : '');
-  fitHeat(el, wk.q);
 }
 
 // Året: en ruta per dag (kolumn = vecka, måndag överst), färgad efter tid i mål. Samma gräns som dagsstaplarna: grönt från
@@ -2050,11 +2042,10 @@ function renderMonth() {
   $('mlab').textContent = x.m ? monthName(x.m) + (x.partial ? ' so far' : '') : '';
   if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">${!L.length ? 'Your month in review shows up here once there is a day of readings.' : `Too few readings in ${monthName(x.m)} to sum up${c ? ` (${c.cov.toFixed(0)} % of the month has readings)` : ''}.`}</div>`; return; }
   const p = x.prev, pn = p && monthName(p.m).split(' ')[0];
-  const bars = partsHtml(x.parts, pn, !!p) + qViews(el, x.q);
+  const bars = profHtml(el, x.prof, 'in ' + monthName(x.m).split(' ')[0] + (x.partial ? ' so far' : ''), partsHtml(x.parts, pn, !!p)) + qViews(el, x.q);
   // Bara nyckeltalen, dygnets delar och värmekartan; Highlights och Meals and activity togs bort 2026-11-14 (finns kvar i bilden)
-  el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars + profHtml(el, x.prof, 'in ' + monthName(x.m).split(' ')[0] + (x.partial ? ' so far' : ''))
+  el.innerHTML = ikpis(c, p, pn, c.lows, p && !x.partial ? p.lows : null) + bars
     + (c.cov < 70 ? `<div class="ifoot"><span>The sensor was active ${c.cov.toFixed(0)} % of the month. Treat these numbers with caution.</span></div>` : '');
-  fitHeat(el, x.q);
 }
 // Pekarrutan: texten från närmaste data-tip, placerad vid pekaren och inom fönstret. Följer med när pekaren rör sig.
 { const tip = $('itip'), hide = () => tip.classList.remove('on');
