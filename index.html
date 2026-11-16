@@ -166,6 +166,11 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 #cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.75rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
 
 /* Måltider, sökruta och listor */
+.subt{margin-top:6px}.cmpnote{margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
+#lib .opt .hist{font-size:.8125rem;color:var(--mut);text-decoration:underline;text-decoration-color:var(--bd);text-underline-offset:3px}#lib .opt .hist:hover{color:var(--fg);text-decoration-color:currentColor}
+#cmp tr.flash td{animation:flash 1.6s ease-out}@keyframes flash{from{background:color-mix(in srgb,var(--acc) 18%,transparent)}to{background:transparent}}
+@media(prefers-reduced-motion:reduce){#cmp tr.flash td{animation:none}}
+@media(max-width:600px){#lib .opt:has(.hist)>b{flex-basis:100%}}
 .addrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:6px 0 14px}.addrow .fld{flex:1;min-width:170px}.addrow .fld:first-child{flex:2;min-width:200px}
 /* Sparade måltider som rader med avdelare (inte rutor i ett kort); Remove finns i redigeringsläget, inte på varje rad */
 #lib{gap:0}#lib .opt{border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px 0}
@@ -405,10 +410,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
     <dt>In range</dt><dd id="tgdd">3.9 to 10.0 mmol/L. The goals are the international targets for CGM.</dd>
     <dt>A low</dt><dd>At least 15 minutes below 3.9. Very low = below 3.0.</dd>
     <dt>Typical curve</dt><dd>The middle value for each half hour. The darker band holds half of the readings, the lighter band 9 in 10.</dd>
-    <dt>Meals compared</dt><dd>Only meals that started in range and have 3 hours of readings after. Insulin without food (Correction) is left out.</dd>
   </dl></details>
-  <h3>Meals compared</h3>
-  <div id="cmp"></div>
 </section>
 
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
@@ -436,13 +438,22 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 </section>
 
 <section class="card panel" id="tab-lib" role="tabpanel" aria-labelledby="t-lib" hidden>
-  <h2 class="sr">Meals</h2><p class="mut m0 subt">Saved meals and their usual dose. They show up first when you log a meal.</p>
+  <h2 class="sr">Meals</h2>
+  <div class="ph"><div class="seg" id="mseg" role="group" aria-label="Show"><button data-mv="cmp" class="on" aria-pressed="true">Compared</button><button data-mv="lib" aria-pressed="false">Saved<span class="segn" id="libn"></span></button></div></div>
+  <div id="mv-cmp">
+    <p class="mut m0 subt">How glucose went after each meal. Open a meal to see every time.</p>
+    <div id="cmp"></div>
+    <p class="mut fine cmpnote">Counts meals that started in range and have 3 hours of readings after. Insulin without food (Correction) is left out.</p>
+  </div>
+  <div id="mv-lib" hidden>
+  <p class="mut m0 subt">Saved meals and their usual dose. They show up first when you log a meal.</p>
   <div class="addrow">
     <div class="fld"><label for="mn">Meal name</label><input id="mn" placeholder="e.g. Pizza"></div>
     <div class="fld"><label for="mi">Usual dose (units)</label><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input id="mi" inputmode="decimal" autocomplete="off" placeholder="e.g. 6"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div></div>
     <button id="msave">Add meal</button>
   </div>
   <div id="lib" class="mlist"></div>
+  </div>
 </section>
 </main>
 
@@ -762,7 +773,7 @@ async function refresh() {
     const d = s['24h'];
     $('tir24').innerHTML = !d ? '' : d.cov < 50 ? `<span class="mut">Readings cover <b style="color:var(--fg)">${d.cov.toFixed(0)} %</b> of the last 24 h, too few for time in range</span>`
       : `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>`;
-    drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); mealWarn(); syncFav();
+    drawChart(); renderLog(); showDet(); nowTime(); renderSum(); renderCmp(); if (editId === null) renderLib(); mealWarn(); syncFav();
     if (!$('tab-ins').hidden && iview === 'week') loadWeek();
   } catch { setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; }
 }
@@ -1319,10 +1330,14 @@ function renderMeals() {
 let act = -1;
 // Egen render för biblioteket, så att en pågående redigering inte skrivs över när sökrutan ritas om
 let editId = null;
+// Under Saved: hur många gånger måltiden räknats i Compared och snittoppen, som en länk dit (samma urval som tabellen)
+const libHist = name => { const h = hist(name); if (!h.length) return ''; const x = summ(h);
+  return `<button class="lk hist" data-cmpgo="${esc(encodeURIComponent(name.toLowerCase()))}" title="Show in Compared">${x.n === 1 ? 'once' : x.n + ' times'}, avg peak <b style="color:${col(mm(x.peak))}">${f1(mm(x.peak))}</b></button>`; };
 function renderLib() {
+  $('libn').textContent = db.meals.length || '';
   setHTML($('lib'), [...db.meals].sort((a, b) => a.name.localeCompare(b.name)).map(m => m.id === editId
     ? `<div class="opt edit"><input class="en" value="${esc(m.name)}" aria-label="Meal name"><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input class="ei" inputmode="decimal" autocomplete="off" value="${m.ins}" aria-label="Usual dose (units)"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div><button class="p" data-save="1">Save</button><button data-cancel="1">Cancel</button><button class="danger" data-rm="${m.id}">Remove meal</button></div>`
-    : `<div class="opt"><b>${esc(m.name)}</b>${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>`).join('')
+    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>`).join('')
     || '<div class="empty">Save the meals you eat often. They show up first when you log a meal.</div>');
 }
 function saveEdit() {
@@ -1349,7 +1364,7 @@ function pick(id) {
   $('mhint').className = 'mut'; $('mhint').innerHTML = m ? `Filled in with your usual dose, <b>${units(m.ins)}</b>.` : '';
   renderMeals();
 }
-const loadOut = () => api('/api/outcomes').then(o => { out = o; renderLog(); showDet(); renderCmp(); mealWarn(); });
+const loadOut = () => api('/api/outcomes').then(o => { out = o; renderLog(); showDet(); renderCmp(); if (editId === null) renderLib(); mealWarn(); });
 // Sparning. Varje ändring är en funktion som ändrar en db. Den körs direkt på sidans kopia, så att sidan svarar
 // på en gång, och sedan på serverns senaste version (base). Har en annan enhet hunnit spara emellan svarar
 // servern 409 med sin version, och ändringen görs om på den. Så skriver mobilen och datorn aldrig över varandra.
@@ -2370,6 +2385,24 @@ document.addEventListener('keydown', e => {
   if (k === '[') { e.preventDefault(); $('dprev').click(); }
   if (k === ']' && !$('dnext').disabled) { e.preventDefault(); $('dnext').click(); }
 });
+// Meals: Compared (hur måltiderna gick, flyttad hit från Patterns 2026-11-16) eller Saved (måltiderna med vanlig dos).
+// Valet sparas, som Insights vy.
+let mview = 'cmp';
+try { if (localStorage.getItem('mealv') === 'lib') mview = 'lib'; } catch {}
+function setMView(v) {
+  mview = v; $('mv-cmp').hidden = v !== 'cmp'; $('mv-lib').hidden = v !== 'lib';
+  document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.mv === v); b.setAttribute('aria-pressed', b.dataset.mv === v); });
+  try { localStorage.setItem('mealv', v); } catch {}
+}
+document.querySelectorAll('#mseg button').forEach(b => b.onclick = () => setMView(b.dataset.mv));
+setMView(mview);
+$('lib').addEventListener('click', e => {
+  const b = e.target.closest('[data-cmpgo]'); if (!b) return;
+  e.stopPropagation(); cmpOpen.add(decodeURIComponent(b.dataset.cmpgo)); setMView('cmp'); renderCmp();
+  const nb = $('cmp').querySelector(`[data-cmp="${CSS.escape(b.dataset.cmpgo)}"]`); if (!nb) return;
+  const tr = nb.closest('tr'); tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash');
+  nb.focus({ preventScroll: true }); tr.scrollIntoView({ block: 'center', behavior: calm() ? 'auto' : 'smooth' });
+}, true);
 function showTab(k) {
   // Bara den valda fliken ligger i tabbordningen; piltangenterna flyttar mellan flikarna (WAI-ARIA tabs)
   document.querySelectorAll('.tabs button').forEach(b => { const on = b.dataset.tab === k; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
