@@ -250,6 +250,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 /* Året under Insights: en ruta per dag */
 .yrw{overflow-x:auto;padding-bottom:4px}.yrw svg{display:block}
 .yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.75rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.yrk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;align-items:baseline;margin-top:10px}.yrk .yrlg{margin:0}.yrh{font-size:.75rem;font-weight:600}.yrsc{display:inline-flex;align-items:center;gap:7px}.yrsc span{display:inline-flex;gap:2px}.yrsc i{margin:0}
 .yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:.8125rem;color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
 .dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--fg)}
 .dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
@@ -1905,7 +1906,7 @@ function renderYear() {
       + `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--ok)"/><rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${hh.toFixed(1)}" style="fill:var(--high-fill)"/><rect x="${x}" y="${(BT + BH - hl).toFixed(1)}" width="${c}" height="${hl.toFixed(1)}" style="fill:var(--low)"/></g>`;
   }
   sv += `<line x1="${l}" x2="${W - g}" y1="${BY(70).toFixed(1)}" y2="${BY(70).toFixed(1)}" style="stroke:var(--fg)" stroke-width="1.2" stroke-dasharray="4 3" opacity=".75" pointer-events="none"/><text x="${l - 6 * z}" y="${(BY(70) + 4 * z).toFixed(1)}" text-anchor="end">70 %</text>`;
-  const good = have.filter(d => d[1] >= 70).length, avg = have.reduce((a, d) => a + d[1], 0) / have.length, byM = new Map();
+  const good = have.filter(d => d[1] >= 70).length, byM = new Map();
   for (const [t, v] of have) { const k = new Date(t).getFullYear() * 12 + new Date(t).getMonth(), m = byM.get(k) || { t, s: 0, n: 0 }; m.s += v; m.n++; byM.set(k, m); }
   // Bästa månaden: bara hela kalendermånader inom rutnätet (inte den första, om data börjar mitt i den, och inte den pågående)
   const cutM = d => new Date(d).getFullYear() * 12 + new Date(d).getMonth(), firstM = cutM(Math.max(D[0][0], yr.first)) + (new Date(Math.max(D[0][0], yr.first)).getDate() > 1 ? 1 : 0), nowM = cutM(Date.now());
@@ -1915,9 +1916,11 @@ function renderYear() {
   const say = `Time in range per day, with a red dot on days with a low, and below it one bar per week split into under 3.9, in range and over 10. ${good} of ${have.length} days with readings were at 70 % or more, and ${lowDays} ${lowDays === 1 ? 'day' : 'days'} had a low.`;
   const yc = yr.cur && yr.cur.cov >= 20 ? yr.cur : null; // nyckeltalen för hela perioden, mot målen
   el.innerHTML = (yc ? ikpis(yc, null, '', yc.lows, null) : '') + `<h3 class="grp">${since}</h3><div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>`
-    + `<div class="yrlg" aria-hidden="true"><span><i style="background:${yrFill(60)}"></i>Under 70 %</span><span><i style="background:${yrFill(75)}"></i>70–79 %</span><span><i style="background:${yrFill(85)}"></i>80–89 %</span><span><i style="background:${yrFill(95)}"></i>90 % or more</span><span><i style="background:${yrFill(null)}"></i>Not enough readings</span><span><i style="background:var(--low);border-radius:50%;width:9px;height:9px"></i>A low that day</span></div>`
-    + `<div class="yrlg" aria-hidden="true"><span>Each week:</span><span><i style="background:var(--low)"></i>Under 3.9</span><span><i style="background:var(--ok)"></i>In range</span><span><i style="background:var(--high-fill)"></i>Over 10</span><span>Dashed line: 70 % in range</span></div>`
-    + `<div class="yrst"><span>Average <b>${Math.round(avg)} %</b> in range</span><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
+    // Förklaringen: en rad för dagarna (en skala från under 70 % till 90 % eller mer, och pricken för känning) och en för
+    // veckostaplarna, i samma ordning som färgerna ligger i stapeln. 70 %-linjen har sin etikett vid axeln.
+    + `<div class="yrk" aria-hidden="true"><span class="yrh">Each day</span><span class="yrlg"><span class="yrsc">Under 70 %<span>${[60, 75, 85, 95].map(v => `<i style="background:${yrFill(v)}"></i>`).join('')}</span>90 % or more in range</span><span><i style="background:var(--low);border-radius:50%;width:9px;height:9px"></i>A low that day</span></span>`
+    + `<span class="yrh">Each week</span><span class="yrlg"><span><i style="background:var(--high-fill)"></i>Over 10</span><span><i style="background:var(--ok)"></i>In range</span><span><i style="background:var(--low)"></i>Under 3.9</span></span></div>`
+    + `<div class="yrst"><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
   const yw = el.querySelector('.yrw'); if (yw) yw.scrollLeft = yw.scrollWidth; // de senaste veckorna syns först
 }
 
