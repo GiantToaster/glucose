@@ -1871,28 +1871,33 @@ function setView(v) {
   return loadIns();
 }
 // Efter ett byte: ryms vyn inte under knapparna flyttas de till överkanten av skärmen, så att man ser vyn utan att scrolla
-function insFit() {
-  const bar = document.querySelector('#tab-ins .insbar'), r = bar.getBoundingClientRect();
-  if ($('tab-ins').getBoundingClientRect().bottom > innerHeight + 1 && r.top > 16) bar.scrollIntoView({ block: 'start', behavior: calm() ? 'auto' : 'smooth' });
+// Efter ett byte: syns inte hela vyn scrollar sidan precis så långt att den gör det, men aldrig så långt att knapparna
+// försvinner upptill. Är vyn högre än skärmen hamnar alltså knapparna överst och vyn börjar direkt under dem.
+function insFit(smooth) {
+  const bt = document.querySelector('#tab-ins .insbar').getBoundingClientRect().top - 12, need = $('tab-ins').getBoundingClientRect().bottom + 12 - innerHeight;
+  if (need > 1 && bt > 1) scrollBy({ top: Math.min(need, bt), behavior: smooth ? 'smooth' : 'auto' });
 }
-// Byte av vy: rutan med vyerna går mjukt från den gamla höjden till den nya (0,25 s) medan den nya vyn tonar in. Blir
-// sidan kortare följer sidan med under animationen i stället för att rycka till, och inget tomrum ligger kvar efteråt.
-// Ryms den nya vyn inte under knapparna flyttas knapparna samtidigt till skärmens överkant. Med minskad rörelse byts
-// vyn direkt. (Förut hölls kortets höjd tills sidan hade glidit klart, vilket syntes som en tom ruta.)
+// Byte av vy. Den nya vyn tonar in. Är den högre får rutan sin nya höjd direkt, så att sidan redan är lång nog när den
+// scrollar fram vyn (förut växte rutan i en animation, och scrollningen tog slut för tidigt: Month från Year blev
+// avklippt). Är den lägre krymper rutan mjukt (0,25 s), så att sidan följer med i stället för att rycka till. Inget
+// hålls kvar efteråt. Med minskad rörelse byts vyn direkt utan animation.
 const IVIEW = { week: 'wk', month: 'mo', year: 'yr' };
+let insEnd = null;
 function insSwitch(v) {
-  const box = $('iviews'), h0 = box.offsetHeight, had = { week: wk, month: mo, year: yr }[v], still = calm();
-  if (!still) { box.classList.remove('anim'); box.style.height = h0 + 'px'; box.classList.add('anim'); }
+  const box = $('iviews'), had = { week: wk, month: mo, year: yr }[v], still = calm();
+  if (insEnd) insEnd(); // ett nytt klick under en pågående animation: den avslutas först
+  const h0 = box.offsetHeight;
+  if (!still) box.style.height = h0 + 'px'; // samma höjd tills den nya vyn är ritad
   const p = setView(v);
   const done = () => requestAnimationFrame(() => {
-    const el = $(IVIEW[v]); if (still) return insFit();
-    const h1 = el.offsetHeight, bar = document.querySelector('#tab-ins .insbar');
+    const el = $(IVIEW[v]), h1 = el.offsetHeight;
+    if (still) { box.style.height = ''; return insFit(false); }
     el.classList.remove('ifade'); void el.offsetWidth; el.classList.add('ifade');
-    const end = () => { box.removeEventListener('transitionend', end); clearTimeout(tm); box.classList.remove('anim'); box.style.height = ''; };
-    const tm = setTimeout(end, 400); box.addEventListener('transitionend', end);
-    box.style.height = h1 + 'px';
-    // Ryms den nya vyn under knapparna när den har vuxit klart? Annars glider knapparna upp till överkanten.
-    if ($('tab-ins').getBoundingClientRect().bottom + (h1 - h0) > innerHeight + 1 && bar.getBoundingClientRect().top > 16) bar.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (h1 >= h0) { box.style.height = ''; return insFit(true); }
+    let tm; const end = () => { clearTimeout(tm); box.removeEventListener('transitionend', end); box.classList.remove('anim'); box.style.height = ''; insEnd = null; };
+    insEnd = end; box.classList.add('anim'); void box.offsetWidth; box.style.height = h1 + 'px';
+    box.addEventListener('transitionend', end); tm = setTimeout(end, 400);
+    setTimeout(() => insFit(true), 260); // en lägre vy kan ändå vara högre än skärmen (mobilen)
   });
   if (had) done(); else Promise.resolve(p).then(done, done);
 }
