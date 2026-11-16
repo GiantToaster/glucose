@@ -513,6 +513,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="sg" id="tgon" hidden>
         <div class="srow"><span class="sname" id="tgwho"></span><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
         <div class="srow" id="tgstw" hidden><label class="sname" for="tgst">Message when readings stop</label><input class="swi" id="tgst" type="checkbox" role="switch"></div>
+        <div class="srow" id="tgpiw" hidden><label class="sname" for="tgpi">Message when the Raspberry Pi has a problem</label><input class="swi" id="tgpi" type="checkbox" role="switch"></div>
         <div class="srow" id="tgrepw" hidden><label class="sname" for="tgrep">Weekly and monthly summary</label><input class="swi" id="tgrep" type="checkbox" role="switch"></div>
       </div>
       <span class="fine warnq" id="tgoffq" aria-live="polite"></span>
@@ -727,6 +728,7 @@ async function refresh() {
       $('nowbox').classList.remove('old'); $('cur').textContent = '–'; $('cur').style.color = ''; $('arrow').textContent = ''; $('state').hidden = true; $('hero').className = 'card hero'; lowMode(false);
       $('age').textContent = 'no current reading'; $('nowbox').setAttribute('aria-label', 'No current glucose reading'); document.title = 'Glucose';
     }
+    piPill();
     // Har under halva dygnet värden (t.ex. efter ett sensorbyte) står täckningen i stället för en procent som bygger på
     // några få värden ("0 % in range" efter en uppvärmning). Samma gräns som dagsstaplarna.
     const d = s['24h'];
@@ -2146,7 +2148,7 @@ async function loadTg() {
     : '')
     + (s.error ? `<br><span class="err">${esc(s.error)}</span>` : '');
   $('tgwho').innerHTML = s.chat ? `${bot}<span class="sd">Linked to ${esc(s.who || 'your Telegram')}. Never sends single readings.</span>` : `${bot}<span class="sd">Waiting for your message…</span>`;
-  $('tgrepw').hidden = $('tgstw').hidden = !(s.on && s.chat); $('tgrep').checked = !!s.report; $('tgst').checked = s.stale !== false;
+  $('tgrepw').hidden = $('tgstw').hidden = $('tgpiw').hidden = !(s.on && s.chat); $('tgpi').checked = s.piw !== false; $('tgrep').checked = !!s.report; $('tgst').checked = s.stale !== false;
   clearTimeout(tgPoll); if (s.on && !s.chat && $('dset').open) tgPoll = setTimeout(loadTg, 3000);
 }
 $('tgsave').onclick = async () => {
@@ -2166,6 +2168,11 @@ $('tgst').onchange = async e => {
   const on = e.target.checked, r = await api('/api/telegram/stale', { method: 'POST', body: JSON.stringify({ on }) }).catch(() => ({ error: 'No contact with the server.' }));
   if (r.error) { e.target.checked = !on; toast(esc(r.error)); return; }
   toast(on ? 'You will get a message when readings stop.' : 'No messages when readings stop.');
+};
+$('tgpi').onchange = async e => {
+  const on = e.target.checked, r = await api('/api/telegram/pi', { method: 'POST', body: JSON.stringify({ on }) }).catch(() => ({ error: 'No contact with the server.' }));
+  if (r.error) { e.target.checked = !on; toast(esc(r.error)); return; }
+  toast(on ? 'You will get a message when the Raspberry Pi has a problem.' : 'No messages about the Raspberry Pi.');
 };
 $('tgset').onsubmit = e => e.preventDefault(); // ett formulär (lösenordsfält hör hemma i ett); Enter trycker på Connect
 twoStep($('tgoff'), 'tgoffq', 'Messages to the bot will no longer be logged.', 'Yes, disconnect', async () => {
@@ -2258,10 +2265,20 @@ const PUBIP = /\b(?!(?:10|127)\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254
 const piV = v => esc(v).replace(PUBIP, ip => `<button type="button" class="ipm" data-ip="${ip}" title="Public IP address. Click to show it">hidden IP</button>`);
 const piN = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 let piLast = null;
+// Ett problem eller en varning på Pi:n står i klartext i statusfältet, men bara när där annars står "Live": att värdena
+// inte kommer eller att servern inte svarar är viktigare och står kvar. Röd vid problem, gul vid varning.
+// Publika IP-adresser döljs, som på Pi-sidan.
+function piPill() {
+  const st = $('status'), p = piLast; if (!p || !st.classList.contains('ok')) return;
+  const crit = p.crit || [], msgs = [...crit, ...(p.warn || [])].map(m => String(m).replace(PUBIP, 'hidden IP')); if (!msgs.length) return;
+  setStatus('Raspberry Pi: ' + msgs[0] + (msgs.length > 1 ? ` (and ${msgs.length - 1} more)` : ''), !crit.length, false, true);
+  st.title = msgs.join('\n');
+}
 function renderPi(p) {
   piLast = p;
   const app = p.app || { rows: [], warn: [] }, crit = p.crit || [], warn = [...(p.warn || []), ...app.warn.map(x => 'dashboard: ' + x)];
   const lvl = crit.length ? 'crit' : warn.length ? 'warn' : 'ok';
+  piPill();
   $('pibtn').dataset.lvl = lvl; $('pibtn').setAttribute('aria-label', 'Raspberry Pi status' + (lvl === 'ok' ? '' : ': ' + [crit.length && piN(crit.length, 'problem'), warn.length && piN(warn.length, 'warning')].filter(Boolean).join(', ')));
   if (!$('dpi').open) return;
   const model = ((p.sections || []).find(x => x.h === 'System') || { rows: [] }).rows.find(r => r.k === 'Model');
@@ -2285,7 +2302,7 @@ async function loadPi(fresh) {
 $('pibtn').onclick = () => { $('dpi').showModal(); $('dpih').focus(); if (piLast) renderPi(piLast); loadPi(false); };
 $('pirf').onclick = () => loadPi(true);
 $('pibody').addEventListener('click', e => { const b = e.target.closest('.ipm'); if (b) b.replaceWith(document.createTextNode(b.dataset.ip)); });
-setTimeout(() => loadPi(false), 4000); // pricken på knappen
+setTimeout(() => loadPi(false), 4000); setInterval(() => loadPi(false), 10 * 6e4); // pricken på knappen och statusfältet, var tionde minut
 $('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); };
 document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
