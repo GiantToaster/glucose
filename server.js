@@ -197,7 +197,7 @@ if (DEMO && !fs.existsSync(DBF)) { // måltider och anteckningar för de senaste
 // bedöms på det som visas (en decimal), samma som sidan: med 10 som övre gräns är 10.0 i mål och 10.1 över.
 // En känning följer inte målområdet: den är alltid minst 15 min under 70 mg/dL (3.9), så att den betyder samma sak
 // oavsett vilket mål man valt. tgtC nollställs när db.json skrivs.
-const okTarget = (lo, hi) => typeof lo === 'number' && typeof hi === 'number' && lo >= 3.9 && lo <= 7 && hi <= 13.9 && hi - lo >= 1;
+const okTarget = (lo, hi) => typeof lo === 'number' && typeof hi === 'number' && lo >= 3.9 && lo <= 7 && hi <= 13.9 && Math.round((hi - lo) * 10) >= 10;
 let tgtC = null;
 const target = () => tgtC ??= (s => okTarget(s.lo, s.hi) ? { lo: s.lo, hi: s.hi } : { lo: 3.9, hi: 10 })(readDb().settings || {});
 const r1 = v => Math.round(v / 18.016 * 10) / 10, below = v => r1(v) < target().lo, above = v => r1(v) > target().hi;

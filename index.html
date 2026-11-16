@@ -228,7 +228,7 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .sname .sd{font-weight:400}.sd{font-size:.8125rem;line-height:1.45;color:var(--mut);text-wrap:pretty}.sd:empty{display:none}
 .sintro{margin:0 4px}.sintro:empty{display:none}
 .srow>.seg,.srow>button,.srow>div,.srow>.swi{flex:none}
-.tnum{width:5.5em;flex:none;text-align:right;font-variant-numeric:tabular-nums}.sctl{display:flex;flex-direction:column;gap:6px;width:min(240px,55%)}.sctl select,.sctl input{width:100%}
+.tnum{width:6.5em;flex:none;font-variant-numeric:tabular-nums}.sctl{display:flex;flex-direction:column;gap:6px;width:min(240px,55%)}.sctl select,.sctl input{width:100%}
 .sdet summary{display:flex;align-items:center;cursor:pointer;min-height:44px;padding:12px 14px;font-size:.8125rem;font-weight:600;color:var(--mut);list-style:none}.sdet summary::-webkit-details-marker{display:none}
 .sdet summary::after{content:'';width:7px;height:7px;margin:0 4px 0 auto;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .15s}.sdet[open] summary::after{transform:translateY(2px) rotate(-135deg)}
 .sdet summary:hover{color:var(--fg)}.sdet .kl{padding:0 14px 14px}
@@ -511,8 +511,8 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="srow"><label class="sname" for="ilong">Basal</label><div class="sctl"><select id="ilong"></select><input id="ilongo" placeholder="Name of your insulin" aria-label="Name of your basal insulin" hidden></div></div>
     </div></section>
     <section class="sgw" aria-labelledby="sg8"><h3 class="slab" id="sg8">Target range</h3><div class="sg">
-      <div class="srow"><label class="sname" for="tlo">Low limit<span class="sd">mmol/L, from 3.9</span></label><input class="tnum" id="tlo" inputmode="decimal" autocomplete="off" placeholder="3.9" aria-describedby="tmsg"></div>
-      <div class="srow"><label class="sname" for="thi">High limit<span class="sd">mmol/L, up to 13.9</span></label><input class="tnum" id="thi" inputmode="decimal" autocomplete="off" placeholder="10" aria-describedby="tmsg"></div>
+      <div class="srow"><label class="sname" for="tlo">Low limit<span class="sd">mmol/L</span></label><select class="tnum" id="tlo" aria-describedby="tmsg"></select></div>
+      <div class="srow"><label class="sname" for="thi">High limit<span class="sd">mmol/L</span></label><select class="tnum" id="thi" aria-describedby="tmsg"></select></div>
       <div class="srow" id="tstdw"><span class="sname">Standard range<span class="sd">3.9 to 10, the international one</span></span><button id="tstd">Use 3.9–10</button></div>
     </div><span class="fine warnq" id="tmsg" aria-live="polite"></span><p class="sd sintro">Time in range, the colours and the charts follow it. A low is always under 3.9.</p></section>
     <section class="sgw" aria-labelledby="sg3"><h3 class="slab" id="sg3">History</h3><div class="sg">
@@ -560,7 +560,7 @@ const $ = id => document.getElementById(id);
 // decimal): med 10 som gräns är 10.0 i mål och 10.1 över. LOW och HIGH är linjerna i graferna, mitt emellan två
 // visade värden, så att 3.9 (70 mg/dL) aldrig färgas rött. En känning följer inte målområdet: alltid under 3.9 (70 mg/dL).
 let TLO = 3.9, THI = 10, LOW = 3.85, HIGH = 10.05;
-const okTarget = (lo, hi) => typeof lo === 'number' && typeof hi === 'number' && lo >= 3.9 && lo <= 7 && hi <= 13.9 && hi - lo >= 1;
+const okTarget = (lo, hi) => typeof lo === 'number' && typeof hi === 'number' && lo >= 3.9 && lo <= 7 && hi <= 13.9 && Math.round((hi - lo) * 10) >= 10;
 const stdTarget = () => TLO === 3.9 && THI === 10;
 function setTarget(st) {
   const ok = st && okTarget(st.lo, st.hi); TLO = ok ? st.lo : 3.9; THI = ok ? st.hi : 10; LOW = TLO - .05; HIGH = THI + .05; buildHZ();
@@ -1822,10 +1822,12 @@ for (const k in INSULINS) {
 
 // Målområdet: två fält i Settings. Det sparas i db.settings (så att mobilen, Telegram och AI:n följer med) och
 // allt som servern räknat ut med gränserna hämtas sedan om.
-function renderTarget() { $('tlo').value = f1(TLO); $('thi').value = f1(THI); $('tstdw').hidden = stdTarget(); $('tmsg').textContent = ''; }
+// Två listor i steg om 0.1: nedre 3.9–7.0, övre 4.9–13.9. Värden som skulle ge under 1 mmol/L mellan gränserna går inte att välja.
+const tOpts = (a, b, v, ok) => { let h = ''; for (let i = Math.round(a * 10); i <= Math.round(b * 10); i++) { const x = i / 10; h += `<option value="${f1(x)}"${ok(x) ? '' : ' disabled'}${x === v ? ' selected' : ''}>${f1(x)}</option>`; } return h; };
+function renderTarget() { $('tlo').innerHTML = tOpts(3.9, 7, TLO, x => Math.round((THI - x) * 10) >= 10); $('thi').innerHTML = tOpts(4.9, 13.9, THI, x => Math.round((x - TLO) * 10) >= 10); $('tstdw').hidden = stdTarget(); $('tmsg').textContent = ''; }
 function saveTarget(lo = num($('tlo').value), hi = num($('thi').value)) {
   const err = isNaN(lo) || isNaN(hi) ? 'Enter both limits as numbers, e.g. 4 and 7.' : lo < 3.9 ? 'The low limit is 3.9 at the lowest: under 3.9 is always a low.'
-    : lo > 7 ? 'The low limit can be 7 at the most.' : hi > 13.9 ? 'The high limit can be 13.9 at the most.' : hi - lo < 1 ? 'The high limit has to be at least 1 above the low limit.' : '';
+    : lo > 7 ? 'The low limit can be 7 at the most.' : hi > 13.9 ? 'The high limit can be 13.9 at the most.' : Math.round((hi - lo) * 10) < 10 ? 'The high limit has to be at least 1 above the low limit.' : '';
   if (err) { $('tmsg').textContent = err; return; }
   if (lo === TLO && hi === THI) return renderTarget();
   const std = lo === 3.9 && hi === 10;
@@ -1833,7 +1835,7 @@ function saveTarget(lo = num($('tlo').value), hi = num($('thi').value)) {
   renderTarget(); toast(`Target range ${f1(TLO)}–${f1(THI)} mmol/L.`);
   queue.then(() => { refresh(); loadProf(); if (wk) loadWeek(); if (mo) loadMonth(moKey); if (yr) loadYear(); });
 }
-for (const id of ['tlo', 'thi']) { $(id).onchange = () => saveTarget(); $(id).onkeydown = e => { if (e.key === 'Enter') e.target.blur(); }; }
+for (const id of ['tlo', 'thi']) $(id).onchange = () => saveTarget();
 $('tstd').onclick = () => { saveTarget(3.9, 10); $('thi').focus(); };
 
 // Insights: veckan och månaden visas på samma sätt. Fyra nyckeltal med jämförelse mot perioden före, en stapel per dag,
