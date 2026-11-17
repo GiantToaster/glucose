@@ -6,7 +6,7 @@ känning om det blev en), och veckan, månaden och året sammanfattas. Måltider
 eller via en egen Telegram-bot. En lokal AI (Ollama) tolkar texten och svarar på frågor om datan, utan att något
 lämnar hemmet.
 
-**Prova demon:** [FYLL I: länk till GitHub Pages] (en påhittad person, körs helt i webbläsaren, inget sparas).
+**Prova demon:** https://gianttoaster.github.io/glucose/ (en påhittad person, körs helt i webbläsaren, inget sparas).
 
 Byggd med Claude Code som ett bidrag till SweClockers × ASUS ProArt (november 2026). Resan, med misstagen, finns i
 [contest/journey.html](contest/journey.html).
