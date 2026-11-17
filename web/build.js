@@ -33,8 +33,9 @@ page = swap(page, "else localStorage.removeItem('btns');", "else localStorage.se
 const a = 'style="color:inherit;white-space:nowrap"';
 const note = `<div style="margin:0 auto;max-width:1200px;padding:8px 16px;font-size:.8125rem;line-height:1.5;color:var(--mut,#999);text-align:center">`
   + `Web demo: a made-up person, computed in your browser. Nothing is saved.<br>`
-  + `Try <b style="color:var(--fg)">pizza 7 units</b> in the box, or ask the AI. `
-  + `<a href="journey.html" ${a}>How it was built</a> · <a href="historik.html" ${a}>History</a>` + (repo ? ` · <a href="${repo}" ${a}>Source code</a>` : '') + `</div>`;
+  + `Try <b style="color:var(--fg)">pizza 7 units</b> in the box, or ask the AI.<br>`
+  // Länkarna på en egen rad i textfärgen, så att resan och historiken syns
+  + `<span style="color:var(--fg)"><a href="journey.html" ${a}>How it was built</a> · <a href="historik.html" ${a}>How it changed</a>` + (repo ? ` · <a href="${repo}" ${a}>Source code</a>` : '') + `</span></div>`;
 page = page.replace(/<body[^>]*>/, m => m + '\n' + note);
 
 // Resan: samma sida som contest/journey.html, med en länk till demon i sidhuvudet
