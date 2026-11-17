@@ -1,17 +1,17 @@
 # Tokens till tävlingen
 
-Framtaget 2026-11-17 22:21 med `node contest/tokens-claude.js`.
+Framtaget 2026-11-17 23:37 med `node contest/tokens-claude.js`.
 
 ## Till formuläret
 
 | Fält | Värde |
 |---|---|
-| Tokens betalda i molnet | **993 945 562** (input 7 294 + cache-skrivning 19 991 438 + cache-läsning 969 948 684 + output 3 998 146) |
+| Tokens betalda i molnet | **1 045 587 427** (input 7 624 + cache-skrivning 20 291 158 + cache-läsning 1 021 142 240 + output 4 146 405) |
 | Tokens bearbetade lokalt | **48 965** (minst; 26 anrop, 45 940 in och 3 025 ut) |
 
-Cacheläsning (969 948 684) är text som redan låg i modellens cache, till exempel koden och samtalet hittills, och lästes om vid varje svar. Den räknas med ovan eftersom den också debiteras, men till en lägre taxa. Bara ny text: input + cache-skrivning + output = 23 996 878.
+Cacheläsning (1 021 142 240) är text som redan låg i modellens cache, till exempel koden och samtalet hittills, och lästes om vid varje svar. Den räknas med ovan eftersom den också debiteras, men till en lägre taxa. Bara ny text: input + cache-skrivning + output = 24 445 187.
 
-Källor: 32 loggfiler i Claude Codes två loggmappar för projektet (före och efter bytet av mappnamn), 3 391 unika svar, samt ai-tokens-2026-11-17.jsonl.
+Källor: 32 loggfiler i Claude Codes två loggmappar för projektet (före och efter bytet av mappnamn), 3 544 unika svar, samt ai-tokens-2026-11-17.jsonl.
 
 ## Molnet per dag
 
@@ -32,7 +32,7 @@ Källor: 32 loggfiler i Claude Codes två loggmappar för projektet (före och e
 | 2026-11-14 | 111 | 256 | 197 218 | 597 915 | 26 419 692 | 27 215 081 |
 | 2026-11-15 | 66 | 142 | 71 118 | 1 709 508 | 35 398 906 | 37 179 674 |
 | 2026-11-16 | 308 | 688 | 410 657 | 1 886 658 | 97 032 849 | 99 330 852 |
-| 2026-11-17 | 127 | 258 | 113 359 | 338 979 | 16 328 132 | 16 780 728 |
+| 2026-11-17 | 280 | 588 | 261 618 | 638 699 | 67 521 688 | 68 422 593 |
 
 ## Molnet per session (huvud / underagenter)
 
@@ -45,7 +45,7 @@ Källor: 32 loggfiler i Claude Codes två loggmappar för projektet (före och e
 | 9d9ccacb huvud | 987 | 2 158 | 1 051 040 | 6 625 925 | 336 615 458 | 344 294 581 |
 | 9d9ccacb underagenter | 864 | 1 760 | 782 652 | 3 729 156 | 94 548 692 | 99 062 260 |
 | a00d5581 huvud | 188 | 410 | 243 439 | 1 089 950 | 49 672 986 | 51 006 785 |
-| c87e51ce huvud | 127 | 258 | 113 359 | 338 979 | 16 328 132 | 16 780 728 |
+| c87e51ce huvud | 280 | 588 | 261 618 | 638 699 | 67 521 688 | 68 422 593 |
 
 ## Molnet per modell
 
@@ -53,13 +53,13 @@ Källor: 32 loggfiler i Claude Codes två loggmappar för projektet (före och e
 |---|---:|---:|---:|---:|---:|---:|
 | <synthetic> | 11 | 0 | 0 | 0 | 0 | 0 |
 | claude-fable-5-2 | 247 | 560 | 397 997 | 2 106 117 | 90 385 367 | 92 890 041 |
-| claude-opus-5-5 | 3 133 | 6 734 | 3 600 149 | 17 885 321 | 879 563 317 | 901 055 521 |
+| claude-opus-5-5 | 3 286 | 7 064 | 3 748 408 | 18 185 041 | 930 756 873 | 952 697 386 |
 
 ## Molnet totalt
 
 | | Svar | Input | Output | Cache skriv | Cache läs | Totalt |
 |---|---:|---:|---:|---:|---:|---:|
-| alla | 3 391 | 7 294 | 3 998 146 | 19 991 438 | 969 948 684 | 993 945 562 |
+| alla | 3 544 | 7 624 | 4 146 405 | 20 291 158 | 1 021 142 240 | 1 045 587 427 |
 
 ## Lokalt per dag (Ollama, loggat sedan 6 november)
 

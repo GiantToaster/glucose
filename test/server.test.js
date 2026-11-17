@@ -102,15 +102,33 @@ test('the demo has readings up to now', async () => {
   assert.ok(Date.now() - n.last.t < 2 * 6e4);
 });
 
-test('export as CSV', async () => {
-  // Börjar med en BOM, så att Excel läser å, ä och ö rätt (text() tar bort den, därför bytena)
-  const raw = Buffer.from(await (await demo.get('/api/export?what=readings')).arrayBuffer());
-  assert.deepEqual([...raw.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
-  assert.match(raw.subarray(3, 200).toString(), /^time,mmol\/L,mg\/dL\r\n\d{4}-\d\d-\d\d \d\d:\d\d,\d+\.\d,\d+\r\n/);
-  const l = await (await demo.get('/api/export?what=log')).text();
-  assert.match(l.slice(0, 200), /^time,type,what,units,insulin\r\n/);
-  assert.match(l, /,Meal,/);
-  assert.equal((await demo.get('/api/export?what=x')).status, 400);
+// Packar upp en zip (det en .xlsx är) med Nodes zlib: innehållsförteckningen sist i filen pekar ut varje fil
+function unzip(buf) {
+  const zlib = require('zlib'), out = {}, e = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  let p = buf.readUInt32LE(e + 16);
+  for (let n = buf.readUInt16LE(e + 10); n--;) {
+    const method = buf.readUInt16LE(p + 10), size = buf.readUInt32LE(p + 20), nl = buf.readUInt16LE(p + 28), off = buf.readUInt32LE(p + 42);
+    const name = buf.toString('utf8', p + 46, p + 46 + nl), start = off + 30 + buf.readUInt16LE(off + 26) + buf.readUInt16LE(off + 28);
+    const data = buf.subarray(start, start + size);
+    out[name] = (method === 8 ? zlib.inflateRawSync(data) : data).toString('utf8');
+    p += 46 + nl + buf.readUInt16LE(p + 30) + buf.readUInt16LE(p + 32);
+  }
+  return out;
+}
+
+test('export as an Excel file', async () => {
+  const r = await demo.get('/api/export');
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type'), /spreadsheetml/);
+  const f = unzip(Buffer.from(await r.arrayBuffer()));
+  assert.match(f['xl/workbook.xml'], /name="Readings".*name="Meals and notes"/);
+  const [s1, s2] = [f['xl/worksheets/sheet1.xml'], f['xl/worksheets/sheet2.xml']];
+  // Rubriker, en riktig tid (stil 1, ett Excel-datum i år) och mmol/L med en decimal (stil 2)
+  assert.match(s1, /<row r="1"><c r="A1" t="inlineStr" s="3"><is><t>Time<\/t>/);
+  assert.match(s1, /<row r="2"><c r="A2" s="1"><v>4\d{4}\.\d+<\/v><\/c><c r="B2" s="2"><v>\d+(\.\d)?<\/v><\/c><c r="C2"><v>\d+<\/v>/);
+  assert.match(s1, /<col min="1" max="1" width="18" customWidth="1"\/>/, 'the time column is wide enough (no #####)');
+  assert.match(s2, /<t xml:space="preserve">Meal<\/t>/);
+  assert.match(f['xl/styles.xml'], /formatCode="yyyy-mm-dd hh:mm"/);
 });
 
 test('the LibreLinkUp version can be set, and empty means the default', async () => {
