@@ -196,8 +196,9 @@ Bilderna ligger i [contest/inlagg/bilder/](bilder/) och visar alla **demoläget*
 | `nya/07-insikter-vecka-manad-ar.gif` | Animation: Insights växlar mellan vecka, månad och år (91 kB) |
 | `nya/08-installningar.png` | Settings: tema, insulin, eget målområde, import och export till Excel, Telegram |
 | `nya/09-mobil-installningar.png` | Mobilen: målområdet, importen och exporten i Settings |
+| `nya/10-sa-har-den-forandrats.png` | Fyra versioner sida vid sida: 25 oktober, 3 november, 6 november och 17 november. Ersätter gärna `02-fore-efter.png` som omslag |
 
-Tabellen nedan är de gamla bilderna från 8 november, med den gamla layouten. `05-monster.png` och `07-manadsbild.png` visar saker som inte finns längre. Behåll gärna `02-fore-efter.png`, `08-fraga-ai.png` och `10-sa-hanger-det-ihop.png`, eftersom de visar resan, AI:n och helheten. Ett förslag på tio: `02-fore-efter`, `nya/01`, `nya/07` (GIF), `nya/05`, `nya/02`, `nya/03`, `08-fraga-ai`, `10-sa-hanger-det-ihop`, `nya/04` och Telegram-bilden.
+Tabellen nedan är de gamla bilderna från 8 november, med den gamla layouten. `05-monster.png` och `07-manadsbild.png` visar saker som inte finns längre. Behåll gärna `02-fore-efter.png`, `08-fraga-ai.png` och `10-sa-hanger-det-ihop.png`, eftersom de visar resan, AI:n och helheten. Ett förslag på tio: `nya/10-sa-har-den-forandrats` (omslag), `nya/01`, `nya/07` (GIF), `nya/05`, `nya/02`, `nya/03`, `08-fraga-ai`, `10-sa-hanger-det-ihop`, `nya/04` och Telegram-bilden.
 
 | Fil | Vad den visar |
 |---|---|
@@ -237,7 +238,7 @@ Beslutat 17 november: koden läggs publikt på GitHub under ett aliaskonto, och 
 https://gianttoaster.github.io/glucose/  (koden: https://github.com/GiantToaster/glucose)
 ```
 
-Webbdemon kör samma server.js i demoläget direkt i webbläsaren, med en påhittad person. Inget sparas och inget skickas någonstans. Den byggs om med `node web/build.js` efter varje ändring av appen.
+Webbdemon kör samma server.js i demoläget direkt i webbläsaren, med en påhittad person. Inget sparas och inget skickas någonstans. Den byggs om med `node web/build.js` efter varje ändring av appen. Bredvid demon ligger resan (`journey.html`) och historiken (`historik.html`), där åtta versioner från 25 oktober till 17 november visas med samma påhittade person.
 
 Anonymiseringen: git-historiken är omskriven så att inga IP-adresser, datornamn, användarnamn eller ditt namn finns kvar, inte heller i commit-författaren. `data/` (dina värden, inloggningsnyckeln och Telegram-token) och `raspberry.txt` har aldrig legat i git. Bilderna visar bara demodata.
 

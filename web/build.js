@@ -1,5 +1,5 @@
 // Bygger webbdemon i docs/ (GitHub Pages): index.html med server.js inbyggd, som körs i demoläget i webbläsaren,
-// och resan (contest/journey.html) bredvid. Kör efter varje ändring av appen:  node web/build.js
+// och bredvid resan (contest/journey.html) och historiken (contest/historik.html). Kör efter varje ändring av appen:  node web/build.js
 // Länken till källkoden tas från git remote "origin" om den finns. AI-svaren kommer från web/ai-answers.json
 // (spelas in med web/record-ai.js).
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process');
@@ -34,17 +34,19 @@ const a = 'style="color:inherit;white-space:nowrap"';
 const note = `<div style="margin:0 auto;max-width:1200px;padding:8px 16px;font-size:.8125rem;line-height:1.5;color:var(--mut,#999);text-align:center">`
   + `Web demo: a made-up person, computed in your browser. Nothing is saved.<br>`
   + `Try <b style="color:var(--fg)">pizza 7 units</b> in the box, or ask the AI. `
-  + `<a href="journey.html" ${a}>How it was built</a>` + (repo ? ` · <a href="${repo}" ${a}>Source code</a>` : '') + `</div>`;
+  + `<a href="journey.html" ${a}>How it was built</a> · <a href="historik.html" ${a}>History</a>` + (repo ? ` · <a href="${repo}" ${a}>Source code</a>` : '') + `</div>`;
 page = page.replace(/<body[^>]*>/, m => m + '\n' + note);
 
 // Resan: samma sida som contest/journey.html, med en länk till demon i sidhuvudet
 const sweLink = '<a class="small" href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">Bidrag till SweClockers × ASUS ProArt</a>';
-const journey = swap(read('contest/journey.html'), sweLink, `<span class="small"><a href="./">Prova demon</a> · ${sweLink.replace(' class="small"', '')}</span>`, 'tävlingslänken i journey.html');
+const journey = swap(read('contest/journey.html'), sweLink, `<span class="small"><a href="./">Prova demon</a> · <a href="historik.html">Historik</a> · ${sweLink.replace(' class="small"', '')}</span>`, 'tävlingslänken i journey.html');
 
 fs.mkdirSync(path.join(out, 'img'), { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), page);
 fs.writeFileSync(path.join(out, 'journey.html'), journey);
-for (const f of fs.readdirSync(path.join(root, 'contest', 'img'))) fs.copyFileSync(path.join(root, 'contest', 'img', f), path.join(out, 'img', f));
+// Bilderna till resan och historiken (contest/img med undermappar)
+fs.cpSync(path.join(root, 'contest', 'img'), path.join(out, 'img'), { recursive: true });
+fs.copyFileSync(path.join(root, 'contest', 'historik.html'), path.join(out, 'historik.html'));
 for (const f of ['icon.svg', 'apple-touch-icon.png', 'icon-512.png', 'manifest.webmanifest']) fs.copyFileSync(path.join(root, f), path.join(out, f));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 console.log(`docs/index.html: ${Math.round(page.length / 1024)} kB, AI answers: ${answers ? Object.keys(answers.answers).length : 0}${repo ? ', source link ' + repo : ', no source link (no git remote yet)'}`);
