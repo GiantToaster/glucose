@@ -65,9 +65,29 @@
     handler(req, res);
     queueMicrotask(() => { if (body) (on.data || []).forEach(f => f(body)); (on.end || []).forEach(f => f()); });
   });
+  // Ask AI: riktiga svar från den lokala AI:n på samma påhittade person, inspelade med web/record-ai.js, för de fyra
+  // förslagsfrågorna. De skrivs fram bit för bit som i appen. Andra frågor går till servern: dosfrågor får spärrens
+  // fasta svar, resten ett besked om att demon bara har de inspelade svaren.
+  const AI = __AI_ANSWERS__;
+  const day = AI && new Date(AI.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const typed = text => new Response(new ReadableStream({
+    async start(c) {
+      const enc = new TextEncoder();
+      for (let i = 0; i < text.length; i += 6) { c.enqueue(enc.encode(text.slice(i, i + 6))); await new Promise(r => setTimeout(r, 12)); }
+      c.close();
+    },
+  }), { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  const recorded = (u, init) => {
+    if (u.pathname === '/api/ai') return Promise.resolve(Response.json({ ok: true, model: AI.model + ' (recorded answers)' }));
+    let q = ''; try { const m = JSON.parse(init.body).messages; q = m[m.length - 1].content; } catch {}
+    const a = AI.answers[q];
+    if (!a) return call(u, init);
+    return Promise.resolve(typed(a + `\n\n(Recorded ${day} from ${AI.model} on a regular graphics card, so the dates and numbers are from this made-up person's data that day.)`));
+  };
   const realFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
     const u = new URL(typeof input === 'string' ? input : input.url, location.href);
-    return u.origin === location.origin && u.pathname.startsWith('/api/') ? call(u, init) : realFetch(input, init);
+    if (u.origin !== location.origin || !u.pathname.startsWith('/api/')) return realFetch(input, init);
+    return AI && (u.pathname === '/api/ai' || u.pathname === '/api/ask') ? recorded(u, init) : call(u, init);
   };
 })();

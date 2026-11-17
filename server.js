@@ -21,7 +21,8 @@
 // Try without logging in:  DEMO=1 node server.js  (made-up person with meals, notes and 90 days of readings in
 //    data-demo/, so screenshots never show your own health data. Each start fills it in up to now; delete data-demo/
 //    to start over.) The same demo runs in the browser without a server: node web/build.js writes it to docs/.
-// Login refused (version/Account-Id)? Set LLU_VERSION to the latest LibreLinkUp app version (default 4.16.0).
+// Login refused because of the app version? It is raised by itself when LibreLinkUp says which version it wants, and can be
+// set under Settings → LibreLinkUp. LLU_VERSION sets the default (4.16.0).
 // Data is stored in the data/ folder. LibreLinkUp only returns about 12 h of history, so history builds up while the server runs.
 
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto'), os = require('os');
@@ -32,7 +33,8 @@ process.on('unhandledRejection', e => console.error('Unhandled:', e));
 const DIR = path.join(__dirname, DEMO ? 'data-demo' : 'data'), RF = path.join(DIR, 'readings.jsonl'), DBF = path.join(DIR, 'db.json'), SF = path.join(DIR, 'session.json');
 fs.mkdirSync(DIR, { recursive: true });
 const R = new Map(); // tid (ms, hel minut) -> mg/dL
-const BASE = 'https://api.libreview.io';
+// LLU_API: en annan adress till LibreLinkUp, bara för testerna (test/), som kör mot en låtsasserver
+const BASE = process.env.LLU_API || 'https://api.libreview.io';
 let creds = LLU_EMAIL && LLU_PASSWORD ? { email: LLU_EMAIL, password: LLU_PASSWORD } : null; // lösenordet finns bara i minnet
 let last = null, loginErr = '', base = BASE, token = null, acct, pid, user = null, gen = 0; // gen räknas upp vid in/utloggning
 // Sparad inloggning från förra körningen: bara token, aldrig lösenordet.
@@ -55,11 +57,21 @@ const add = (t, v) => {
 };
 
 // ---------- LibreLinkUp ----------
-const hdr = () => ({ 'content-type': 'application/json', product: 'llu.android', version: LLU_VERSION, ...(token && { authorization: 'Bearer ' + token, 'account-id': acct }) });
-async function call(p, body) {
+// Appversionen som skickas med varje anrop. LibreLinkUp nekar för gamla versioner (status 920, och då står den lägsta
+// godkända i svaret). Den höjs då automatiskt och sparas i data/llu.json; den kan också ändras under Settings →
+// LibreLinkUp. Förut var den fast (LLU_VERSION) och värdena slutade komma tills någon ändrade koden.
+const VF = path.join(DIR, 'llu.json'), okVer = v => typeof v === 'string' && /^\d{1,2}\.\d{1,3}(\.\d{1,3})?$/.test(v);
+let lluVer = LLU_VERSION;
+try { const v = JSON.parse(fs.readFileSync(VF, 'utf8')).version; if (okVer(v)) lluVer = v; } catch {}
+const setVer = v => { lluVer = okVer(v) ? v : LLU_VERSION; if (lluVer === LLU_VERSION) fs.rmSync(VF, { force: true }); else fs.writeFileSync(VF, JSON.stringify({ version: lluVer })); };
+const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
+const hdr = () => ({ 'content-type': 'application/json', product: 'llu.android', version: lluVer, ...(token && { authorization: 'Bearer ' + token, 'account-id': acct }) });
+async function call(p, body, again = true) {
   // Timeout: ett anrop som hänger får inte blockera alla följande minuters hämtningar
   const r = await fetch(base + p, { method: body ? 'POST' : 'GET', headers: hdr(), body: body && JSON.stringify(body), signal: AbortSignal.timeout(20e3) });
   const j = await r.json().catch(() => ({}));
+  const min = j.data && j.data.minimumVersion;
+  if (j.status === 920 && again && okVer(min) && newer(min, lluVer)) { console.log(`LibreLinkUp wants app version ${min} (was ${lluVer}). Using it from now on.`); setVer(min); return call(p, body, false); }
   if (!r.ok || (j.status && j.status !== 0)) throw Object.assign(new Error(`${p}: HTTP ${r.status} ${JSON.stringify(j).slice(0, 200)}`), { http: r.status, llu: j.status });
   return j;
 }
@@ -76,6 +88,7 @@ function logout(err = '') { gen++; creds = token = pid = last = user = null; bas
 // LibreLinkUp status 2 = fel e-post/lösenord, 4 = villkor måste godkännas i appen
 const why = e => e.llu === 2 ? 'LibreLinkUp did not accept that email and password.'
   : e.llu === 4 ? 'Open the LibreLinkUp app with this account, accept the terms there, then log in again.'
+  : e.llu === 920 ? `LibreLinkUp no longer accepts app version ${lluVer}. Enter the version of the LibreLinkUp app in your phone's app store under Settings → LibreLinkUp, then log in again.`
   : e.http === 429 ? 'Too many attempts. Wait a few minutes and try again.'
   : e.name === 'TimeoutError' ? 'LibreLinkUp did not answer in time. Trying again in a minute.'
   : e.message;
@@ -1211,9 +1224,33 @@ function piStatus(force) {
 function route(req, res) {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/icon.svg') return file(res, 'icon.svg', 'image/svg+xml');
+  // Ikonen på mobilens hemskärm och manifestet med appens namn
+  if (u.pathname === '/apple-touch-icon.png' || u.pathname === '/icon-512.png') return file(res, u.pathname.slice(1), 'image/png');
+  if (u.pathname === '/manifest.webmanifest') return file(res, 'manifest.webmanifest', 'application/manifest+json');
   if (u.pathname === '/api/bye') { pageGone(u.searchParams.get('c')); res.writeHead(204); return res.end(); }
   if (u.pathname === '/api/now') pageSeen(u.searchParams.get('c'));
-  if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev(), sensor: { starts: sens.starts.slice(-40), warm: sens.warm, life: SENSOR_DAYS } });
+  if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev(), sensor: { starts: sens.starts.slice(-40), warm: sens.warm, life: SENSOR_DAYS }, llu: { version: lluVer, std: LLU_VERSION } });
+  // Settings → LibreLinkUp: appversionen som skickas. Tom = standard (LLU_VERSION).
+  if (u.pathname === '/api/llu' && req.method === 'POST') return body(req, res, ({ version }) => {
+    const v = String(version || '').trim();
+    if (v && !okVer(v)) return send(res, { error: 'Write the version as numbers with dots, e.g. 4.16.0.' }, 400);
+    setVer(v); send(res, { ok: 1, version: lluVer });
+  });
+  // Settings → Export: dina värden eller din logg som CSV (öppnas i Excel, Numbers och Google Kalkylark). Tiderna i
+  // serverns tidszon, mmol/L med en decimal som i appen.
+  if (u.pathname === '/api/export') {
+    const what = u.searchParams.get('what'), q = v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    const when = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+    let rows;
+    if (what === 'readings') rows = [['time', 'mmol/L', 'mg/dL'], ...S.map(([t, v]) => [when(t), (Math.round(v / 18.016 * 10) / 10).toFixed(1), String(v)])];
+    else if (what === 'log') {
+      const d = readDb();
+      rows = [['time', 'type', 'what', 'units', 'insulin'], ...[...d.log.map(m => [m.t, 'Meal', m.name, m.ins ?? '', m.type || '']), ...d.notes.map(n => [n.t, n.kind || 'Note', n.text || '', '', ''])]
+        .filter(r => Number.isFinite(r[0])).sort((a, b) => a[0] - b[0]).map(([t, ...r]) => [when(t), ...r.map(String)])];
+    } else return send(res, { error: 'what=readings or what=log' }, 400);
+    res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="glucose-${what}.csv"`, 'cache-control': 'no-store' });
+    return res.end('﻿' + rows.map(r => r.map(q).join(',')).join('\r\n') + '\r\n');
+  }
   if (u.pathname === '/api/stats') return send(res, stats());
   if (u.pathname === '/api/pi') { piStatus(u.searchParams.has('fresh')).then(p => send(res, { ...p, app: appHealth() })); return; }
   if (u.pathname === '/api/readings') {
