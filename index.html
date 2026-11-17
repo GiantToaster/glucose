@@ -127,7 +127,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .lowres{display:block;margin-top:2px;color:var(--low);font-weight:600;font-size:.8125rem}.lowres b{font-weight:700}
 /* Utfallet efter en måltid: siffrorna med pil och en kort grå etikett */
 .oc{font-size:.9375rem;font-weight:500;color:var(--fg);white-space:nowrap}.oc b{font-weight:700}.oc .ar{color:var(--mut);margin:0 3px}
-.ocn{font-size:.8125rem;color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:600px){.ocn{white-space:normal}}
+.ocn{font-size:.8125rem;color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:640px){.ocn{white-space:normal}}
 .acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:.8125rem}
 /* ✕ dämpad och ramlös; namnet är en knapp utan knappens utseende som öppnar detaljvyn */
 .li .lk{display:inline-flex;align-items:center;gap:8px;text-align:left}.li .lk[aria-expanded=true] .chev{transform:rotate(45deg)}
@@ -138,7 +138,7 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 .more{display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--bd)}
 /* Pekskärm: ingen ✕ på varje rad (lätt att råka trycka på); tryck på raden öppnar detaljvyn med Remove */
 @media(pointer:coarse){.li[data-row]{cursor:pointer}}
-@media(max-width:640px){.li .ins span{display:none}.li{grid-template-columns:72px minmax(0,1fr) auto;align-items:start}.li .tm{grid-row:1/3}.li .ins{grid-column:3;grid-row:1;text-align:right}.li .res{grid-column:2}.li .acts{grid-column:3;grid-row:2}}
+@media(max-width:640px){.li .ins span{display:none}.li{grid-template-columns:72px minmax(0,1fr) auto;align-items:start}.li .tm{grid-row:1/3}.li .ins{grid-column:3;grid-row:1;text-align:right}.li .res{grid-column:2}.li .acts:empty{display:none}.li .res:has(.ocn){grid-column:2/-1}.ocn{display:inline}.li .acts{grid-column:3;grid-row:2}}
 
 /* Mönster */
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.kpi{padding:12px 14px;border-radius:10px;background:var(--sub)}.kpi b{display:block;font-size:1.75rem;line-height:1.2;font-weight:700}.kpi span{font-size:.8125rem;color:var(--mut)}
@@ -306,8 +306,6 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Värmekartan och dygnets delar under Insights */
 .hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:.8125rem}svg text.rt.td{font-weight:650}
 .parts{margin:8px 0 0}@media(min-width:641px){.parts{margin-left:1.875rem;margin-right:8px}}.prof2{font-size:.8125rem;color:var(--mut)}@media(max-width:640px){.parts .pspan{display:block}}.parts .tirbar{margin:6px 0 6px}.parts .pspan{opacity:.8;font-variant-numeric:tabular-nums}.pdl{font-size:.8125rem;font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
-/* Patterns: bara en tunn stapel och en lugn rad överst; nyckeltalen finns under Insights */
-.pstir{margin-top:4px}.pstir .kpi2{margin-top:8px}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
 .insbar{scroll-margin-top:12px}@media(min-width:601px){html{scroll-padding-top:60px}}
 /* Byte av vy: rutan med vyerna ändrar höjd mjukt och den nya vyn tonar in */
@@ -321,7 +319,8 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 @media(max-width:359px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.8125rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
 @media(max-width:600px){
-  body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}html{scroll-padding-bottom:84px}
+  /* 140 px: under flikraden (56 px) och Log-knappen (70 + 56 px) syns ändå det sista i listan */
+  body{padding-bottom:calc(140px + env(safe-area-inset-bottom))}html{scroll-padding-bottom:140px}
   .tabbar{display:block;margin:0 -16px;padding:0 16px;border-bottom:0}.tbr{display:block;padding:0}
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;gap:0;padding:0 6px env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--bd)}
   .tabs button{flex:1;min-width:0;min-height:54px;margin:0;padding:6px 2px;border-bottom:0;border-top:2px solid transparent;font-size:.8125rem;font-weight:600}
@@ -1972,7 +1971,7 @@ const dDate = t => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', d
 const lowsN = k => k === 0 ? 'no lows' : k === 1 ? '1 low' : k + ' lows';
 const ikpi = (lab, val, sub, c, goal) => `<div class="kpi"><span>${lab}</span><b${c ? ` style="color:${c}"` : ''}>${String(val).replace(/ %$/, '&nbsp;%')}</b><span>${sub}</span>${goal ? `<span class="kgoal">${goal}</span>` : ''}</div>`;
 // De fyra nyckeltalen. p = perioden före (eller null), pl = vad den heter ("Week before", "September").
-// Med en jämförelse står den under talet; utan står målet, som under Patterns.
+// Med en jämförelse står den under talet; utan står målet.
 // Jämförelsen i en ruta: "October: 86 %" på en rad, på mobilen på två rader ("October:" / "86 %") och "Last week" i
 // stället för "Week before", så att inget bryts mitt i ett tal eller ett ord i de smala rutorna
 const cmpTxt = (pl, val) => { val = String(val).replace(/ %$/, '&nbsp;%'); return `<span class="sl">${pl}: ${val}</span><span class="ss">${pl === 'Week before' ? 'Last&nbsp;week' : pl}:<br>${val}</span>`; };

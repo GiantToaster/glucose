@@ -19,7 +19,8 @@
 //
 // Optional: LLU_EMAIL and LLU_PASSWORD environment variables log in automatically at start.
 // Try without logging in:  DEMO=1 node server.js  (made-up person with meals, notes and 90 days of readings in
-//    data-demo/, so screenshots never show your own health data. Delete data-demo/ to generate it again.)
+//    data-demo/, so screenshots never show your own health data. Each start fills it in up to now; delete data-demo/
+//    to start over.) The same demo runs in the browser without a server: node web/build.js writes it to docs/.
 // Login refused (version/Account-Id)? Set LLU_VERSION to the latest LibreLinkUp app version (default 4.16.0).
 // Data is stored in the data/ folder. LibreLinkUp only returns about 12 h of history, so history builds up while the server runs.
 
@@ -148,8 +149,8 @@ function plan(d) {
   for (const [h, opts] of MENU) {
     const [name, usual, rise, peak] = opts[Math.floor(r() * opts.length)], extra = [-1, -.5, 0, 0, 0, .5, 1][Math.floor(r() * 7)];
     // Mer insulin än vanligt: lägre topp och risk för känning efter 2–3 h. Mindre: högre topp.
-    meals.push({ t: d + (h + (r() - .5) * 1.2) * 36e5, name, ins: usual + extra, a: rise * 1.35 * (1 - extra * .3) * (.7 + r() * .6), peak,
-      dip: extra > 0 && r() < .7 ? 55 + r() * 35 : r() < .1 ? 45 : 0 });
+    meals.push({ t: d + (h + (r() - .5) * 1.2) * 36e5, name, ins: usual + extra, a: rise * 1.15 * (1 - extra * .3) * (.7 + r() * .6), peak,
+      dip: extra > 0 && r() < .6 ? 40 + r() * 30 : r() < .1 ? 40 : 0 });
   }
   if (r() < .3) notes.push({ t: d + (16.5 + r()) * 36e5, kind: 'Exercise', text: ['45 min promenad', 'Gym', 'Cykel till jobbet'][Math.floor(r() * 3)], dip: 45 + r() * 30 });
   const p = { meals, notes, base: 95 + r() * 40, gap: r() < .07 ? d + (9 + r() * 6) * 36e5 : 0 };
@@ -174,22 +175,30 @@ async function demo() {
   add(now, v); status = 'demo';
   last = { t: now, v: Math.round(v), trend: slope > 2 ? 5 : slope > 1 ? 4 : slope < -2 ? 1 : slope < -1 ? 2 : 3 };
 }
-if (DEMO && !R.size) for (let t = Math.floor((Date.now() - 90 * 864e5) / 3e5) * 3e5; t < Date.now(); t += 3e5) if (!inGap(t)) add(t, model(t) + (Math.random() - .5) * 4);
-if (DEMO && !fs.existsSync(DBF)) { // måltider och anteckningar för de senaste 30 dagarna, i samma format som appen sparar
-  const log = [], notes = [], id = () => crypto.randomBytes(6).toString('hex');
-  for (let d = midnight(Date.now() - 30 * 864e5); d < Date.now(); d = midnight(d + 36 * 36e5)) {
-    const p = plan(d);
-    for (const m of p.meals) if (m.t < Date.now()) log.push({ id: id(), t: Math.round(m.t / 6e4) * 6e4, name: m.name, ins: m.ins, type: 'Fiasp' });
-    for (const n of p.notes) if (n.t < Date.now()) notes.push({ id: id(), t: Math.round(n.t / 6e4) * 6e4, kind: n.kind, text: n.text });
+// Demodatan skapas första gången och fylls sedan på vid varje start: från senaste sparade värde, måltid och
+// anteckning fram till nu. Förut skapades den bara en gång, så en demo som startades veckor senare hade en tom kurva.
+if (DEMO) {
+  // Varje lucka över 15 min de senaste 90 dagarna fylls, även en mitt i (demon kördes en stund och stängdes av)
+  const now = Date.now(), from = now - 90 * 864e5, have = range(from, now).map(x => x[0]), fill = [];
+  [from, ...have, now].forEach((t, i, a) => { if (i && t - a[i - 1] > 15 * 6e4) for (let u = Math.ceil((a[i - 1] + 3e5) / 3e5) * 3e5; u < t - 2 * 6e4; u += 3e5) fill.push(u); });
+  for (const t of fill) if (!inGap(t)) add(t, model(t) + (Math.random() - .5) * 4);
+  let db = null; try { db = JSON.parse(fs.readFileSync(DBF, 'utf8')); } catch {}
+  const id = () => crypto.randomBytes(6).toString('hex'), newest = a => (a || []).reduce((m, x) => Math.max(m, x.t || 0), 0);
+  // Fylls i efter senaste loggade måltid respektive anteckning, i samma format som appen sparar
+  const fromLog = Math.max(newest(db && db.log), now - 30 * 864e5), fromNotes = Math.max(newest(db && db.notes), now - 30 * 864e5), log = [], notes = [];
+  for (let d = midnight(Math.min(fromLog, fromNotes)); d < now; d = midnight(d + 36 * 36e5)) {
+    const p = plan(d), at = t => Math.round(t / 6e4) * 6e4;
+    for (const m of p.meals) if (at(m.t) > fromLog && m.t < now) log.push({ id: id(), t: at(m.t), name: m.name, ins: m.ins, type: 'Fiasp' });
+    for (const n of p.notes) if (at(n.t) > fromNotes && n.t < now) notes.push({ id: id(), t: at(n.t), kind: n.kind, text: n.text });
   }
   // Behandlade känningar där demokurvan går under 3.9, så att snabbknapparna med egna mängder syns i demon
   let pv = 999;
-  for (const t of [...R.keys()].filter(t => t > Date.now() - 30 * 864e5).sort((a, b) => a - b)) {
-    const v = R.get(t); if (v < 70 && pv >= 70 && t + 15 * 6e4 < Date.now()) notes.push({ id: id(), t: t + 10 * 6e4, kind: 'Low treated', text: ['15 g, Dextro', '15 g', '20 g, juice'][notes.length % 3] }); pv = v;
+  for (const [t, v] of range(fromNotes - 30 * 6e4, now)) {
+    if (v < 70 && pv >= 70 && t + 10 * 6e4 > fromNotes && t + 15 * 6e4 < now) notes.push({ id: id(), t: t + 10 * 6e4, kind: 'Low treated', text: ['15 g, Dextro', '15 g', '20 g, juice'][notes.length % 3] }); pv = v;
   }
-  notes.sort((a, b) => a.t - b.t);
-  const meals = MENU.flatMap(([, o]) => o).map(([name, ins]) => ({ id: id(), name, ins }));
-  fs.writeFileSync(DBF, JSON.stringify({ meals, log: log.reverse(), notes: notes.reverse(), settings: { fast: 'Fiasp', long: 'Tresiba' }, rev: 1 }));
+  notes.sort((a, b) => b.t - a.t); log.reverse();
+  if (!db) db = { meals: MENU.flatMap(([, o]) => o).map(([name, ins]) => ({ id: id(), name, ins })), log: [], notes: [], settings: { fast: 'Fiasp', long: 'Tresiba' }, rev: 0 };
+  if (log.length || notes.length) { db.log = [...log, ...(db.log || [])]; db.notes = [...notes, ...(db.notes || [])]; db.rev = (db.rev || 0) + 1; fs.writeFileSync(DBF, JSON.stringify(db)); }
 }
 
 // ---------- Målområdet ----------
@@ -578,12 +587,17 @@ DATA
 const DOSE_W = '(units?|insulin\\w*|doses?|dosing|bolus|basal|ratio|correct\\w*|enhet\\w*|dos(en|er|erna|era)?|kvot\\w*|korrig\\w*|korrektion\\w*)';
 const ADVICE = '(should|shall|ought|do i need|need to|must|recommend\\w*|suggest\\w*|advi[cs]e\\w*|ska|skall|bör|borde|behöver|måste|rekommender\\w*|föreslå\\w*|råd\\w*)';
 const AMOUNT = '(too much|too little|enough|lagom|för mycket|för lite|tillräckligt)';
-const DOSE_Q = new RegExp([`${ADVICE}.{0,60}${DOSE_W}`, `${DOSE_W}.{0,60}${ADVICE}`, `${AMOUNT}.{0,30}${DOSE_W}`, `${DOSE_W}.{0,30}${AMOUNT}`].map(x => `(^|[^\\p{L}])(${x})`).join('|'), 'iu');
+// "Which meal needs more insulin than I usually take?" slank förut igenom: "needs" fanns inte bland orden, och
+// "more/less insulin" är en fråga om att ändra dosen även utan "should". Därför egna mönster för båda.
+const NEED = '(needs?|needed|requires?|kräver|krävs|behövs)';
+const MORE = '(more|less|fewer|extra|higher|lower|mer|mera|mindre|färre|högre|lägre|större)';
+const DOSE_Q = new RegExp([`${ADVICE}.{0,60}${DOSE_W}`, `${DOSE_W}.{0,60}${ADVICE}`, `${AMOUNT}.{0,30}${DOSE_W}`, `${DOSE_W}.{0,30}${AMOUNT}`,
+  `${NEED}.{0,60}${DOSE_W}`, `${MORE}\\s+(\\p{L}+\\s+)?${DOSE_W}`].map(x => `(^|[^\\p{L}])(${x})`).join('|'), 'iu');
 const WHY_Q = /^\s*(varför|why|hur kommer det sig|how come)\b/i;
 const doseQ = q => DOSE_Q.test(q) && !WHY_Q.test(q);
 const DOSE_NO = sv => sv
-  ? 'Jag kan inte ge råd om doser eller ändringar i behandlingen. Det beslutet är ditt och ditt diabetesteams.\n\nNär du loggar en måltid visar appen hur det gick de senaste gångerna med samma måltid och dos, och under Patterns jämförs dina måltider. Jag kan gärna beskriva vad som hände efter en viss måltid, till exempel: "Hur har det gått de senaste gångerna jag ätit pizza?"'
-  : 'I can\'t give advice on doses or treatment changes. That decision is yours and your diabetes team\'s.\n\nWhen you log a meal, the app shows how it went the last times with the same meal and dose, and Patterns compares your meals. I can describe what happened after a meal, for example: "How did it go the last times I had pizza?"';
+  ? 'Jag kan inte ge råd om doser eller ändringar i behandlingen. Det beslutet är ditt och ditt diabetesteams.\n\nNär du loggar en måltid visar appen hur det gick de senaste gångerna du åt samma sak, och under Meals → Compared jämförs dina måltider. Jag kan gärna beskriva vad som hände efter en viss måltid, till exempel: "Hur har det gått de senaste gångerna jag ätit pizza?"'
+  : 'I can\'t give advice on doses or treatment changes. That decision is yours and your diabetes team\'s.\n\nWhen you log a meal, the app shows how it went the last times you had the same thing, and Meals → Compared compares your meals. I can describe what happened after a meal, for example: "How did it go the last times I had pizza?"';
 const SWEDISH = /[åäö]|\b(jag|ska|hur|vad|och|mina?|varför|när|vilka?)\b/i;
 const REMIND = '\n\n(Reminder: never recommend or estimate insulin doses, ratios or treatment changes. Logged doses may be stated and summed.)';
 
@@ -1059,21 +1073,34 @@ const currentRev = () => dbRev ??= readDb().rev;
 const send = (res, o, c = 200) => { res.writeHead(c, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); };
 // Läser JSON-kroppen. Kräver content-type application/json, så att andra webbsidor i webbläsaren
 // inte kan skicka hit anrop (t.ex. falska mätvärden) utan en CORS-förfrågan som servern aldrig godkänner.
+// Högst 64 MB: räcker för en import av flera års mätvärden, men ett jättestort anrop kan inte fylla minnet.
+const MAX_BODY = 64 * 2 ** 20;
 const body = (req, res, fn) => {
   if (!/^application\/json/.test(req.headers['content-type'] || '')) return send(res, { error: 'expected JSON' }, 415);
-  let b = ''; req.on('data', c => b += c);
+  const parts = []; let n = 0;
+  req.on('data', c => { n += c.length; if (n <= MAX_BODY) parts.push(c); else parts.length = 0; }); // för stort: läses men sparas inte
   req.on('end', () => {
-    let o; try { o = JSON.parse(b); } catch { return send(res, { error: 'invalid JSON' }, 400); }
+    if (n > MAX_BODY) return send(res, { error: 'too large' }, 413);
+    let o; try { o = JSON.parse(Buffer.concat(parts).toString('utf8')); } catch { return send(res, { error: 'invalid JSON' }, 400); }
     // Fångar fel både i vanliga och asynkrona hanterare
     Promise.resolve().then(() => fn(o === null ? {} : o)).catch(e => { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); });
   });
 };
-// Bara localhost som värdnamn när servern lyssnar lokalt. Stoppar "DNS rebinding", där en främmande webbsida
-// får sitt eget domännamn att peka på 127.0.0.1 och sedan kan läsa dina värden.
-const LOCAL = /^(127\.|localhost$|::1$)/.test(HOST), okHost = h => !LOCAL || LOCALHOST.test(h || '');
 // SITE_NAME=bg.local: dashboarden har ett eget namn. Andra .local-namn på samma dator (t.ex. Pi:ns eget, raspberrypi.local)
 // skickas vidare dit, så att den bara nås på ett namn. IP-adressen och localhost fungerar som förut.
 const SITE = (process.env.SITE_NAME || '').toLowerCase();
+// Stoppar "DNS rebinding": en främmande webbsida får sitt eget domännamn att peka på dashboardens adress och kan
+// sedan läsa dina värden och skriva över loggen. Webbläsaren skickar då det främmande namnet som Host, så bara
+// namn som inte kan pekas om utifrån släpps in. Lokalt: bara localhost. I hemnätet dessutom IP-adresser, .local-namn
+// (mDNS, svarar bara i det egna nätet), datorns eget namn, SITE_NAME och namn i ALLOWED_HOSTS (kommaseparerade).
+const LOCAL = /^(127\.|localhost$|::1$)/.test(HOST);
+const ALLOWED = new Set([SITE, os.hostname().toLowerCase(), ...(process.env.ALLOWED_HOSTS || '').toLowerCase().split(',').map(x => x.trim())].filter(Boolean));
+const okHost = h => {
+  if (LOCALHOST.test(h || '')) return true;
+  if (LOCAL) return false;
+  const n = String(h || '').toLowerCase().replace(/:\d+$/, '');
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(n) || /^\[[0-9a-f:.]+\]$/.test(n) || n.endsWith('.local') || ALLOWED.has(n);
+};
 const otherName = h => { const n = String(h || '').toLowerCase().replace(/:\d+$/, ''); return SITE && n.endsWith('.local') && n !== SITE; };
 // LAN_IFACE=eth0 (flera med komma): bara klienter på det nätets adresser, och datorn själv via 127.0.0.1, får svar.
 // På en Pi som också är WiFi-accesspunkt (wlan0) nådde enheter på det nätet annars dashboarden utan inloggning.

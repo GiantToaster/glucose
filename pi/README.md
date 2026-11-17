@@ -1,6 +1,6 @@
 # Dashboarden på Raspberry Pi (24/7)
 
-Pi:n (`raspberrypi`, PI-IP-ADRESS) hämtar mätvärden och läser Telegram dygnet runt, även när datorn är avstängd.
+Pi:n (här kallad `raspberrypi`) hämtar mätvärden och läser Telegram dygnet runt, även när datorn är avstängd.
 Telegram fungerar var du än är, eftersom servern själv frågar Telegram efter nya meddelanden. Ingen port behöver
 öppnas i routern.
 
@@ -10,11 +10,11 @@ Från datorn eller mobilen i hemnätet (eller i Pi:ns eget Wi-Fi):
 
 - **http://bg.local:3000** (dashboardens eget namn, från tjänsten `bg-alias`). Pi:ns eget namn
   (raspberrypi.local:3000) skickas vidare hit (`SITE_NAME=bg.local` i tjänsten), så att dashboarden bara har en adress.
-- eller **http://PI-IP-ADRESS:3000** om namnet inte fungerar (t.ex. på vissa Android-telefoner)
+- eller Pi:ns IP-adress med `:3000` efter, om namnet inte fungerar (t.ex. på vissa Android-telefoner)
 
 Lägg gärna till den på mobilens hemskärm. Dashboarden har inget eget lösenord: alla enheter i ditt nätverk kan
 öppna den, men den nås inte från internet (den lyssnar bara på IPv4 bakom routern). Ge Pi:n en fast adress i
-routern (DHCP-reservation), så att PI-IP-ADRESS inte ändras.
+routern (DHCP-reservation), så att adressen inte ändras.
 
 ## Kör bara en server
 
@@ -26,7 +26,7 @@ datan glider isär. Starta alltså inte `node server.js` på datorn igen, och sl
 
 ```powershell
 # på datorn
-cd C:\Users\me\Desktop\BG_Dashboard
+cd <projektmappen>
 ssh pi@raspberrypi "mkdir -p ~/glucose/pi"
 scp index.html server.js icon.svg pi@raspberrypi:glucose/
 scp pi/install.sh pi/README.md pi@raspberrypi:glucose/pi/
@@ -49,8 +49,8 @@ finns i mappen. Kopiera aldrig `raspberry.txt`.
 
 ## Logga in på Pi:n från datorn
 
-Datorn har en SSH-nyckel (`C:\Users\me\.ssh\id_ed25519`, utan lösenfras) som Pi:n känner igen, och
-`C:\Users\me\.ssh\config` ger Pi:n det korta namnet `pi`. I PowerShell:
+Datorn har en SSH-nyckel (`%USERPROFILE%\.ssh\id_ed25519`, utan lösenfras) som Pi:n känner igen, och
+`%USERPROFILE%\.ssh\config` ger Pi:n det korta namnet `pi`. I PowerShell:
 
 ```powershell
 ssh pi                                   # ett skal på Pi:n, "exit" för att gå ut
@@ -125,7 +125,7 @@ avstängda. En gång på datorn (PowerShell som administratör):
 New-NetFirewallRule -DisplayName 'Ollama for the glucose Pi' -Direction Inbound -Protocol TCP -LocalPort 11434 -RemoteAddress PI-IP-ADRESS -Action Allow
 ```
 
-Avsluta sedan Ollama i aktivitetsfältet (Quit Ollama) och starta det igen. Brandväggsregeln släpper bara in Pi:n.
+Avsluta sedan Ollama i aktivitetsfältet (Quit Ollama) och starta det igen. Byt PI-IP-ADRESS mot Pi:ns adress. Brandväggsregeln släpper bara in Pi:n.
 
 Vill du att Ollama startar dolt när du loggar in (inget fönster, ingen ikon): kopiera `pc\ollama-hidden.vbs` till
 Autostart-mappen (Win+R, skriv `shell:startup`, Enter). Starta inte Ollama-appen samtidigt; båda vill ha port 11434.
