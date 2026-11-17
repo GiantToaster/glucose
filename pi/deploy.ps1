@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 $pi = 'pi'                       # namnet i C:\Users\<du>\.ssh\config
 $dir = 'glucose'                 # mappen pa Pi:n
 $svc = 'glucose-dashboard'
-$files = 'index.html', 'server.js', 'icon.svg'
+$files = 'index.html', 'server.js', 'icon.svg', 'apple-touch-icon.png', 'icon-512.png', 'manifest.webmanifest'
 $pifiles = 'pi/README.md', 'pi/allow-restart.sh'
 
 Push-Location (Split-Path $PSScriptRoot -Parent)

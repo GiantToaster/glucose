@@ -25,6 +25,12 @@ DEMO=1 node server.js     # påhittad person, ingen inloggning: http://localhost
 node server.js            # på riktigt: logga in med ett LibreLinkUp-konto
 ```
 
+Testerna (spärren mot dosfrågor, loggningen, skydden, exporten och LibreLinkUp-versionen) körs med `node --test`
+från projektmappen, också utan paket.
+
+Under Settings finns export av värden och logg som CSV, och LibreLinkUp-appens version. Den höjs av sig själv när
+LibreLinkUp säger vilken version som krävs. Lägg gärna dashboarden på mobilens hemskärm, då får den en egen ikon.
+
 Hur LibreLinkUp, Telegram och den lokala AI:n sätts upp står överst i `server.js`. Att köra den dygnet runt på en
 Raspberry Pi står i [pi/README.md](pi/README.md). Lösenordet sparas aldrig på disk, och dina värden ligger i `data/`,
 som aldrig följer med i git.
@@ -36,5 +42,6 @@ som aldrig följer med i git.
 | `server.js`, `index.html` | Hela appen |
 | `pi/` | Installation och uppdatering på en Raspberry Pi |
 | `pc/` | Starta Ollama dolt i Windows |
-| `web/`, `docs/` | Webbdemon: `node web/build.js` bygger `docs/` (GitHub Pages) |
+| `test/` | Testerna: `node --test` |
+| `web/`, `docs/` | Webbdemon: `node web/build.js` bygger `docs/` (GitHub Pages). AI-svaren i demon spelas in med `web/record-ai.js` |
 | `contest/` | Tävlingsbidraget: resan, tokenräkningen och utkastet |

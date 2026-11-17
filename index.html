@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Blood glucose</title>
 <link rel="icon" href="/icon.svg">
+<!-- Ikon och namn när sidan läggs till på mobilens hemskärm -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Glucose">
 <script>try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('btns') === 'hide') document.documentElement.dataset.btns = 'hide'; } catch {}</script>
 <style>
 /* Statusfärgerna bär text (glukosvärden, tabellsiffror, etiketter) och klarar 4.5:1 mot --card och --sub i båda teman.
@@ -250,6 +254,8 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 .sintro{margin:0 4px}.sintro:empty{display:none}
 .srow>.seg,.srow>button,.srow>div,.srow>.swi{flex:none}
 .tnum{width:6.5em;flex:none;font-variant-numeric:tabular-nums}.sctl{display:flex;flex-direction:column;gap:6px;width:min(240px,55%)}.sctl select,.sctl input{width:100%}
+/* Export och LibreLinkUp-versionen: knappar (och ett kort fält) bredvid varandra till höger, som raderna med en knapp */
+.sbtn{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.sbtn input{width:6.5em}
 .sdet summary{display:flex;align-items:center;cursor:pointer;min-height:44px;padding:12px 14px;font-size:.8125rem;font-weight:600;color:var(--mut);list-style:none}.sdet summary::-webkit-details-marker{display:none}
 .sdet summary::after{content:'';width:7px;height:7px;margin:0 4px 0 auto;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .15s}.sdet[open] summary::after{transform:translateY(2px) rotate(-135deg)}
 .sdet summary:hover{color:var(--fg)}.sdet .kl{padding:0 14px 14px}
@@ -557,6 +563,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
     </div><span class="fine warnq" id="tmsg" aria-live="polite"></span><p class="sd sintro">Time in range, the colours and the charts follow it. A low is always under 3.9.</p></section>
     <section class="sgw" aria-labelledby="sg3"><h3 class="slab" id="sg3">History</h3><div class="sg">
       <div class="srow"><span class="sname">Import from LibreView<span class="sd" id="imsg" aria-live="polite">CSV export. Safe to run again.</span></span><div><button id="imbtn" aria-describedby="imsg">Choose file…</button><input id="imfile" type="file" accept=".csv,text/csv" hidden></div></div>
+      <div class="srow"><span class="sname">Export<span class="sd" id="exmsg" aria-live="polite">CSV for Excel, Numbers or Google Sheets</span></span><div class="sbtn"><button id="exr" aria-describedby="exmsg">Readings</button><button id="exl" aria-describedby="exmsg">Meals and notes</button></div></div>
     </div></section>
     <section class="sgw" id="autosec" aria-labelledby="sg4" hidden><h3 class="slab" id="sg4">Startup</h3><div class="sg">
       <div class="srow"><label class="sname" for="auto">Start with Windows<span class="sd">Minimized in the taskbar</span></label><input class="swi" id="auto" type="checkbox" role="switch"></div>
@@ -585,6 +592,9 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
         </dl>
       </details>
     </div><span id="keyst" hidden></span></section>
+    <section class="sgw" id="llusec" aria-labelledby="sg9" hidden><h3 class="slab" id="sg9">LibreLinkUp</h3><div class="sg">
+      <div class="srow"><label class="sname" for="lluv">App version<span class="sd" id="llumsg" aria-live="polite">Raised by itself when LibreLinkUp asks for a newer one</span></label><div class="sbtn"><input id="lluv" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="llumsg"><button id="llus">Save</button></div></div>
+    </div></section>
     <section class="sgw" id="acct" aria-labelledby="sg7" hidden><h3 class="slab" id="sg7">Account</h3><div class="sg">
       <div class="srow"><span class="sname" id="acctu"></span><button id="logout" aria-describedby="logoutq">Log out</button></div>
     </div><span class="fine warnq" id="logoutq" aria-live="polite"></span></section>
@@ -774,6 +784,8 @@ async function refresh() {
     setStatus(txt || (tech ? "Can't get new readings right now. Retrying every minute." : n.status), !!txt, n.status === 'ok' || n.status === 'demo');
     $('status').title = txt ? '' : n.status;
     $('acct').hidden = n.demo || n.status === 'login'; $('acctu').textContent = n.user || '';
+    // LibreLinkUp-versionen (Settings): visas inte i demoläget, och skrivs inte över medan man ändrar den
+    $('llusec').hidden = !!n.demo; if (n.llu && !lluEdit) { $('lluv').value = n.llu.version; $('lluv').placeholder = n.llu.std; }
     if (n.status === 'login' && $('login').hidden) { $('lmsg').textContent = n.loginErr || LMSG; $('lmsg').className = n.loginErr ? 'err' : 'mut'; }
     $('login').hidden = n.status !== 'login';
     if (n.last) {
@@ -2587,6 +2599,25 @@ function parseCsv(txt) {
   return out;
 }
 $('imbtn').onclick = () => $('imfile').click();
+// Export: hämtas med fetch och sparas som fil, så att det fungerar även i webbdemon (där finns ingen server att länka till)
+const exportCsv = async what => {
+  const b = $('ex' + what[0]); b.disabled = true;
+  try {
+    const r = await fetch('/api/export?what=' + what); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const url = URL.createObjectURL(await r.blob()), a = Object.assign(document.createElement('a'), { href: url, download: `glucose-${what}.csv` });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5e3);
+    $('exmsg').textContent = `Saved glucose-${what}.csv`;
+  } catch { $('exmsg').textContent = 'Could not export. Try again.'; } finally { b.disabled = false; }
+};
+$('exr').onclick = () => exportCsv('readings'); $('exl').onclick = () => exportCsv('log');
+// LibreLinkUp-versionen: tom = standard. Servern höjer den själv när LibreLinkUp säger vilken som krävs.
+let lluEdit = false;
+$('lluv').oninput = () => { lluEdit = true; };
+$('llus').onclick = async () => {
+  const r = await api('/api/llu', { method: 'POST', body: JSON.stringify({ version: $('lluv').value.trim() }) }).catch(() => ({ error: 'No contact with the server.' }));
+  $('llumsg').textContent = r.error || `Saved: ${r.version}. Used from the next request.`; $('llumsg').className = r.error ? 'sd err' : 'sd';
+  if (!r.error) { lluEdit = false; $('lluv').value = r.version; }
+};
 $('imfile').onchange = async () => {
   const f = $('imfile').files[0]; if (!f) return;
   $('imsg').textContent = 'Reading file…';
