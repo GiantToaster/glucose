@@ -45,7 +45,7 @@ p{margin:.9rem 0;text-wrap:pretty}
 .hero h1 em{font-style:normal;color:var(--ok)}
 .curve{display:block;width:100%;height:auto;margin:1.5rem 0 .5rem}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr));gap:.75rem 1.25rem;margin:1.75rem 0 0;padding:1rem 0 0;border-top:1px solid var(--line);font-size:.9375rem}
-.facts div{display:flex;flex-direction:column}.facts b{font-family:var(--mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums}.facts span{color:var(--mut);font-size:.8125rem}
+.facts div{display:flex;flex-direction:column}.facts b{font-family:var(--mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}.facts span{color:var(--mut);font-size:.8125rem}
 
 /* Bilder */
 figure{margin:2rem 0}
@@ -129,11 +129,11 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
   <p>Den hämtar mina värden varje minut, dygnet runt, på en Raspberry Pi 4. Måltider loggar jag genom att skriva till en egen Telegram-bot var jag än är, till exempel <q>pizza 7,5 enheter</q>. En lokal AI på mitt grafikkort svarar på frågor om mina värden, så frågorna lämnar aldrig hemmet.</p>
   <p>Du kan prova den själv i <a href="https://gianttoaster.github.io/glucose/">webbdemon</a>, med en påhittad person. Koden ligger på <a href="https://github.com/GiantToaster/glucose">GitHub</a>.</p>
   <div class="facts" aria-label="Projektet i siffror">
-    <div><b>16</b><span>dagar med Claude Code</span></div>
+    <div><b>16</b><span>dagars arbete</span></div>
     <div><b>2</b><span>filer: server och sida</span></div>
     <div><b>0</b><span>npm-paket</span></div>
-    <div><b>870 → 4 094</b><span>rader kod</span></div>
-    <div><b>27 → 36</b><span>av 40 i designgranskning</span></div>
+    <div><b>4 094</b><span>rader kod, från 870</span></div>
+    <div><b>36 av 40</b><span>designbetyg, från 27</span></div>
   </div>
 </section>
 
