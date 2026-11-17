@@ -43,6 +43,8 @@
     n => mods[n], process, Buffer, '/app', quiet, offline, timer(setTimeout.bind(window)), timer(setInterval.bind(window)));
 
   // Sidans anrop till /api/... går till serverns hanterare med en låtsad förfrågan och ett låtsat svar
+  // Text som text, och binärt (t.ex. Excel-exporten) oförändrat
+  const bin = d => d instanceof Uint8Array ? d : String(d);
   const call = (u, init) => new Promise(resolve => {
     const on = {}, h = new Headers(init.headers || {}), body = init.body == null ? '' : String(init.body);
     const req = { method: (init.method || 'GET').toUpperCase(), url: u.pathname + u.search, socket: { remoteAddress: '127.0.0.1' },
@@ -53,11 +55,11 @@
       headersSent: false, writableFinished: false,
       writeHead(c, hd) { status = c; head = { ...head, ...hd }; res.headersSent = true; return res; },
       setHeader(k, v) { head[k] = v; },
-      write(d) { res.headersSent = true; out.push(String(d)); return true; },
+      write(d) { res.headersSent = true; out.push(bin(d)); return true; },
       end(d) {
-        if (res.writableFinished) return; if (d != null) out.push(String(d)); res.writableFinished = true;
+        if (res.writableFinished) return; if (d != null) out.push(bin(d)); res.writableFinished = true;
         const hs = Object.fromEntries(Object.entries(head).map(([k, v]) => [k, String(v)]));
-        resolve(new Response([101, 204, 205, 304].includes(status) ? null : out.join(''), { status, headers: hs }));
+        resolve(new Response([101, 204, 205, 304].includes(status) ? null : new Blob(out), { status, headers: hs }));
         closed.forEach(f => f());
       },
       on(ev, f) { if (ev === 'close') closed.push(f); return res; },

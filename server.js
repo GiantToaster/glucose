@@ -541,12 +541,16 @@ function aiContext() {
     const di = db.log.filter(m => m.t >= from && m.t < to), dIns = Math.round(di.reduce((x, m) => x + (+m.ins || 0), 0) * 10) / 10;
     L.push(p ? `${lab}: ${sum(p)}, mealtime insulin ${dIns} units in ${di.length} ${di.length === 1 ? 'dose' : 'doses'}, lowest ${mm(p.min[1])} at ${hm(p.min[0])}, highest ${mm(p.max[1])} at ${hm(p.max[0])}${p.lows.length ? ', lows: ' + p.lows.map(([t, v, n]) => `${hm(t)} ${mm(v)} ${n} min`).join('; ') : ''}` : `${lab}: no readings`);
   }
-  L.push('', 'MEALS, last 14 days (glucose at the meal, the peak within 3 h, then the lowest value between the peak and 3 h after the meal)');
+  L.push('', `MEALS, last 14 days (glucose at the meal, the peak within 3 h, then the lowest value between the peak and 3 h after the meal, and how many minutes of those 3 h were above ${T.hi})`);
+  // Minuter över målområdet inom 3 h efter måltiden, tidsvägt (luckor över 15 min räknas inte). Förut fick AI:n bara toppen
+  // och det lägsta värdet, och gissade på frågan "hur länge ligger jag över 10" (i test: "tillbaka i mål inom 3 h" om en
+  // pizza som låg på 13,1 efter 3 h).
+  const minAbove = (from, to) => { const a = range(from, to); let s = 0; for (let i = 1; i < a.length; i++) { const d = a[i][0] - a[i - 1][0]; if (d <= 15 * 6e4 && above(a[i - 1][1])) s += d; } return Math.round(s / 6e4); };
   // Lägsta värdet efter toppen: det som spelar roll för en känning. Lägsta inom hela 3 h är ofta bara värdet före stigningen.
   const lowAfter = (from, to) => { let lo = null; for (let k = Math.ceil(from / 6e4) * 6e4; k <= to; k += 6e4) { const v = R.get(k); if (v !== undefined && (!lo || v < lo[1])) lo = [k, v]; } return lo; };
   for (const m of db.log.filter(m => m.t >= now - 14 * 864e5 && m.t <= now)) {
     const o = outcome(m.t, treatCut(m.t, db.notes)), min = t => Math.round((t - m.t) / 6e4) + ' min', la = o.pk && lowAfter(o.pk[0], m.t + 3 * 36e5);
-    L.push(`${dTag(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.pk ? ` => ${[above(o.pk[1]) && 'went above ' + T.hi, la && la[1] < 70 && 'went below 3.9'].filter(Boolean).join(' and ') || 'stayed in range'}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
+    L.push(`${dTag(m.t)} ${hm(m.t)} ${m.name}, ${m.ins} units: ${o.b ? 'at meal ' + mm(o.b[1]) : 'no reading at meal'}${o.pk ? `, peak ${mm(o.pk[1])} after ${min(o.pk[0])}` : ''}${la ? `, then lowest ${mm(la[1])} after ${min(la[0])}` : ''}${o.pk ? ` => ${[above(o.pk[1]) && `went above ${T.hi} (${minAbove(m.t, Math.min(now, m.t + 3 * 36e5))} min above${o.done && la && above(la[1]) ? (la[0] >= m.t + 165 * 6e4 ? ', still above at 3 h' : ', then no readings') : ''})`, la && la[1] < 70 && 'went below 3.9'].filter(Boolean).join(' and ') || 'stayed in range'}` : ''}${o.done ? '' : ' (under 3 h ago)'}`);
   }
   const notes = db.notes.filter(n => n.t >= now - 14 * 864e5 && n.t <= now);
   if (notes.length) L.push('', 'NOTES, last 14 days', ...notes.map(n => `${dTag(n.t)} ${hm(n.t)}${n.dur ? '-' + hm(n.t + n.dur * 6e4) : ''} ${n.kind}${n.text ? ': ' + n.text : ''}`));
@@ -1069,6 +1073,58 @@ async function tgLoop() {
 const LOCALHOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
 const file = (res, f, type) => fs.readFile(path.join(__dirname, f), (e, d) => { res.writeHead(e ? 404 : 200, { 'content-type': e ? 'text/plain' : type, 'cache-control': 'no-cache' }); res.end(e ? 'not found' : d); });
 
+// ---------- Excel-fil (.xlsx) utan paket ----------
+// En .xlsx är en zip med några XML-filer. Celler: tal, text, { t: ms } (tid, visas som 2026-11-17 18:05 i serverns
+// tidszon) eller { n1: tal } (en decimal). Första raden är rubriker i fetstil och fryses. Komprimeras med zlib när den
+// finns (Node); i webbdemon, där servern körs i webbläsaren, sparas filerna okomprimerade, vilket zip också tillåter.
+let zlib = null; try { zlib = require('zlib'); } catch {}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], dir = []; let off = 0;
+  const hdr = (n, f) => { const b = new Uint8Array(n); f(new DataView(b.buffer)); return b; };
+  for (const [name, text] of files) {
+    const nm = enc.encode(name), raw = enc.encode(text), crc = crc32(raw);
+    const z = zlib && zlib.deflateRawSync ? new Uint8Array(zlib.deflateRawSync(raw)) : null, data = z || raw, method = z ? 8 : 0;
+    // Lokalt filhuvud (30 byte) och posten i innehållsförteckningen (46 byte). 0x21 = 1980-01-01, datumet spelar ingen roll.
+    parts.push(hdr(30, v => { v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(8, method, true); v.setUint16(12, 0x21, true);
+      v.setUint32(14, crc, true); v.setUint32(18, data.length, true); v.setUint32(22, raw.length, true); v.setUint16(26, nm.length, true); }), nm, data);
+    dir.push(hdr(46, v => { v.setUint32(0, 0x02014b50, true); v.setUint16(4, 20, true); v.setUint16(6, 20, true); v.setUint16(10, method, true); v.setUint16(14, 0x21, true);
+      v.setUint32(16, crc, true); v.setUint32(20, data.length, true); v.setUint32(24, raw.length, true); v.setUint16(28, nm.length, true); v.setUint32(42, off, true); }), nm);
+    off += 30 + nm.length + data.length;
+  }
+  const size = dir.reduce((n, b) => n + b.length, 0);
+  const end = hdr(22, v => { v.setUint32(0, 0x06054b50, true); v.setUint16(8, files.length, true); v.setUint16(10, files.length, true); v.setUint32(12, size, true); v.setUint32(16, off, true); });
+  const all = [...parts, ...dir, end], out = new Uint8Array(all.reduce((n, b) => n + b.length, 0)); let p = 0;
+  for (const b of all) { out.set(b, p); p += b.length; }
+  return out;
+}
+function xlsx(sheets) {
+  const NS = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"', REL = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', T = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/';
+  const x = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+  // Excels tid: dagar sedan 1899-12-30, i lokal tid (samma klockslag som i appen)
+  const serial = t => { const d = new Date(t); return (Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()) / 864e5 + 25569).toFixed(10); };
+  const cell = (v, ref, head) => v === '' || v == null ? '' : head ? `<c r="${ref}" t="inlineStr" s="3"><is><t>${x(v)}</t></is></c>`
+    : typeof v === 'number' ? `<c r="${ref}"><v>${v}</v></c>` : v.t !== undefined ? `<c r="${ref}" s="1"><v>${serial(v.t)}</v></c>`
+    : v.n1 !== undefined ? `<c r="${ref}" s="2"><v>${v.n1}</v></c>` : `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+  const sheet = s => `${H}<worksheet ${NS}><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`
+    + `<cols>${s.widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>`
+    + s.rows.map((r, i) => `<row r="${i + 1}">${r.map((v, j) => cell(v, String.fromCharCode(65 + j) + (i + 1), i === 0)).join('')}</row>`).join('') + '</sheetData></worksheet>';
+  return zip([
+    ['[Content_Types].xml', `${H}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+    ['_rels/.rels', `${H}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${T}officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ['xl/workbook.xml', `${H}<workbook ${NS} ${REL}><sheets>${sheets.map((s, i) => `<sheet name="${x(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`],
+    ['xl/_rels/workbook.xml.rels', `${H}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="${T}worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="${T}styles" Target="styles.xml"/></Relationships>`],
+    // Stilar: 0 vanlig, 1 tid (2026-11-17 18:05), 2 en decimal, 3 fetstil (rubriker)
+    ['xl/styles.xml', `${H}<styleSheet ${NS}><numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd hh:mm"/><numFmt numFmtId="165" formatCode="0.0"/></numFmts>`
+      + '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+      + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+      + '<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+    ...sheets.map((s, i) => [`xl/worksheets/sheet${i + 1}.xml`, sheet(s)]),
+  ]);
+}
+
 // ---------- HTTP ----------
 // db.json: måltider, logg, anteckningar och inställningar. rev räknas upp vid varje sparning, så att två
 // enheter (t.ex. datorn och mobilen) inte skriver över varandras ändringar: en sparning från en äldre
@@ -1236,20 +1292,18 @@ function route(req, res) {
     if (v && !okVer(v)) return send(res, { error: 'Write the version as numbers with dots, e.g. 4.16.0.' }, 400);
     setVer(v); send(res, { ok: 1, version: lluVer });
   });
-  // Settings → Export: dina värden eller din logg som CSV (öppnas i Excel, Numbers och Google Kalkylark). Tiderna i
-  // serverns tidszon, mmol/L med en decimal som i appen.
+  // Settings → Export: en Excel-fil (.xlsx) med två blad, värdena och loggen (måltider och anteckningar). Förut CSV, men
+  // där visade Excel tiden som ##### (kolumnen för smal) och svenska Excel kan läsa decimalpunkt och komma fel.
   if (u.pathname === '/api/export') {
-    const what = u.searchParams.get('what'), q = v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-    const when = t => { const d = new Date(t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
-    let rows;
-    if (what === 'readings') rows = [['time', 'mmol/L', 'mg/dL'], ...S.map(([t, v]) => [when(t), (Math.round(v / 18.016 * 10) / 10).toFixed(1), String(v)])];
-    else if (what === 'log') {
-      const d = readDb();
-      rows = [['time', 'type', 'what', 'units', 'insulin'], ...[...d.log.map(m => [m.t, 'Meal', m.name, m.ins ?? '', m.type || '']), ...d.notes.map(n => [n.t, n.kind || 'Note', n.text || '', '', ''])]
-        .filter(r => Number.isFinite(r[0])).sort((a, b) => a[0] - b[0]).map(([t, ...r]) => [when(t), ...r.map(String)])];
-    } else return send(res, { error: 'what=readings or what=log' }, 400);
-    res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="glucose-${what}.csv"`, 'cache-control': 'no-store' });
-    return res.end('﻿' + rows.map(r => r.map(q).join(',')).join('\r\n') + '\r\n');
+    const d = readDb();
+    const log = [...d.log.map(m => [m.t, 'Meal', m.name, Number.isFinite(m.ins) ? m.ins : '', m.type || '']), ...d.notes.map(n => [n.t, n.kind || 'Note', n.text || '', '', ''])]
+      .filter(r => Number.isFinite(r[0])).sort((a, b) => a[0] - b[0]).map(([t, ...r]) => [{ t }, ...r]);
+    const file = xlsx([
+      { name: 'Readings', widths: [18, 9, 9], rows: [['Time', 'mmol/L', 'mg/dL'], ...S.map(([t, v]) => [{ t }, { n1: Math.round(v / 18.016 * 10) / 10 }, v])] },
+      { name: 'Meals and notes', widths: [18, 14, 34, 8, 12], rows: [['Time', 'Type', 'What', 'Units', 'Insulin'], ...log] },
+    ]);
+    res.writeHead(200, { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'content-disposition': 'attachment; filename="glucose.xlsx"', 'cache-control': 'no-store' });
+    return res.end(file);
   }
   if (u.pathname === '/api/stats') return send(res, stats());
   if (u.pathname === '/api/pi') { piStatus(u.searchParams.has('fresh')).then(p => send(res, { ...p, app: appHealth() })); return; }

@@ -25,10 +25,10 @@ DEMO=1 node server.js     # påhittad person, ingen inloggning: http://localhost
 node server.js            # på riktigt: logga in med ett LibreLinkUp-konto
 ```
 
-Testerna (spärren mot dosfrågor, loggningen, skydden, exporten och LibreLinkUp-versionen) körs med `node --test`
+Testerna (spärren mot dosfrågor, loggningen, skydden, Excel-exporten och LibreLinkUp-versionen) körs med `node --test`
 från projektmappen, också utan paket.
 
-Under Settings finns export av värden och logg som CSV, och LibreLinkUp-appens version. Den höjs av sig själv när
+Under Settings finns export av värden, måltider och anteckningar som en Excel-fil, och LibreLinkUp-appens version. Den höjs av sig själv när
 LibreLinkUp säger vilken version som krävs. Lägg gärna dashboarden på mobilens hemskärm, då får den en egen ikon.
 
 Hur LibreLinkUp, Telegram och den lokala AI:n sätts upp står överst i `server.js`. Att köra den dygnet runt på en
