@@ -232,7 +232,7 @@ Ingen video är gjord än. Ett förslag på 60–90 sekunder, inspelat i demolä
 Beslutat 17 november: koden läggs publikt på GitHub under ett aliaskonto, och webbdemon på GitHub Pages. Länka till demon, och till koden i texten:
 
 ```text
-[FYLL I: https://<alias>.github.io/<repo>/]
+https://gianttoaster.github.io/glucose/  (koden: https://github.com/GiantToaster/glucose)
 ```
 
 Webbdemon kör samma server.js i demoläget direkt i webbläsaren, med en påhittad person. Inget sparas och inget skickas någonstans. Den byggs om med `node web/build.js` efter varje ändring av appen.
@@ -275,7 +275,7 @@ Bidraget: [länk när det är publicerat]
 - [ ] Telegram-bilden. Lägg den inte i projektmappen: bilder med "telegram" i namnet är utestängda från git.
 - [ ] Kör `.\contest\spara-underlag.ps1` sista dagen. Det räknar om tokens och sparar loggarna. Uppdatera tabellen och metoden ovan.
 - [ ] Ta en skärmdump av [contest/tokens-claude.md](../tokens-claude.md) (avsnittet "Till formuläret"). Logga in på claude.ai och ta en skärmdump av förbrukningen eller abonnemanget under Settings → Usage, om sidan visar något.
-- [x] Koden på GitHub: beslutat, under ett aliaskonto. Fyll i länken ovan när kontot finns.
+- [x] Koden på GitHub: https://github.com/GiantToaster/glucose, demon på https://gianttoaster.github.io/glucose/
 - [ ] Bestäm om det ska bli en video.
 
 ## Om bidraget hamnar bland de tre med flest röster
