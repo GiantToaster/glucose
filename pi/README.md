@@ -105,11 +105,6 @@ scp index.html server.js pi:glucose/
 ssh -t pi "sudo systemctl restart glucose-dashboard"   # -t: så att sudo kan fråga efter lösenordet
 ```
 
-## Nätverket
-
-Pi:ns egen trafik
-(LibreLinkUp och Telegram) går direkt ut via kabeln.
-
 ## Lokal AI (Ollama på datorn)
 
 Pi:n använder Ollama på datorn (`OLLAMA_URL=http://MY-PC.local:11434` i tjänsten). Modellen, den tunga delen

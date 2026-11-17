@@ -18,8 +18,10 @@ try { repo = execSync('git remote get-url origin', { cwd: root, stdio: ['ignore'
 let page = read('index.html');
 page = swap(page, '<link rel="icon" href="/icon.svg">', '<link rel="icon" href="icon.svg">', 'ikonlänken i index.html');
 page = page.replace(/<script>/, () => `<script>\n${shim}\n</script>\n<script>`);
-// Ingen Log-knapp i webbdemon (varken i flikraden eller nere till höger på mobilen): där loggar man med textrutan
-page = swap(page, '</head>', '<style>.logw{display:none!important}</style>\n</head>', '</head> i index.html');
+// Log-knappen är dold från början i webbdemon (där loggar man med textrutan), men går att slå på under Settings →
+// Log button precis som i appen. Valet sparas i webbläsaren: "show" i stället för att nyckeln tas bort.
+page = swap(page, "if (localStorage.getItem('btns') === 'hide')", "if (localStorage.getItem('btns') !== 'show')", 'starten av Log-knappens val');
+page = swap(page, "else localStorage.removeItem('btns');", "else localStorage.setItem('btns', 'show');", 'sparandet av Log-knappens val');
 const note = `<div style="margin:0 auto;max-width:1200px;padding:8px 16px;font-size:.8125rem;color:var(--mut,#999);text-align:center">`
   + `Web demo with a made-up person, computed in your browser. Nothing you log is saved or sent anywhere.`
   + (repo ? ` <a href="${repo}" style="color:inherit">Source code</a>` : '') + `</div>`;

@@ -81,7 +81,7 @@
 })();
 
 </script>
-<script>try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('btns') === 'hide') document.documentElement.dataset.btns = 'hide'; } catch {}</script>
+<script>try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('btns') !== 'show') document.documentElement.dataset.btns = 'hide'; } catch {}</script>
 <style>
 /* Statusfärgerna bär text (glukosvärden, tabellsiffror, etiketter) och klarar 4.5:1 mot --card och --sub i båda teman.
    --high-fill är den klara gula för ytor utan text (staplar). --field är kanten på inmatningsfält (minst 3:1). */
@@ -435,7 +435,6 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   .chk input{width:22px;height:22px}
 }
 </style>
-<style>.logw{display:none!important}</style>
 </head>
 <body>
 <div style="margin:0 auto;max-width:1200px;padding:8px 16px;font-size:.8125rem;color:var(--mut,#999);text-align:center">Web demo with a made-up person, computed in your browser. Nothing you log is saved or sent anywhere. <a href="https://github.com/GiantToaster/glucose" style="color:inherit">Source code</a></div>
@@ -2435,7 +2434,7 @@ $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setThem
 function setBtns(v) {
   const hide = v === 'hide';
   if (hide) document.documentElement.dataset.btns = 'hide'; else delete document.documentElement.dataset.btns;
-  try { if (hide) localStorage.setItem('btns', 'hide'); else localStorage.removeItem('btns'); } catch {}
+  try { if (hide) localStorage.setItem('btns', 'hide'); else localStorage.setItem('btns', 'show'); } catch {}
   $('btnsw').checked = !hide;
 }
 const btnsHidden = () => document.documentElement.dataset.btns === 'hide';
