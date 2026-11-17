@@ -194,6 +194,8 @@ Bilderna ligger i [contest/inlagg/bilder/](bilder/) och visar alla **demoläget*
 | `nya/05-mobil-aktivitet.png` | Mobilen: måltider med start → topp, en behandlad känning och en promenad |
 | `nya/06-mobil-insikter.png` | Mobilen: Insights |
 | `nya/07-insikter-vecka-manad-ar.gif` | Animation: Insights växlar mellan vecka, månad och år (91 kB) |
+| `nya/08-installningar.png` | Settings: tema, insulin, eget målområde, import och export till Excel, Telegram |
+| `nya/09-mobil-installningar.png` | Mobilen: målområdet, importen och exporten i Settings |
 
 Tabellen nedan är de gamla bilderna från 8 november, med den gamla layouten. `05-monster.png` och `07-manadsbild.png` visar saker som inte finns längre. Behåll gärna `02-fore-efter.png`, `08-fraga-ai.png` och `10-sa-hanger-det-ihop.png`, eftersom de visar resan, AI:n och helheten. Ett förslag på tio: `02-fore-efter`, `nya/01`, `nya/07` (GIF), `nya/05`, `nya/02`, `nya/03`, `08-fraga-ai`, `10-sa-hanger-det-ihop`, `nya/04` och Telegram-bilden.
 
