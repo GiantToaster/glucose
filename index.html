@@ -9,20 +9,26 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Glucose">
+<meta name="theme-color" content="#f5f6f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d0f" media="(prefers-color-scheme: dark)">
 <script>try { const t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; if (localStorage.getItem('btns') === 'hide') document.documentElement.dataset.btns = 'hide'; } catch {}</script>
 <style>
 /* Statusfärgerna bär text (glukosvärden, tabellsiffror, etiketter) och klarar 4.5:1 mot --card och --sub i båda teman.
    --high-fill är den klara gula för ytor utan text (staplar). --field är kanten på inmatningsfält (minst 3:1). */
 :root{color-scheme:light dark;--bg:#f5f6f7;--card:#fff;--sub:#f0f2f4;--fg:#101418;--mut:#5d6870;--bd:#e2e5e8;--field:#7d878f;--ok:#08745f;--low:#c42b2b;--high:#8f6000;--high-fill:#d99a00;--acc:#101418;--note:#1f6bc2;--onacc:#fff;--sh:0 1px 2px rgba(16,20,24,.05);--dlgbd:transparent;--dlgsh:0 24px 64px rgba(0,0,0,.35);--lbbg:var(--low);--lbfg:#fff;--tbg:#101418;--tfg:#f5f6f7;--meal:#2f9a4c;--ins:#b0336f;--sys:#4a6380}
 /* Tema: följer systemet, eller det man valt under Settings (data-theme på <html>) */
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f;--sys:#8ea6c2}}
-:root[data-theme=dark]{color-scheme:dark;--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#5e6870;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f;--sys:#8ea6c2}:root[data-theme=light]{color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#6b767e;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f;--sys:#8ea6c2}}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0b0d0f;--card:#131619;--sub:#1b1f23;--fg:#e9ecee;--mut:#9aa4ac;--bd:#252b30;--field:#6b767e;--ok:#2bb39a;--low:#f05a5a;--high:#f0b429;--high-fill:#f0b429;--acc:#c8cfd5;--note:#5aa9ff;--onacc:#0b0d0f;--sh:none;--dlgbd:var(--bd);--dlgsh:none;--lbbg:#e05050;--lbfg:#0b0d0f;--tbg:#2b3238;--tfg:#f1f3f5;--meal:#6cc77c;--ins:#d8689f;--sys:#8ea6c2}:root[data-theme=light]{color-scheme:light}
+/* Textstorlekar: en skala för hela sidan (minst 12 px). --lowpat: känningar ritas randiga, så att lågt och i mål skiljs åt
+   även utan färgseende (rött och grönt har nästan samma ljushet). */
+:root{--fs-xs:.75rem;--fs-sm:.8125rem;--fs-base:.875rem;--fs-md:.9375rem;--fs-lg:1rem;--fs-xl:1.125rem;--fs-2xl:1.25rem;--fs-3xl:1.375rem;--fs-4xl:1.5rem;--fs-5xl:1.75rem;
+  --lowpat:repeating-linear-gradient(135deg,var(--low) 0 3px,color-mix(in srgb,var(--low) 45%,var(--card)) 3px 5px)}
 *{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0 auto;max-width:1080px;padding:0 16px 32px;background:var(--bg);color:var(--fg);font:.875rem/1.5 "Segoe UI Variable Text","Segoe UI",-apple-system,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+body{margin:0 auto;max-width:1080px;padding:0 16px 32px;background:var(--bg);color:var(--fg);font:var(--fs-base)/1.5 "Segoe UI Variable Text","Segoe UI",-apple-system,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
 /* Namn kan vara långa ord utan mellanslag (inklistrat, dikterat). De får brytas i stället för att trycka ut sidan. */
 .dh>div,.opt>b,.li>div,#cmp td:first-child{min-width:0;overflow-wrap:anywhere}
 /* Rubrikskala med tydliga steg över brödtexten (14 px): avsnitt 16 px, kort 20 px */
-h1,h2,h3{margin:0;letter-spacing:-.01em}h2{font-size:1.25rem;font-weight:650}h3{font-size:1rem;font-weight:600;color:var(--fg);margin:28px 0 10px}
+h1,h2,h3{margin:0;letter-spacing:-.01em}h2{font-size:var(--fs-2xl);font-weight:650}h3{font-size:var(--fs-lg);font-weight:600;color:var(--fg);margin:28px 0 10px}
 .mut{color:var(--mut)}.err{color:var(--low)}
 button,input,select{font:inherit;color:inherit}
 input,select{padding:8px 10px;border-radius:8px;border:1px solid var(--field);background:var(--card);min-width:0}
@@ -31,15 +37,15 @@ button{cursor:pointer;padding:7px 12px;border-radius:8px;border:1px solid var(--
 @media(hover:hover){button:hover{background:var(--sub)}}button:disabled{opacity:.4;cursor:default}
 button.p{background:var(--acc);border-color:var(--acc);color:var(--onacc);font-weight:600}button.p:hover{background:var(--acc);filter:brightness(1.08)}
 button.icon{padding:6px;display:inline-grid;place-items:center;border-color:transparent;background:none;color:var(--mut)}button.icon:hover{background:var(--sub);color:var(--fg)}
-kbd{font-family:inherit;font-size:.6875rem;font-weight:600;line-height:1;padding:2px 5px;border-radius:4px;border:1px solid color-mix(in srgb,currentColor 45%,transparent);margin-left:8px}
+kbd{font-family:inherit;font-size:var(--fs-xs);font-weight:600;line-height:1;padding:2px 5px;border-radius:4px;border:1px solid color-mix(in srgb,currentColor 45%,transparent);margin-left:8px}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
 
 /* Topp och huvudvärde */
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0}
-.brand{display:flex;align-items:center;gap:8px;font-size:.9375rem}.brand h1{font-size:inherit;font-weight:700}.logo{width:20px;height:20px;color:var(--fg);flex:none}
+.brand{display:flex;align-items:center;gap:8px;font-size:var(--fs-md)}.brand h1{font-size:inherit;font-weight:700}.logo{width:20px;height:20px;color:var(--fg);flex:none}
 .hr{display:flex;align-items:center;gap:6px;min-width:0}
-.pill{display:inline-flex;align-items:center;gap:7px;font-size:.8125rem;color:var(--mut);padding:4px 10px;border-radius:999px;border:1px solid var(--bd);max-width:min(62vw,460px)}.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-sm);color:var(--mut);padding:4px 10px;border-radius:999px;border:1px solid var(--bd);max-width:min(62vw,460px)}.pill span{overflow-wrap:anywhere;line-height:1.35}.pill.err,.pill.stale{border-radius:12px}.pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--mut)}
 .pill.ok i{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}.pill.stale{color:var(--fg);border-color:color-mix(in srgb,var(--high-fill) 60%,transparent);background:color-mix(in srgb,var(--high-fill) 16%,transparent)}.pill.stale i{background:var(--high-fill)}.pill.err{color:var(--low);border-color:color-mix(in srgb,var(--low) 40%,transparent)}.pill.err i{background:var(--low)}
 .hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px 28px;align-items:center;padding:20px 24px}
 /* Huvudkortet har bara fritextfältet (2026-11-17); Meal, Note och Low treatment ligger bakom Log-knappen i flikraden.
@@ -51,14 +57,14 @@ kbd{font-family:inherit;font-size:.6875rem;font-weight:600;line-height:1;padding
 .ql{position:relative}.ql #qfav{display:inline-flex;align-items:center;gap:6px;padding-inline:12px}.ql #qfav svg{flex:none;color:var(--mut)}.ql #qfav[aria-expanded=true]{border-color:var(--acc)}
 .favl{position:absolute;right:0;top:100%;z-index:12;margin-top:4px;width:min(360px,100%);padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:2px}
 .favl button{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:8px;font-weight:600}.favl button:hover,.favl button:focus-visible{background:var(--sub)}
-.favl button span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.favl button span:last-child{flex:none;color:var(--mut);font-weight:500;font-size:.8125rem}
+.favl button span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.favl button span:last-child{flex:none;color:var(--mut);font-weight:500;font-size:var(--fs-sm)}
 @media(max-width:480px){.ql #qfav span{display:none}}
-.ql{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 8px}.ql label{flex-basis:100%;font-size:.8125rem;color:var(--mut);font-weight:500}.ql input{flex:1;min-width:0}.ql button{padding:8px 16px}
+.ql{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 8px}.ql label{flex-basis:100%;font-size:var(--fs-sm);color:var(--mut);font-weight:500}.ql input{flex:1;min-width:0}.ql button{padding:8px 16px}
 .now{display:grid;grid-template-columns:auto 1fr;justify-content:start;align-items:baseline;column-gap:4px}#cur{font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.03em}#arrow{font-size:2.5rem;font-weight:600;line-height:1;color:var(--mut)}
 /* Gammalt värde (över 15 min): siffran dämpas, pilen tas bort och lägesordet byts mot åldern, så att det inte ser aktuellt ut */
 .now.old #cur{color:var(--mut)!important}.hero .now.old .st{background:color-mix(in srgb,var(--high-fill) 24%,var(--card));color:var(--fg);box-shadow:none}
 /* Glukosläget i ord bredvid värdet (inte bara färg), och en tonad yta på kortet när det är lågt eller mycket högt */
-.st{grid-column:1/-1;justify-self:start;margin-top:10px;font-size:.8125rem;font-weight:650;padding:3px 10px;border-radius:999px;color:var(--sc,var(--mut));background:color-mix(in srgb,var(--sc,var(--mut)) 11%,transparent)}
+.st{grid-column:1/-1;justify-self:start;margin-top:10px;font-size:var(--fs-sm);font-weight:650;padding:3px 10px;border-radius:999px;color:var(--sc,var(--mut));background:color-mix(in srgb,var(--sc,var(--mut)) 11%,transparent)}
 .hero.is-low .st,.hero.is-vhigh .st{background:var(--card);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 45%,transparent)}
 .hero.is-vlow{border-width:2px;background:color-mix(in srgb,var(--low) 13%,var(--card))}.hero.is-vlow .st{background:var(--low);color:var(--onacc);box-shadow:none}
 .hero.is-low{background:color-mix(in srgb,var(--low) 7%,var(--card));border-color:color-mix(in srgb,var(--low) 50%,var(--bd))}
@@ -72,19 +78,19 @@ svg text.thr{fill:var(--ok);font-weight:650}
 button.lowbtn,button.lowbtn:hover{background:var(--lbbg);border-color:var(--low);color:var(--lbfg)}
 /* Utan känning: en lågmäld textknapp sist i raden, så att den finns men inte tävlar med "Log meal" */
 .cta .quiet{border-color:transparent;background:none;color:var(--mut);font-weight:600;padding-inline:10px}@media(hover:hover){.cta .quiet:hover{color:var(--low)}}@media(hover:hover){.cta .quiet:hover{background:var(--sub)}}
-.treat{margin:0;font-size:.8125rem}.treat.tnow{font-size:.9375rem;font-weight:600}
+.treat{margin:0;font-size:var(--fs-sm)}.treat.tnow{font-size:var(--fs-md);font-weight:600}
 .cta .lowsec{border-color:var(--low);background:none;color:var(--low);font-weight:600}.okv{color:var(--ok)}
-#lg.big{font-size:1.25rem;font-weight:600;padding:10px 12px}#lgq{margin-top:6px}#lgq button[aria-pressed=true]{border-color:var(--low);background:var(--low);color:var(--onacc);font-weight:650}
-.lowtip{grid-column:1/-1;margin:0;font-size:.8125rem;font-weight:600;color:var(--low)}
+#lg.big{font-size:var(--fs-2xl);font-weight:600;padding:10px 12px}#lgq{margin-top:6px}#lgq button[aria-pressed=true]{border-color:var(--low);background:var(--low);color:var(--onacc);font-weight:650}
+.lowtip{grid-column:1/-1;margin:0;font-size:var(--fs-sm);font-weight:600;color:var(--low)}
 /* Lågt läge: bara det som hjälper just nu. Senaste måltid, 24 h-stapeln och fritextrutan döljs (behandlingen loggas i
    sin egen dialog). På mobilen ligger knappen nedtill vid tummen. */
 .hero.is-low #lastmeal,.hero.is-low #tir24,.hero.is-low .ql{display:none}
 @media(max-width:600px){
-  .hero.is-low .cta .lowbtn{position:fixed;left:16px;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:15;min-height:52px;font-size:1rem;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+  .hero.is-low .cta .lowbtn{position:fixed;left:16px;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:15;min-height:52px;font-size:var(--fs-lg);box-shadow:0 8px 24px rgba(0,0,0,.28)}
   body:has(.cta .lowbtn){padding-bottom:calc(150px + env(safe-area-inset-bottom))}html:has(.cta .lowbtn){scroll-padding-bottom:154px}body:has(.cta .lowbtn) #toast{bottom:calc(140px + env(safe-area-inset-bottom))}
   body:has(.cta .lowbtn) .logw{bottom:calc(134px + env(safe-area-inset-bottom))}
 }
-.tirbar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--sub)}.tirbar i{display:block}.tirbar.big{height:12px}
+.tirbar{display:flex;gap:2px;height:8px;border-radius:99px;overflow:hidden;background:var(--sub)}.tirbar i{display:block;flex:none}.tirbar i.lo,.obar i.lo,.yrlg i.lo{background:var(--lowpat)!important}.tirbar.big{height:12px}
 @media(max-width:900px){.hero{grid-template-columns:auto minmax(0,1fr);gap:14px 18px;padding:16px}.cta{grid-column:1/-1;flex-wrap:wrap}.cta button{flex:1}.cta .lowbtn,.cta .lowsec{flex-basis:100%}.cta .quiet{flex:0 0 auto}.cta button{white-space:nowrap}.hero .lowtip{order:1}.hero .cta{order:2}.hero .ql{order:3}}
 /* Låg skärm (t.ex. 800x480 vid sängen): värdet, knapparna i en egen kolumn och kurvan på samma skärm */
 @media(max-height:560px){.hero{padding:12px 16px;gap:8px 18px}.hero .ql{display:none}#cur{font-size:3rem}.top{padding:8px 0}.hvhint{display:none}.card{padding:12px;margin-bottom:8px}.bar2{margin-bottom:2px}.cta{gap:6px}}
@@ -102,18 +108,18 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* Avläsningen: lodrät linje, punkt i zonfärgen och en etikett med klockslag och värde. pan-y: fingret kan dra i sidled
    över grafen för att läsa av, medan ett lodrätt drag fortfarande scrollar sidan. */
 #chsvg{touch-action:pan-y}#chsvg:focus-visible{outline-offset:4px;border-radius:6px}
-.hvl{stroke:var(--mut);stroke-width:1}.hvc{stroke:var(--card);stroke-width:2}.hvb{fill:var(--card);stroke:var(--field);stroke-width:1}svg text.hvt{fill:var(--fg);font-weight:600;white-space:pre}svg text{fill:var(--mut);font-size:.75rem}svg .ml{fill:var(--onacc);font-weight:600}.mk{cursor:pointer}.mk:hover .ln,.mk.sel .ln{stroke-width:2.5;stroke-dasharray:none}.mk:focus{outline:none}.mk:focus-visible .ln{stroke-width:3.5;stroke-dasharray:none}.mk:focus-visible circle{stroke-width:4}.mkl.lsel rect{stroke:var(--fg);stroke-width:1.5}#dtitle:focus,#dmealh:focus,#dlowh:focus,#dseth:focus,#dpih:focus{outline:none}
+.hvl{stroke:var(--mut);stroke-width:1}.hvc{stroke:var(--card);stroke-width:2}.hvb{fill:var(--card);stroke:var(--field);stroke-width:1}svg text.hvt{fill:var(--fg);font-weight:600;white-space:pre}svg text{fill:var(--mut);font-size:var(--fs-xs)}svg .ml{fill:var(--onacc);font-weight:600}.mk{cursor:pointer}.mk:focus{outline:none}.mkl.lsel rect{stroke:var(--fg);stroke-width:1.5}#dtitle:focus,#dmealh:focus,#dlowh:focus,#dseth:focus,#dpih:focus{outline:none}
 /* Detaljvyn: ingen egen ram inne i grafkortet (kort i kort), bara en avdelare. Färgen (måltid, anteckning, känning) sitter i en punkt vid rubriken. */
 .det{margin-top:14px;padding-top:14px;border-top:1px solid var(--bd);--dc:var(--acc)}.det.note{--dc:var(--note)}.det.note.lt{--dc:var(--low)}
-.det .dh h3::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--dc);margin-right:8px;vertical-align:1px}.dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.dh h3{margin:0;font-size:1.375rem;color:var(--fg)}
-.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.tile{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.tile b{font-size:1.5rem;line-height:1.15}.da{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}.da #dback{margin-right:auto}.da #ddel{color:var(--low)}
+.det .dh h3::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--dc);margin-right:8px;vertical-align:1px}.dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.dh h3{margin:0;font-size:var(--fs-xl);color:var(--fg)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.tile{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.tile b{font-size:var(--fs-4xl);line-height:1.15}.da{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}.da #dback{margin-right:auto}.da #ddel{color:var(--low)}
 @media(max-width:600px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.tiles.t3{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:600px){.tiles.t3 b{font-size:1.125rem}}
+.tiles.t3{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:600px){.tiles.t3 b{font-size:var(--fs-xl)}}
 
 /* Flikar */
 .tabbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:8px 16px;margin:0 -16px 14px;padding:0 16px;background:var(--bg);border-bottom:1px solid var(--bd)}
 .tbr{display:flex;align-items:center;gap:10px;padding:6px 0}
-.mini{display:inline-flex;align-items:baseline;gap:6px;border:0;background:none;padding:4px 10px;border-radius:8px;color:var(--mut);font-size:.8125rem;font-weight:600}.mini b{font-size:1.125rem;font-weight:700;line-height:1.2;color:var(--fg)}.mini:hover{background:var(--sub)}.mini[hidden]{display:none}
+.mini{display:inline-flex;align-items:baseline;gap:6px;border:0;background:none;padding:4px 10px;border-radius:8px;color:var(--mut);font-size:var(--fs-sm);font-weight:600}.mini b{font-size:var(--fs-xl);font-weight:700;line-height:1.2;color:var(--fg)}.mini:hover{background:var(--sub)}.mini[hidden]{display:none}
 .logw{position:relative}#logbtn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px}
 .logmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:210px;padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:2px}.logmenu[hidden]{display:none}
 .logmenu button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-weight:600}.logmenu button:hover,.logmenu button:focus-visible{background:var(--sub)}
@@ -125,66 +131,66 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 
 /* Aktivitet */
 .li{display:grid;grid-template-columns:92px minmax(0,1.2fr) 120px minmax(0,1.5fr) 128px;gap:2px 16px;align-items:center;padding:12px 0;border-top:1px solid var(--bd)}
-.li .tm b{display:block;font-weight:600}.li .tm span,.li .ins span{display:block;font-size:.8125rem;color:var(--mut)}.li .ins b{font-weight:600}.li .k{color:var(--note);font-weight:600;margin-right:6px}.li .k.kl{color:var(--low)}
-.li .res{font-size:.8125rem;color:var(--mut)}.li .res b{font-weight:600}
+.li .tm b{display:block;font-weight:600}.li .tm span,.li .ins span{display:block;font-size:var(--fs-sm);color:var(--mut)}.li .ins b{font-weight:600}.li .k{color:var(--note);font-weight:600;margin-right:6px}.li .k.kl{color:var(--low)}
+.li .res{font-size:var(--fs-sm);color:var(--mut)}.li .res b{font-weight:600}
 /* Känning efter måltiden: i ord och i rött, på egen rad under toppen så att den inte drunknar i siffrorna */
-.lowres{display:block;margin-top:2px;color:var(--low);font-weight:600;font-size:.8125rem}.lowres b{font-weight:700}
+.lowres{display:block;margin-top:2px;color:var(--low);font-weight:600;font-size:var(--fs-sm)}.lowres b{font-weight:700}
 /* Utfallet efter en måltid: siffrorna med pil och en kort grå etikett */
-.oc{font-size:.9375rem;font-weight:500;color:var(--fg);white-space:nowrap}.oc b{font-weight:700}.oc .ar{color:var(--mut);margin:0 3px}
-.ocn{font-size:.8125rem;color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:640px){.ocn{white-space:normal}}
-.acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:.8125rem}
+.oc{font-size:var(--fs-md);font-weight:500;color:var(--fg);white-space:nowrap}.oc b{font-weight:700}.oc .ar{color:var(--mut);margin:0 3px}
+.ocn{font-size:var(--fs-sm);color:var(--mut);display:inline-block;white-space:nowrap}@media(max-width:640px){.ocn{white-space:normal}}
+.acts{display:flex;gap:6px;justify-self:end}.acts button{padding:3px 9px;font-size:var(--fs-sm)}
 /* ✕ dämpad och ramlös; namnet är en knapp utan knappens utseende som öppnar detaljvyn */
 .li .lk{display:inline-flex;align-items:center;gap:8px;text-align:left}.li .lk[aria-expanded=true] .chev{transform:rotate(45deg)}
 .detslot .det{margin:0;padding:6px 0 18px;border-top:0}.detslot .foldin{border-top:1px solid var(--bd)}
 .lk{all:unset;cursor:pointer;display:block;min-width:0;overflow-wrap:anywhere}.lk:hover b,.lk:hover{text-decoration:underline;text-underline-offset:3px}.lk:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
 .li .tm span{white-space:nowrap}.li .lk{padding:2px 0}
-.legend{margin:0 0 8px}.nw{white-space:nowrap}.prog{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:.8125rem;color:var(--mut)}.pbar{flex:none;width:40px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}.pbar i{display:block;height:100%;background:var(--acc)}
+.legend{margin:0 0 8px}.nw{white-space:nowrap}.prog{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:var(--fs-sm);color:var(--mut)}.pbar{flex:none;width:40px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--fg) 12%,transparent);overflow:hidden}.pbar i{display:block;height:100%;background:var(--acc)}
 .more{display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid var(--bd)}
 /* Pekskärm: ingen ✕ på varje rad (lätt att råka trycka på); tryck på raden öppnar detaljvyn med Remove */
 @media(pointer:coarse){.li[data-row]{cursor:pointer}}
 @media(max-width:640px){.li .ins span{display:none}.li{grid-template-columns:72px minmax(0,1fr) auto;align-items:start}.li .tm{grid-row:1/3}.li .ins{grid-column:3;grid-row:1;text-align:right}.li .res{grid-column:2}.li .acts:empty{display:none}.li .res:has(.ocn){grid-column:2/-1}.ocn{display:inline}.li .acts{grid-column:3;grid-row:2}}
 
 /* Mönster */
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.kpi{padding:12px 14px;border-radius:10px;background:var(--sub)}.kpi b{display:block;font-size:1.75rem;line-height:1.2;font-weight:700}.kpi span{font-size:.8125rem;color:var(--mut)}
-@media(max-width:700px){.kpi{padding:10px 12px}.kpi b{font-size:1.375rem}}
-.kpi2{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:10px;font-size:.8125rem;color:var(--mut)}.kpi2 b{color:var(--fg);font-weight:650}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.kpi{padding:12px 14px;border-radius:10px;background:var(--sub)}.kpi b{display:block;font-size:var(--fs-5xl);line-height:1.2;font-weight:700}.kpi span{font-size:var(--fs-sm);color:var(--mut)}
+@media(max-width:700px){.kpi{padding:10px 12px}.kpi b{font-size:var(--fs-3xl)}}
+.kpi2{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:10px;font-size:var(--fs-sm);color:var(--mut)}.kpi2 b{color:var(--fg);font-weight:650}
 .facts span b{font-size:inherit;font-weight:650}
-.lgd{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8125rem;color:var(--mut)}.lgd i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 22%,transparent)}
+.lgd{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-sm);color:var(--mut)}.lgd i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fg) 22%,transparent)}
 .lgd i.b2{background:color-mix(in srgb,var(--fg) 13%,transparent)}.lgd i.b1{background:color-mix(in srgb,var(--fg) 7%,transparent)}
 .lgd i.ln{height:3px;width:20px;vertical-align:2px;box-shadow:none;background:linear-gradient(90deg,var(--low) 0 25%,var(--fg) 25% 75%,var(--high) 75%)}
-.facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:.8125rem;color:var(--mut)}.facts b{font-size:1.125rem;font-weight:650}.facts .wide b{font-size:.9375rem;line-height:1.6}
+.facts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}.prof2{margin:6px 0 0}.facts>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sub)}.facts span{font-size:var(--fs-sm);color:var(--mut)}.facts b{font-size:var(--fs-xl);font-weight:650}.facts .wide b{font-size:var(--fs-md);line-height:1.6}
 .lowbars{margin:8px 0 4px}
 /* Symbolerna i grafen. Pekar man på, fokuserar eller har valt en händelse markeras den i sin egen färg (--kc): brickan
    tonas i färgen och strecket blir tjockare, eller en ring runt symbolen. Förut blev ramen vit, vilket såg konstigt ut. */
 .mk.ev .halo{opacity:0;transition:opacity .12s}.mk.ev:hover .halo,.mk.ev.sel .halo{opacity:.55}.mk.ev:focus-visible .halo{opacity:1}
-.mk.ev .pl{fill:color-mix(in srgb,var(--kc) 10%,var(--card));stroke:color-mix(in srgb,var(--kc) 45%,transparent);stroke-width:1;transition:fill .12s}.mk.ev .bd{fill:color-mix(in srgb,var(--kc) 16%,var(--card));stroke:color-mix(in srgb,var(--kc) 55%,transparent);stroke-width:1}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke-width:2.5}
-.mk.ev:focus-visible circle{stroke-width:2}svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg .gap{fill:var(--sub);opacity:.7}svg .nsens{fill:var(--note);opacity:.09}svg .nsensl{stroke:var(--note);stroke-width:1;stroke-dasharray:3 3;opacity:.75}#sens:empty{display:none}svg text.gapt,svg text.nodata{fill:var(--fg);font-weight:600}svg text.nodata{font-size:.875rem}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
+.mk.ev .pl{fill:color-mix(in srgb,var(--kc) 10%,var(--card));stroke:color-mix(in srgb,var(--kc) 45%,transparent);stroke-width:1;transition:fill .12s}.mk.ev .bd{fill:color-mix(in srgb,var(--kc) 16%,var(--card));stroke:color-mix(in srgb,var(--kc) 55%,transparent);stroke-width:1}.mk.ev:hover .pl,.mk.ev.sel .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub))}.mk.ev:focus-visible .pl{fill:color-mix(in srgb,var(--kc) 22%,var(--sub));stroke:var(--fg);stroke-width:2}.mk.ev:focus-visible .halo{stroke:var(--fg)}
+svg .ln.hot,svg .ln.sel{stroke-width:2;opacity:.9}svg .lane{stroke:var(--bd);stroke-width:1}svg .gap{fill:var(--sub);opacity:.7}svg .nsens{fill:var(--note);opacity:.09}svg .nsensl{stroke:var(--note);stroke-width:1;stroke-dasharray:3 3;opacity:.75}#sens:empty{display:none}svg text.gapt,svg text.nodata{fill:var(--fg);font-weight:600}svg text.nodata{font-size:var(--fs-base)}svg text.lanel{font-weight:600}svg text.pt{fill:var(--fg);font-weight:600}
 /* Meals compared: rubrikerna är knappar som sorterar; den valda står i textfärg med en pil (ner = högst först) */
 .cmps{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border-radius:4px}.cmps:hover{color:var(--fg)}.cmps.on{color:var(--fg);font-weight:600}.cmps:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .sarr{width:0;height:0;border:4px solid transparent;opacity:0}.sarr.dn{border-top-color:currentColor;border-bottom-width:0;opacity:1}.sarr.up{border-bottom-color:currentColor;border-top-width:0;opacity:1}.cmps:hover .sarr:not(.dn):not(.up){border-top-color:currentColor;border-bottom-width:0;opacity:.5}
-.cmpsel{display:none;align-items:center;gap:8px;font-size:.8125rem;color:var(--mut);margin:4px 0 8px}.cmpsel select{flex:1;max-width:260px}
+.cmpsel{display:none;align-items:center;gap:8px;font-size:var(--fs-sm);color:var(--mut);margin:4px 0 8px}.cmpsel select{flex:1;max-width:260px}
 @media(max-width:600px){.cmpsel{display:flex}}
 /* Meals compared: namnet fäller ut varje tillfälle (en pil som vrids), och listan ligger på en egen ton under raden */
 #cmp .cmpb{display:inline-flex;align-items:center;gap:8px;text-align:left}#cmp .cmpb:hover{text-decoration:underline;text-underline-offset:3px}
 .chev{flex:none;width:7px;height:7px;border:solid var(--mut);border-width:0 2px 2px 0;transform:rotate(-45deg);transition:transform .15s;margin:0 2px}
 
-.occ{border-radius:10px;background:var(--sub);padding:4px 14px;font-size:.8125rem}
+.occ{border-radius:10px;background:var(--sub);padding:4px 14px;font-size:var(--fs-sm)}
 .occr{display:grid;grid-template-columns:minmax(120px,1fr) 80px minmax(0,1.3fr) minmax(0,1.7fr);gap:2px 14px;padding:8px 0;border-top:1px solid var(--bd);align-items:baseline}.occr:first-child{border-top:0}
-.occh{color:var(--mut);font-size:.8125rem;padding:6px 0}
+.occh{color:var(--mut);font-size:var(--fs-sm);padding:6px 0}
 /* Ett tillfälle som följdes av en känning: en svag röd ton över hela raden, så att det är det man ser först */
-.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:.8125rem;color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
-@media(max-width:600px){.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occr.occh{display:none}.occh+.occr{border-top:0}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
+.occr.lw{background:color-mix(in srgb,var(--low) 11%,transparent);margin:0 -14px;padding-inline:14px;border-top-color:transparent}.occr.lw+.occr{border-top-color:transparent}.occr.nc{color:var(--mut)}.ncw{display:block;font-size:var(--fs-sm);color:var(--mut)}.lowv{color:var(--low);font-weight:600}.hiv{color:var(--high);font-weight:600}.occr .okv{font-weight:600}
+@media(max-width:600px){.occr{display:flex;flex-wrap:wrap;gap:2px 14px}.occr.occh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.occh+.occr{border-top:0}.occw{flex-basis:100%;font-weight:600;color:var(--fg)}.occr>span:last-child{flex-basis:100%}.occr>span:last-child:empty{display:none}}
 /* Settings: kortkommandona hopfällda. Hela raden är klickbar, med en pil som vrids när den är öppen. */
 
 
-.keyb{display:flex;flex-direction:column;gap:10px;margin-top:10px}svg text.lbn{fill:var(--low);font-weight:650}.facts span.lwk{color:var(--fg);font-size:.875rem}
-#cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:.8125rem}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
+.keyb{display:flex;flex-direction:column;gap:10px;margin-top:10px}svg text.lbn{fill:var(--low);font-weight:650}.facts span.lwk{color:var(--fg);font-size:var(--fs-base)}
+#cmp table{width:100%;border-collapse:collapse;min-width:560px}#cmp td,#cmp th{padding:9px 6px;text-align:left;border-bottom:1px solid var(--bd)}#cmp th{font-weight:500;color:var(--mut);font-size:var(--fs-sm)}#cmp td:not(:first-child),#cmp th:not(:first-child){text-align:right}
 
 /* Måltider, sökruta och listor */
-.obar{display:inline-flex;width:132px;height:10px;border-radius:99px;overflow:hidden;background:var(--sub);vertical-align:middle}.obar i{display:block}.cmplg{margin-top:12px}
+.obar{display:inline-flex;gap:2px;width:132px;height:10px;border-radius:99px;overflow:hidden;background:var(--sub);vertical-align:middle}.obar i{display:block;flex:none}.cmplg{margin-top:12px}
 @media(max-width:600px){#cmp td.cmpo{grid-column:1/-1;align-items:center}.cmpo .obar{flex:1;width:auto;margin-left:16px}}
-.subt{margin-top:6px}.cmpall{margin-top:10px;font-size:.8125rem;color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}.segn:empty{display:none}
-#lib .opt .hist{display:inline-flex;align-items:center;font-size:.8125rem;color:var(--mut)}#lib .opt .hist:hover{color:var(--fg)}.hist .chev{margin:0 10px 0 2px}.cmpb[aria-expanded=true] .chev,.hist[aria-expanded=true] .chev{transform:rotate(45deg)}
+.subt{margin-top:6px}.cmpall{margin-top:10px;font-size:var(--fs-sm);color:var(--mut)}.cmpall:hover{color:var(--fg)}.occsv{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 0}.segn{margin-left:6px;font-variant-numeric:tabular-nums}.segn:empty{display:none}
+#lib .opt .hist{display:inline-flex;align-items:center;font-size:var(--fs-sm);color:var(--mut)}#lib .opt .hist:hover{color:var(--fg)}.hist .chev{margin:0 10px 0 2px}.cmpb[aria-expanded=true] .chev,.hist[aria-expanded=true] .chev{transform:rotate(45deg)}
 .fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}.fold.on{grid-template-rows:1fr}.fold>div{overflow:hidden;min-height:0}
 @media(prefers-reduced-motion:reduce){.fold{transition:none}}
 #cmp tr.cmpd td{padding:0;border:0;text-align:left;font-weight:400}#cmp tr.cmpd .fold{width:0;min-width:100%}#cmp tr.cmpd .foldin{padding:6px 0 14px;border-bottom:1px solid var(--bd)}
@@ -195,21 +201,22 @@ svg{display:block}svg:not([width]){width:100%;height:auto}
 /* Sparade måltider som rader med avdelare (inte rutor i ett kort); Remove finns i redigeringsläget, inte på varje rad */
 #lib{gap:0}#lib .opt{border:0;border-top:1px solid var(--bd);border-radius:0;padding:10px 0}
 #lib .opt.edit{border-top-color:transparent;border-radius:10px;padding:12px;background:var(--sub);margin:4px 0}#lib .opt.edit .danger{margin-left:auto}
-.mlist{display:flex;flex-direction:column;gap:6px}.opt>b{flex:1 1 9em}.opt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;cursor:pointer}.opt .dose{margin-left:auto}.opt.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}.opt .rm{padding:4px 9px;font-size:.8125rem}#lib .opt{cursor:default}
-.dose{display:inline-flex;align-items:baseline;gap:6px;padding:3px 10px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--bd);font-size:.8125rem;white-space:nowrap}.dose b{color:var(--fg);font-size:.875rem}
+.mlist{display:flex;flex-direction:column;gap:6px}.opt>b{flex:1 1 9em}.opt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;cursor:pointer}.opt .dose{margin-left:auto}.opt.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}.opt .rm{padding:4px 9px;font-size:var(--fs-sm)}#lib .opt{cursor:default}
+.dose{display:inline-flex;align-items:baseline;gap:6px;padding:3px 10px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--bd);font-size:var(--fs-sm);white-space:nowrap}.dose b{color:var(--fg);font-size:var(--fs-base)}
 .opt.free{border-style:dashed}.opt.free .dose{background:none;color:var(--mut)}
 .opt.edit{flex-wrap:wrap;cursor:default;border-color:var(--acc)}.opt.edit .en{flex:2;min-width:160px}.opt.edit .step{flex:1;min-width:170px}
 #mlist{display:none;position:absolute;left:0;right:0;top:100%;z-index:10;margin-top:4px;padding:6px;max-height:280px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.3)}#mlist.open{display:flex}#mlist .opt{border-color:transparent}#mlist .opt.act{outline:2px solid var(--acc);outline-offset:-2px}
 #mlist .opt:hover,#mlist .opt.on,#mlist .opt.act{background:var(--sub);border-color:transparent;box-shadow:none}
-#msearch{font-size:1rem;padding:11px 12px}#msearch.picked{border-color:var(--ok);font-weight:600;padding-right:34px;background:var(--card) no-repeat right 12px center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='%2308745f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+:root[data-theme=dark] #msearch.picked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='%232bb39a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important}@media(prefers-color-scheme:dark){:root:not([data-theme=light]) #msearch.picked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='%232bb39a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important}}
+#msearch{font-size:var(--fs-lg);padding:11px 12px}#msearch.picked{border-color:var(--ok);font-weight:600;padding-right:34px;background:var(--card) no-repeat right 12px center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3 3 7-7' fill='none' stroke='%2308745f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 
 /* Formulär och dialoger */
-.fld{display:flex;flex-direction:column;gap:5px;min-width:0}.fld label,.lab{font-size:.8125rem;color:var(--mut);font-weight:500}.fld input,.fld select{width:100%}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}.fld label,.lab{font-size:var(--fs-sm);color:var(--mut);font-weight:500}.fld input,.fld select{width:100%}
 .tw{display:flex;flex-wrap:wrap;gap:6px}.tw input{flex:1}
 /* Ändringsläget: datumet på en egen rad, så att det aldrig kortas till "2026-11" */
 .tw input[type=date]{flex:1 1 100%}
 .hvhint{margin:4px 0 0}.ptr-coarse{display:none}@media(pointer:coarse){.ptr-coarse{display:inline}.ptr-fine{display:none}}
-.step{display:flex;gap:6px}.step input{flex:1;text-align:center;font-weight:600}.step button{width:40px;padding:0;font-size:1.0625rem}
+.step{display:flex;gap:6px}.step input{flex:1;text-align:center;font-weight:600}.step button{width:40px;padding:0;font-size:var(--fs-lg)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.grid2{grid-template-columns:1fr}}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{border-radius:999px;padding:5px 12px}.chips button.on{border-color:var(--note);background:color-mix(in srgb,var(--note) 16%,transparent)}
 /* Ljust tema: skugga utan kant. Mörkt: kant utan skugga (en skugga syns inte mot den mörka bakgrunden). */
@@ -227,36 +234,36 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 /* Raspberry Pi: bred dialog med ett kort per avsnitt i pistatus */
 #dpi{width:min(880px,calc(100vw - 24px));max-height:calc(90dvh - 24px);overflow:auto}
 @media(max-width:600px){#dpi{width:100%;max-height:92dvh}}
-.pih{display:flex;gap:6px;align-items:center}.pih button:not(.icon){padding:6px 12px;font-size:.8125rem}
+.pih{display:flex;gap:6px;align-items:center}.pih button:not(.icon){padding:6px 12px;font-size:var(--fs-sm)}
 .pigrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:12px;align-items:start}
 .pis{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:5px;min-width:0}
-.pis h3{margin:0 0 3px;font-size:.875rem}.pis.app{border-color:color-mix(in srgb,var(--ok) 35%,var(--bd))}
-.pir{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:10px;font-size:.8125rem;align-items:baseline}
+.pis h3{margin:0 0 3px;font-size:var(--fs-base)}.pis.app{border-color:color-mix(in srgb,var(--ok) 35%,var(--bd))}
+.pir{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:10px;font-size:var(--fs-sm);align-items:baseline}
 .pir>span:last-child{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.pir.pil{grid-template-columns:minmax(0,1fr);gap:2px}.pil ul{margin:0;padding:0;list-style:none;font:.75rem/1.5 ui-monospace,Consolas,monospace;color:var(--mut)}.pil li{overflow-wrap:anywhere}
+.pir.pil{grid-template-columns:minmax(0,1fr);gap:2px}.pil ul{margin:0;padding:0;list-style:none;font:var(--fs-xs)/1.5 ui-monospace,Consolas,monospace;color:var(--mut)}.pil li{overflow-wrap:anywhere}
 .pd{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--ok)}.pd[data-s=warn]{background:var(--sys)}.pd[data-s=crit]{background:var(--low)}
-.pisum{--c:var(--ok);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 9%,var(--card));border-radius:12px;padding:10px 14px;font-size:.875rem}
-#pibody{display:grid;gap:12px}.pisum[data-l=warn]{--c:var(--sys)}.pisum li{text-wrap:pretty}.pisum[data-l=crit]{--c:var(--low)}.pisum ul{margin:6px 0 0;padding-left:18px;font-size:.8125rem}.pisum b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:1px}
+.pisum{--c:var(--ok);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 9%,var(--card));border-radius:12px;padding:10px 14px;font-size:var(--fs-base)}
+#pibody{display:grid;gap:12px}.pisum[data-l=warn]{--c:var(--sys)}.pisum li{text-wrap:pretty}.pisum[data-l=crit]{--c:var(--low)}.pisum ul{margin:6px 0 0;padding-left:18px;font-size:var(--fs-sm)}.pisum b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:8px;vertical-align:1px}
 .ipm{all:unset;cursor:pointer;color:var(--mut);border-bottom:1px dashed var(--field)}.ipm:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:2px}
 #pibtn{position:relative}#pibtn[data-lvl=warn]::after,#pibtn[data-lvl=crit]::after{content:'';position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--sys);box-shadow:0 0 0 2px var(--bg)}#pibtn[data-lvl=crit]::after{background:var(--low)}
-.dl{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}.dhd{display:flex;justify-content:space-between;align-items:center}.dhd h2{font-size:1.375rem}
+.dl{padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}.dhd{display:flex;justify-content:space-between;align-items:center}.dhd h2{font-size:var(--fs-3xl)}
 .dft{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}.dft button{padding:9px 16px}
-.sec{display:flex;flex-direction:column;gap:14px;padding-top:18px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:1rem;font-weight:650}
+.sec{display:flex;flex-direction:column;gap:14px;padding-top:18px;border-top:1px solid var(--bd)}.sec h3{margin:0;font-size:var(--fs-lg);font-weight:650}
 /* Settings: grupper som i en telefon. Gruppnamnet (slab) ovanför en ram med rader (srow): namnet till vänster, reglaget
    till höger, en tunn linje mellan raderna. sd = en kort extra rad under namnet, bara där namnet inte räcker. */
 #dset .dl{gap:22px}.sgw{display:flex;flex-direction:column;gap:8px}
-.slab{margin:0 0 0 4px;font-size:.8125rem;font-weight:600;color:var(--mut)}
+.slab{margin:0 0 0 4px;font-size:var(--fs-sm);font-weight:600;color:var(--mut)}
 .sg{border:1px solid var(--bd);border-radius:12px;background:var(--card);overflow:hidden}
 .srow{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;padding:10px 14px;min-height:52px}.srow+.srow,.sg>.sdet{border-top:1px solid var(--bd)}
 .srow[hidden]{display:none}
-.sname{display:flex;flex-direction:column;gap:1px;min-width:0;font-size:.875rem;font-weight:600;color:var(--fg);overflow-wrap:anywhere}label.sname{cursor:pointer}
-.sname .sd{font-weight:400}.sd{font-size:.8125rem;line-height:1.45;color:var(--mut);text-wrap:pretty}.sd:empty{display:none}
+.sname{display:flex;flex-direction:column;gap:1px;min-width:0;font-size:var(--fs-base);font-weight:600;color:var(--fg);overflow-wrap:anywhere}label.sname{cursor:pointer}
+.sname .sd{font-weight:400}.sd{font-size:var(--fs-sm);line-height:1.45;color:var(--mut);text-wrap:pretty}.sd:empty{display:none}
 .sintro{margin:0 4px}.sintro:empty{display:none}
 .srow>.seg,.srow>button,.srow>div,.srow>.swi{flex:none}
 .tnum{width:6.5em;flex:none;font-variant-numeric:tabular-nums}.sctl{display:flex;flex-direction:column;gap:6px;width:min(240px,55%)}.sctl select,.sctl input{width:100%}
 /* Export och LibreLinkUp-versionen: knappar (och ett kort fält) bredvid varandra till höger, som raderna med en knapp */
 .sbtn{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.sbtn input{width:6.5em}
-.sdet summary{display:flex;align-items:center;cursor:pointer;min-height:44px;padding:12px 14px;font-size:.8125rem;font-weight:600;color:var(--mut);list-style:none}.sdet summary::-webkit-details-marker{display:none}
+.sdet summary{display:flex;align-items:center;cursor:pointer;min-height:44px;padding:12px 14px;font-size:var(--fs-sm);font-weight:600;color:var(--mut);list-style:none}.sdet summary::-webkit-details-marker{display:none}
 .sdet summary::after{content:'';width:7px;height:7px;margin:0 4px 0 auto;border:solid currentColor;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .15s}.sdet[open] summary::after{transform:translateY(2px) rotate(-135deg)}
 .sdet summary:hover{color:var(--fg)}.sdet .kl{padding:0 14px 14px}
 @media(max-width:520px){.srow.wide{flex-direction:column;align-items:flex-start}.sctl{width:100%}.srow:has(.sctl){flex-direction:column;align-items:stretch}}
@@ -269,37 +276,37 @@ dialog::backdrop{background:rgba(5,8,10,.55);backdrop-filter:blur(3px)}
 /* Rubriken och stängknappen ligger kvar överst när man scrollar i dialogen */
 #dset .dhd{position:sticky;top:0;z-index:2;margin:-18px -20px 0;padding:18px 20px 12px;background:var(--card);border-radius:16px 16px 0 0}
 /* Spökkurvorna i måltidens detaljvy */
-.ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:1rem;font-weight:600;color:var(--fg)}
+.ghost{margin:4px 0 14px;display:grid;gap:8px;max-width:760px}.ghh{display:flex;align-items:center;justify-content:space-between;gap:12px}.ghh h4{margin:0;font-size:var(--fs-lg);font-weight:600;color:var(--fg)}
 .ghc svg{display:block;max-width:100%;height:auto}.ghc.mut{padding:24px 0}
 .gh .ghv{stroke:var(--mut);opacity:.5;stroke-width:1.5;fill:none}.gh:hover .ghv{stroke:var(--meal);opacity:1;stroke-width:2.5}
-.ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8125rem;color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
+.ghlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-sm);color:var(--mut)}.ghlg i{display:inline-block;width:16px;border-top:2px solid var(--mut);vertical-align:4px;margin-right:6px}
 .ghlg i.l1{border-top:3px solid var(--fg)}.ghlg i.l2{opacity:.6}.ghlg i.l3{border-top:2px dashed var(--fg);opacity:.75}
 /* Året under Insights: en ruta per dag */
-.yrw{overflow-x:auto;padding-bottom:4px}.yrw svg{display:block}
-.yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8125rem;color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.yrw{overflow-x:auto;padding-bottom:4px;border-radius:6px}.yrw svg{display:block}
+.yrlg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-sm);color:var(--mut);align-items:center;margin-top:8px}.yrlg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
 .yrlg b{color:var(--fg);font-weight:600;margin-right:2px}.yrlg.yrtop{margin:0 0 8px}
-.yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:.8125rem;color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
-.dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:1rem;font-weight:600;color:var(--fg)}
-.dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:.8125rem}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
-.dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:.8125rem}
-.lowv{color:var(--low)}#mwarn:empty,#mhint:empty{display:none}#mhint{margin:0;font-size:.8125rem}#mwarn{font-size:.8125rem}#mwarn>div+div{margin-top:4px}
+.yrst{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:var(--fs-sm);color:var(--mut);margin-top:12px}.yrst b{color:var(--fg);font-variant-numeric:tabular-nums}
+.dhist{margin:4px 0 12px}.dhist h4{margin:0 0 6px;font-size:var(--fs-lg);font-weight:600;color:var(--fg)}
+.dhist table{width:100%;max-width:560px;border-collapse:collapse;font-size:var(--fs-sm)}.dhist th,.dhist td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--bd)}.dhist th{font-weight:500;color:var(--mut)}
+.dhist th:first-child,.dhist td:first-child{text-align:left}.dhist tr.cur td{background:var(--sub);font-weight:600}.dhist tr.cur .mut{font-weight:400}.dhist p{margin:6px 0 0;font-size:var(--fs-sm)}
+.lowv{color:var(--low)}#mwarn:empty,#mhint:empty{display:none}#mhint{margin:0;font-size:var(--fs-sm)}#mwarn{font-size:var(--fs-sm)}#mwarn>div+div{margin-top:4px}
 .warn{padding:10px 14px;border-radius:10px;border:1px solid var(--high);background:color-mix(in srgb,var(--high) 12%,transparent)}.warn.low{border-color:var(--low);background:color-mix(in srgb,var(--low) 12%,transparent)}
 .login{max-width:440px;margin:12px auto}.login .dl{padding:4px}.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-height:24px}.chk input{width:16px;height:16px;margin:0}
-#toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;bottom:24px;transform:translateY(16px);opacity:0;pointer-events:none;background:var(--tbg);color:var(--tfg);padding:10px 16px;border-radius:10px;font-size:.8125rem;box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .2s,transform .2s,visibility 0s .2s;visibility:hidden;max-width:calc(100vw - 32px);z-index:20}#toast.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
-#toast button{margin-left:12px;padding:2px 10px;font-size:.8125rem;background:none;color:inherit;border-color:currentColor}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
-.disc{margin:-6px 0 12px;font-size:.8125rem;line-height:1.4;color:var(--mut);text-wrap:pretty}@media(max-height:560px){.disc{margin:-4px 0 8px}}
-.fine{font-size:.8125rem}.sm{font-size:.8125rem}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}.todh{margin:20px 0 8px}.todh .grp{margin:0}.todsvg{display:block}
-.foot{margin:8px 0 0;font-size:.8125rem}#lmsg{margin:0;font-size:.8125rem}#aist{font-size:.8125rem}#cmp{overflow-x:auto}.lgband{fill:var(--ok)}
+#toast.on{display:flex;align-items:center;gap:4px}#toast .tm{min-width:0}#toast{position:fixed;left:16px;right:16px;margin-inline:auto;width:fit-content;bottom:24px;transform:translateY(16px);opacity:0;pointer-events:none;background:var(--tbg);color:var(--tfg);padding:10px 16px;border-radius:10px;font-size:var(--fs-sm);box-shadow:0 8px 24px rgba(0,0,0,.25);transition:opacity .2s,transform .2s,visibility 0s .2s;visibility:hidden;max-width:calc(100vw - 32px);z-index:20}#toast.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition-delay:0s}
+#toast button{margin-left:12px;padding:2px 10px;font-size:var(--fs-sm);background:none;color:inherit;border-color:currentColor}#toast .tx{margin-left:8px;padding:3px 5px;border-color:transparent;vertical-align:-3px}.sec a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
+.disc{margin:-6px 0 12px;font-size:var(--fs-sm);line-height:1.4;color:var(--mut);text-wrap:pretty}@media(max-height:560px){.disc{margin:-4px 0 8px}}
+.fine{font-size:var(--fs-sm)}.sm{font-size:var(--fs-sm)}.m0{margin:0}.m6{margin:6px}.rel{position:relative}.subh{margin:28px 0 10px}.todh{margin:20px 0 8px}.todh .grp{margin:0}.todsvg{display:block}
+.foot{margin:8px 0 0;font-size:var(--fs-sm)}#lmsg{margin:0;font-size:var(--fs-sm)}#aist{font-size:var(--fs-sm)}#cmp{overflow-x:auto}.lgband{fill:var(--ok)}
 p{text-wrap:pretty}.warnq:empty{display:none}.warnq{color:var(--fg)}
 /* Hjälp under fritextrutan: vad man kan skriva och kortkommandona, utfällbar så att den inte tar plats */
-.qlerr{flex-basis:100%;margin:0;font-size:.8125rem;color:var(--high);font-weight:600}.help{flex-basis:100%;font-size:.8125rem;color:var(--mut)}.help summary{cursor:pointer;display:inline-flex;align-items:center;width:max-content;font-weight:500}.help summary:hover{color:var(--fg)}
+.qlerr{flex-basis:100%;margin:0;font-size:var(--fs-sm);color:var(--high);font-weight:600}.help{flex-basis:100%;font-size:var(--fs-sm);color:var(--mut)}.help summary{cursor:pointer;display:inline-flex;align-items:center;width:max-content;font-weight:500}.help summary:hover{color:var(--fg)}
 .help[open]{padding:10px 12px;border-radius:10px;background:var(--sub);color:var(--fg)}.help[open] summary{margin-bottom:6px;color:var(--mut)}
 .help dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:0}.help dt{font-weight:600}.help dd{margin:0}.help i{font-style:normal;font-weight:600}.help p{margin:8px 0 0}
 #lq{width:min(220px,100%);padding:6px 10px}.ahead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-bottom:6px}
 #dlive{color:var(--acc);font-weight:600;white-space:nowrap}input[type=search]::-webkit-search-cancel-button{display:none}
-.skip{position:absolute;left:16px;top:-60px;z-index:30;padding:8px 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600}.skip:focus{top:8px}.insi .lk{color:var(--acc);font-weight:600;padding:2px 0;text-decoration:underline;text-underline-offset:3px}#aichk{margin-left:6px;padding:2px 10px;font-size:.8125rem}
+.skip{position:absolute;left:16px;top:-60px;z-index:30;padding:8px 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600}.skip:focus{top:8px}.insi .lk{color:var(--acc);font-weight:600;padding:2px 0;text-decoration:underline;text-underline-offset:3px}#aichk{margin-left:6px;padding:2px 10px;font-size:var(--fs-sm)}
 @media(pointer:coarse){.skip{min-height:44px;display:inline-flex;align-items:center}#flow .dft [data-close]{display:none}#flow #ladd{flex:1}#aichk{min-height:44px}.insi .lk{padding:12px 0}.seg button{min-width:44px}.help .keys{display:none}}
-.phelp{margin-top:12px}.kl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;margin:0;font-size:.8125rem}.kl dd{margin:0}.kl kbd{margin:0}html.nokeys button kbd{display:none}@media(pointer:coarse){#keysec{display:none}}.help kbd{margin:0}.help summary kbd{margin-left:8px}.help .keys{margin-top:8px}
+.phelp{margin-top:12px}.kl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 14px;margin:0;font-size:var(--fs-sm)}.kl dd{margin:0}.kl kbd{margin:0}html.nokeys button kbd{display:none}.help kbd{margin:0}.help summary kbd{margin-left:8px}.help .keys{margin-top:8px}
 button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var(--bd));font-weight:600}
 /* Minskad rörelse: meddelanderutan tonar bara in (ingen glidning); detaljvyn hoppar dit i stället för att scrolla mjukt (i JS) */
 @media(prefers-reduced-motion:reduce){#toast,#toast.on{transform:none}}
@@ -308,10 +315,10 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Insikterna som en lista med avdelare (en kolumn): inga halvtomma rutor, och raderna läses uppifrån och ned */
 .mlab{min-width:9.5em;text-align:center;font-weight:600}svg rect.mdn{fill:var(--bd)}
 /* Pekarrutan under Insights: syns direkt (webbläsarens egen title-ruta väntar ungefär en sekund) */
-#itip{position:fixed;z-index:30;pointer-events:none;background:var(--tbg);color:var(--tfg);border-radius:8px;padding:5px 9px;font-size:.8125rem;line-height:1.35;max-width:min(320px,calc(100vw - 16px));opacity:0;transition:opacity .06s}#itip.on{opacity:1}
+#itip{position:fixed;z-index:30;pointer-events:none;background:var(--tbg);color:var(--tfg);border-radius:8px;padding:5px 9px;font-size:var(--fs-sm);line-height:1.35;max-width:min(320px,calc(100vw - 16px));opacity:0;transition:opacity .06s}#itip.on{opacity:1}
 /* Värmekartan och dygnets delar under Insights */
-.hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:.8125rem}svg text.rt.td{font-weight:650}
-.parts{margin:8px 0 0}@media(min-width:641px){.parts{margin-left:1.875rem;margin-right:8px}}.prof2{font-size:.8125rem;color:var(--mut)}@media(max-width:640px){.parts .pspan{display:block}}.parts .tirbar{margin:6px 0 6px}.parts .pspan{opacity:.8;font-variant-numeric:tabular-nums}.pdl{font-size:.8125rem;font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
+.hmap{display:block;margin-top:2px}svg text.rt{fill:var(--fg);font-size:var(--fs-sm)}svg text.rt.td{font-weight:650}
+.parts{margin:8px 0 0}@media(min-width:641px){.parts{margin-left:1.875rem;margin-right:8px}}.prof2{font-size:var(--fs-sm);color:var(--mut)}@media(max-width:640px){.parts .pspan{display:block}}.parts .tirbar{margin:6px 0 6px}.parts .pspan{color:var(--mut);font-variant-numeric:tabular-nums}.pdl{font-size:var(--fs-sm);font-weight:650;margin-left:4px;vertical-align:3px}.pdl.up{color:var(--ok)}.pdl.dn{color:var(--high)}
 /* Insights: växeln vecka/månad, nyckeltalen, staplarna och två spalter (en på smala skärmar) */
 .insbar{scroll-margin-top:12px}@media(min-width:601px){html{scroll-padding-top:60px}}
 /* Byte av vy: rutan med vyerna ändrar höjd mjukt och den nya vyn tonar in */
@@ -319,78 +326,89 @@ button.danger{color:var(--low);border-color:color-mix(in srgb,var(--low) 55%,var
 /* Medan rutan krymper ligger den gamla vyn kvar under den nya och tonar ut, så att rutan aldrig är tom */
 #iviews{position:relative}#iviews>div:not([hidden]){display:flow-root}.iover{position:absolute;top:0;left:0;right:0;z-index:1;background:var(--card)}.iout{animation:iout .25s ease-out forwards;pointer-events:none}@keyframes iout{to{opacity:0}}
 .insbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
-.kpi .kgoal{display:block;opacity:.75}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi .ss{display:none}
+.kpi .kgoal{display:block}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi .ss{display:none}
 /* Smal skärm: rutorna fyra i bredd och tätare (förut två och två), så att veckan och månaden ryms på en skärm */
-@media(max-width:640px){.kpis.k4{gap:6px}.kpis.k4 .kpi{padding:8px 7px}.kpis.k4 .kpi b{font-size:1.125rem}.kpis.k4 .kpi span{font-size:.6875rem;line-height:1.3}.kpis.k4 .pdl{font-size:.625rem;margin-left:2px;vertical-align:2px;white-space:nowrap}.kpis.k4 .pspan{white-space:nowrap}.kpis.k4 .tirbar{height:6px}.kpi .sl{display:none}.kpi .ss{display:inline}}
+@media(max-width:640px){.kpis.k4{gap:6px}.kpis.k4 .kpi{padding:8px 7px}.kpis.k4 .kpi b{font-size:var(--fs-xl)}.kpis.k4 .kpi span{font-size:var(--fs-xs);line-height:1.3}.kpis.k4 .pdl{font-size:var(--fs-xs);margin-left:2px;vertical-align:2px;white-space:nowrap}.kpis.k4 .pspan{white-space:nowrap}.kpis.k4 .tirbar{height:6px}.kpi .sl{display:none}.kpi .ss{display:inline}}
 @media(max-width:359px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:.8125rem;color:var(--mut)}.ifoot span{flex:1 1 280px}
+.ifoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);font-size:var(--fs-sm);color:var(--mut)}.ifoot span{flex:1 1 280px}
 @media(max-width:600px){
   /* 140 px: under flikraden (56 px) och Log-knappen (70 + 56 px) syns ändå det sista i listan */
   body{padding-bottom:calc(140px + env(safe-area-inset-bottom))}html{scroll-padding-bottom:140px}
   .tabbar{display:block;margin:0 -16px;padding:0 16px;border-bottom:0}.tbr{display:block;padding:0}
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;gap:0;padding:0 6px env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--bd)}
-  .tabs button{flex:1;min-width:0;min-height:54px;margin:0;padding:6px 2px;border-bottom:0;border-top:2px solid transparent;font-size:.8125rem;font-weight:600}
+  .tabs button{flex:1;min-width:0;min-height:54px;margin:0;padding:6px 2px;border-bottom:0;border-top:2px solid transparent;font-size:var(--fs-sm);font-weight:600}
   .tabs button[aria-selected=true]{border-top-color:var(--acc)}
   .mini{display:flex;justify-content:center;width:100%;padding:8px;margin-bottom:10px;border-radius:0;border-bottom:1px solid var(--bd)}
   .logw{position:fixed;right:16px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:26}
   #logbtn{width:56px;height:56px;justify-content:center;padding:0;border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,.35)}#logbtn svg{width:24px;height:24px}
   #logbtn span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   .logmenu{top:auto;bottom:calc(100% + 10px)}.logmenu button{padding:14px 14px}
-  #toast{bottom:calc(72px + env(safe-area-inset-bottom))}
+  #toast{bottom:calc(72px + env(safe-area-inset-bottom))}:root:not([data-btns=hide]) #toast{bottom:calc(136px + env(safe-area-inset-bottom))}
 }
 .stack{display:flex;flex-direction:column;gap:4px}
-.lead{margin:10px 0 4px;font-size:1rem;line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
-.grp{margin:20px 0 8px;font-size:.8125rem;font-weight:600;color:var(--mut);letter-spacing:.02em}
+.lead{margin:10px 0 4px;font-size:var(--fs-lg);line-height:1.45;text-wrap:pretty}.lead b{font-weight:700}
+.grp{margin:20px 0 8px;font-size:var(--fs-sm);font-weight:600;color:var(--mut);letter-spacing:.02em}
 .chat{display:flex;flex-direction:column;gap:10px}.chat:not(:empty){margin-bottom:12px}
 .msg{padding:10px 14px;border-radius:12px;max-width:min(680px,92%)}.msg.u{align-self:flex-end;background:color-mix(in srgb,var(--acc) 14%,transparent)}.msg.a{align-self:flex-start;background:var(--sub)}
 .msg p{margin:0 0 6px}.msg p:last-child{margin:0}.msg ul{margin:4px 0 6px;padding-left:20px}
-.askf{display:flex;gap:8px;margin-top:10px}.askf input{flex:1}
-code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4px;background:var(--sub)}
+.askf{display:flex;flex-direction:column;gap:5px;margin-top:10px}.askr{display:flex;gap:8px}.askr input{flex:1;min-width:0}
+code{font:var(--fs-xs) ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4px;background:var(--sub)}
 
 /* Måltidsjämförelsen på smala skärmar: ett kort per måltid med etiketter, i stället för en tabell att scrolla i sidled */
 @media(max-width:600px){
   #cmp table{min-width:0}#cmp thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   #cmp tr{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;padding:10px 0;border-bottom:1px solid var(--bd)}
   #cmp td{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border:0}
-  #cmp td::before{content:attr(data-label);content:attr(data-label) / "";color:var(--mut);font-size:.8125rem;font-weight:400}
-  #cmp td:first-child{grid-column:1/-1;display:block;text-align:left;font-weight:600;font-size:.9375rem}
+  #cmp td::before{content:attr(data-label);content:attr(data-label) / "";color:var(--mut);font-size:var(--fs-sm);font-weight:400}
+  #cmp td:first-child{grid-column:1/-1;display:block;text-align:left;font-weight:600;font-size:var(--fs-md)}
 }
 /* Pekskärm: tryckytor minst 44 px och inga kortkommandotips (det finns inget tangentbord att trycka L på).
    Fält med text under 16 px får iOS att zooma in när man trycker i dem. */
 @media(pointer:coarse){
   kbd{display:none}
-  input,select{font-size:1rem}
+  input,select{font-size:var(--fs-lg)}
   button.icon,.nav button,.acts button,.opt .rm,.opt button,.chips button,#toast button,.step button{min-width:44px;min-height:44px}
   .seg button,.tabs button,.nav input,.nav button,.ql input,.ql button,.step input,.tw button,.cta button,.dft button,.da button,#more,#msave,.fld input,.fld select,#imbtn,#lq,.askf input,.askf button,.help summary,#toast button{min-height:44px}
   .chk input{width:22px;height:22px}
 }
+/* Windows kontrastläge (forced colors): bakgrundsfärger tas bort, så valt läge och strömbrytarna markeras med kant och systemfärger */
+@media(forced-colors:active){
+  .seg button[aria-checked=true],.seg button.on,.chips button.on,.tabs button[aria-selected=true]{outline:2px solid Highlight;outline-offset:-2px}
+  .swi{border:1px solid CanvasText}.swi::after{background:CanvasText;forced-color-adjust:none}.swi:checked{background:Highlight}.swi:checked::after{background:HighlightText}
+  .tirbar i,.obar i,.yrlg i,.lgd i,svg rect,svg path,svg circle{forced-color-adjust:none}
+}
+/* Flikarnas nav-landmärke påverkar inte layouten; enheten i grafens hörn läses mot kurvan; vald ruta i Insights (tangentbordet) */
+.tnav{display:contents}svg text.axu{font-weight:600;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}svg .tipon{stroke:var(--fg);stroke-width:2;paint-order:stroke}
+.tipnav:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:4px}
+.lqw{display:flex;align-items:center;gap:8px;min-width:0}.tgf{align-items:center}.tgf .lab{flex-basis:100%}.qlst{flex-basis:100%;margin:0;font-size:var(--fs-sm)}.qlst:empty{display:none}
+.hzlg{gap:4px 12px}
 </style>
 </head>
 <body>
 <a class="skip" href="#t-act" id="skip">Skip to the sections</a>
 <header class="top">
   <div class="brand"><svg class="logo" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect class="lgband" x="0" y="7" width="20" height="6" rx="1.5" opacity=".28"/><path d="M1.5 9.5c3 0 3.2 6 6.2 6S10.6 3.5 14 3.5s3.4 5.8 4.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><h1>Glucose</h1></div>
-  <div class="hr"><span class="pill" id="status"><i></i><span>Connecting…</span></span>
+  <div class="hr"><span class="pill" id="status"><i aria-hidden="true"></i><span role="status">Connecting…</span></span>
     <button class="icon" id="pibtn" aria-label="Raspberry Pi status" title="Raspberry Pi status"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01M6 18h.01"/></svg></button>
     <button class="icon" id="gear" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </header>
 <!-- Överst, så att den syns i alla flikar utan att man scrollar (förut stod den sist på sidan) -->
-<p class="disc">Information tool only. It gives no dosing advice and does not replace the Libre app or its alarms.</p>
+<aside aria-label="About this tool"><p class="disc">Information tool only. It gives no dosing advice and does not replace the Libre app or its alarms.</p></aside>
 
 <!-- Flikraden: överst och kvar när man scrollar (på mobilen en fast rad nedtill). Till höger det aktuella värdet på andra
      flikar än Activity (där står det stort i huvudkortet) och Log-knappen, som öppnar Meal, Note och Low treatment. -->
 <div class="tabbar" id="tabbar">
-  <div class="tabs" role="tablist" aria-label="Sections">
+  <nav class="tnav" aria-label="Sections"><div class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" id="t-act" aria-controls="tab-act" data-tab="act" aria-selected="true">Activity</button>
     <button role="tab" id="t-ins" aria-controls="tab-ins" data-tab="ins" aria-selected="false" tabindex="-1">Insights</button>
     <button role="tab" id="t-lib" aria-controls="tab-lib" data-tab="lib" aria-selected="false" tabindex="-1">Meals</button>
     <button role="tab" id="t-ask" aria-controls="tab-ask" data-tab="ask" aria-selected="false" tabindex="-1">Ask AI</button>
-  </div>
+  </div></nav>
   <div class="tbr">
     <button class="mini" id="mini" title="Show the chart" hidden><b id="mcur"></b><span id="marr" aria-hidden="true"></span><span id="mst"></span></button>
     <div class="logw">
-      <button class="p" id="logbtn" aria-haspopup="true" aria-expanded="false" aria-controls="logmenu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Log</span></button>
+      <button class="p" id="logbtn" aria-expanded="false" aria-controls="logmenu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Log</span></button>
       <div class="logmenu" id="logmenu" role="group" aria-label="Log" hidden><button data-log="meal" aria-keyshortcuts="L">Meal<kbd aria-hidden="true">L</kbd></button><button data-log="note" aria-keyshortcuts="N">Note<kbd aria-hidden="true">N</kbd></button><button data-log="low" aria-keyshortcuts="T">Low treatment<kbd aria-hidden="true">T</kbd></button></div>
     </div>
   </div>
@@ -401,15 +419,15 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div class="dl">
     <h2>Log in to LibreLinkUp</h2>
     <p class="mut m0">Use the follower account you invited from the LibreLink app, not your own.</p>
-    <div class="fld"><label for="lem">Email</label><input id="lem" type="email" autocomplete="username" required></div>
-    <div class="fld"><label for="lpw">Password</label><input id="lpw" type="password" autocomplete="current-password" required></div>
-    <label class="chk"><input id="lrem" type="checkbox" checked> Stay logged in on this computer</label>
+    <div class="fld"><label for="lem">Email</label><input id="lem" type="email" autocomplete="username" required aria-describedby="lmsg"></div>
+    <div class="fld"><label for="lpw">Password</label><input id="lpw" type="password" autocomplete="current-password" required aria-describedby="lmsg"></div>
+    <label class="chk"><input id="lrem" type="checkbox" checked> Stay logged in after a restart</label>
     <button class="p">Log in</button>
-    <p class="mut" id="lmsg"></p>
+    <p class="mut" id="lmsg" role="status"></p>
   </div>
 </form>
 
-<section class="card hero acttop" id="hero">
+<section class="card hero acttop" id="hero" aria-labelledby="heroh"><h2 class="sr" id="heroh">Current glucose</h2>
   <div class="now" id="nowbox" role="group" aria-label="Current glucose"><span id="cur">–</span><span id="arrow" aria-hidden="true"></span><span id="state" class="st" hidden></span></div>
   <div id="srlive" class="sr" aria-live="polite"></div>
   <div class="meta">
@@ -421,14 +439,15 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </div>
   <div class="cta"><button class="p" id="openMeal" aria-keyshortcuts="L">Log meal<kbd aria-hidden="true">L</kbd></button><button id="openNote" aria-keyshortcuts="N">Note<kbd aria-hidden="true">N</kbd></button><button class="quiet" id="openLow" aria-keyshortcuts="T">Low treatment<kbd aria-hidden="true">T</kbd></button></div>
   <p class="lowtip" id="lowtip" hidden>Treat it first. You can log it afterwards.</p>
-  <form class="ql" id="ql"><label for="qlt" id="qll">Log in your own words</label><input id="qlt" aria-describedby="qlerr" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-haspopup="true" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><button id="qlb">Log<kbd aria-hidden="true">/</kbd></button>
-    <p class="qlerr" id="qlerr" role="alert" hidden></p>
+  <form class="ql" id="ql"><label for="qlt" id="qll">Write what you ate or did</label><input id="qlt" aria-describedby="qlerr qlst" maxlength="300" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><button id="qlb">Add<kbd aria-hidden="true">/</kbd></button>
+    <p class="qlerr" id="qlerr" role="alert" hidden></p><p class="qlst mut" id="qlst" role="status"></p>
 </form>
 </section>
 
-<section class="card acttop">
+<div class="panel" id="tab-act" role="tabpanel" aria-labelledby="t-act">
+<section class="card" aria-labelledby="charth"><h2 class="sr" id="charth">Glucose chart, mmol/L</h2>
   <div class="bar2">
-    <div class="seg" id="rng" role="group" aria-label="Time shown in the chart"><button data-h="3" title="Last 3 hours (key 1)" aria-keyshortcuts="1" aria-pressed="false">3 h</button><button data-h="6" title="Last 6 hours (key 2)" class="on" aria-keyshortcuts="2" aria-pressed="true">6 h</button><button data-h="12" title="Last 12 hours (key 3)" aria-keyshortcuts="3" aria-pressed="false">12 h</button><button data-h="24" title="Last 24 hours (key 4)" aria-keyshortcuts="4" aria-pressed="false">24 h</button></div>
+    <div class="seg" id="rng" role="radiogroup" aria-label="Time shown in the chart"><button data-h="3" title="Last 3 hours (key 1)" aria-keyshortcuts="1" role="radio" aria-checked="false">3 h</button><button data-h="6" title="Last 6 hours (key 2)" class="on" aria-keyshortcuts="2" role="radio" aria-checked="true">6 h</button><button data-h="12" title="Last 12 hours (key 3)" aria-keyshortcuts="3" role="radio" aria-checked="false">12 h</button><button data-h="24" title="Last 24 hours (key 4)" aria-keyshortcuts="4" role="radio" aria-checked="false">24 h</button></div>
     <div class="nav"><button id="dlive" aria-label="Back to now" hidden><span class="nlg">Back to now</span><span class="nsm">Now</span></button><button id="dprev" aria-label="Previous day" title="Previous day ([)" aria-keyshortcuts="[">‹</button><input id="dpick" type="date" aria-label="Show a day"><button id="dnext" aria-label="Next day" title="Next day (])" aria-keyshortcuts="]" disabled>›</button></div>
   </div>
   <div id="chart"></div><div id="hvsr" class="sr" aria-live="polite"></div>
@@ -436,18 +455,19 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="dethome"><div id="mdet"></div></div>
 </section>
 
-<section class="card panel" id="tab-act" role="tabpanel" aria-labelledby="t-act">
-  <h2 class="sr">Activity</h2>
-  <div class="ahead"><input id="lq" type="search" aria-keyshortcuts="F" title="Filter (F)" placeholder="Filter, e.g. pizza or low" aria-label="Filter activity" autocomplete="off"><span class="mut" id="ins24"></span></div>
+<section class="card" aria-labelledby="acth">
+  <h2 class="sr" id="acth">Activity</h2>
+  <div class="ahead"><label class="lqw"><span class="lab">Filter</span><input id="lq" type="search" aria-keyshortcuts="F" title="Filter (F)" placeholder="e.g. pizza or low" autocomplete="off"></label><span class="mut" id="ins24"></span></div>
   <p class="mut fine legend">Meals and doses are followed for 3 hours: the peak, and a low if there was one.</p>
   <div id="log"></div>
 </section>
+</div>
 
 <section class="card panel" id="tab-ins" role="tabpanel" aria-labelledby="t-ins" hidden>
-  <div id="itip" aria-hidden="true"></div>
+  <div id="itip" aria-hidden="true"></div><div id="isr" class="sr" aria-live="polite"></div>
   <h2 class="sr">Insights</h2>
   <div class="insbar">
-    <div class="seg" id="iseg" role="group" aria-label="Period"><button data-v="week" class="on" aria-pressed="true">This week</button><button data-v="month" aria-pressed="false">Month</button><button data-v="year" aria-pressed="false">Year</button></div>
+    <div class="seg" id="iseg" role="radiogroup" aria-label="Period"><button data-v="week" class="on" role="radio" aria-checked="true">7 days</button><button data-v="month" role="radio" aria-checked="false">Month</button><button data-v="year" role="radio" aria-checked="false">Year</button></div>
     <div class="nav" id="monav" hidden><button id="mprev" aria-label="Previous month">‹</button><span class="mlab" id="mlab" aria-live="polite"></span><button id="mnext" aria-label="Next month">›</button></div>
   </div>
   <div id="iviews"><div id="wk"></div>
@@ -460,22 +480,10 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   </dl></details>
 </section>
 
-<section class="card panel" id="tab-ask" role="tabpanel" aria-labelledby="t-ask" hidden>
-  <div class="ph"><h2>Ask about your data</h2><span class="mut fine" id="aist"></span></div>
-  <div class="chat" id="chat"></div><div class="sr" id="chatsr" aria-live="polite"></div>
-  <div class="chips" id="sugg">
-    <button data-q="Summarize my last 7 days. What stands out compared with the week before?">Explain my week</button>
-    <button data-q="When do my lows happen, and what tends to come before them?">When do I go low?</button>
-    <button data-q="Which meals give me the highest peaks, and how long do I stay above 10 after them?">Which meals spike most?</button>
-    <button data-q="How do my nights look? Any patterns overnight?">How are my nights?</button>
-  </div>
-  <form class="askf" id="askf"><input id="askq" placeholder="Ask anything about your readings, meals and notes" autocomplete="off" aria-label="Question"><button class="p" id="askb">Ask</button></form>
-</section>
-
 <section class="card panel" id="tab-lib" role="tabpanel" aria-labelledby="t-lib" hidden>
   <h2 class="sr">Meals</h2>
-  <div class="ph"><div class="seg" id="mseg" role="group" aria-label="Show"><button data-mv="cmp" class="on" aria-pressed="true">Compared</button><button data-mv="lib" aria-pressed="false">Saved<span class="segn" id="libn"></span></button></div>
-    <div class="seg" id="cper" role="group" aria-label="Period"><button data-per="90" class="on" aria-pressed="true">90 days</button><button data-per="0" aria-pressed="false">All time</button></div></div>
+  <div class="ph"><div class="seg" id="mseg" role="radiogroup" aria-label="Show"><button data-mv="cmp" class="on" role="radio" aria-checked="true">Compared</button><button data-mv="lib" role="radio" aria-checked="false">Saved<span class="segn" id="libn"></span></button></div>
+    <div class="seg" id="cper" role="radiogroup" aria-label="Period"><button data-per="90" class="on" role="radio" aria-checked="true">90 days</button><button data-per="0" role="radio" aria-checked="false">All time</button></div></div>
   <div id="mv-cmp">
     <p class="mut m0 subt">How glucose went after each meal. Open a meal to see every time.</p>
     <div id="cmp"></div>
@@ -483,20 +491,32 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <div id="mv-lib" hidden>
   <p class="mut m0 subt">Saved meals and their usual dose, most eaten first. They show up first when you log a meal.</p>
   <div class="addrow">
-    <div class="fld"><label for="mn">Meal name</label><input id="mn" placeholder="e.g. Pizza"></div>
+    <div class="fld"><label for="mn">Meal name</label><input id="mn" placeholder="e.g. Pizza" maxlength="200"></div>
     <div class="fld"><label for="mi">Usual dose (units)</label><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input id="mi" inputmode="decimal" autocomplete="off" placeholder="e.g. 6"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div></div>
     <button id="msave">Add meal</button>
   </div>
   <div id="lib" class="mlist"></div>
   </div>
 </section>
+<section class="card panel" id="tab-ask" role="tabpanel" aria-labelledby="t-ask" hidden>
+  <div class="ph"><h2>Ask about your data</h2><span class="mut fine" id="aist" role="status"></span></div>
+  <div class="chat" id="chat"></div><div class="sr" id="chatsr" aria-live="polite"></div>
+  <div class="chips" id="sugg">
+    <button data-q="Summarize my last 7 days. What stands out compared with the week before?">Explain my week</button>
+    <button data-q="When do my lows happen, and what tends to come before them?">When do I go low?</button>
+    <button data-q="Which meals give me the highest peaks, and how long do I stay above 10 after them?">Which meals spike most?</button>
+    <button data-q="How do my nights look? Any patterns overnight?">How are my nights?</button>
+  </div>
+  <form class="askf" id="askf"><label class="lab" for="askq">Your question</label><div class="askr"><input id="askq" placeholder="e.g. How did my weekend go?" autocomplete="off" maxlength="1000"><button class="p" id="askb">Ask</button></div></form>
+</section>
+
 </main>
 
 
 <dialog id="dmeal" aria-labelledby="dmealh">
   <form class="dl" id="fmeal">
-    <div class="dhd"><h2 id="dmealh" tabindex="-1">Log a meal</h2><button type="button" class="icon" data-close aria-label="Close">✕</button></div>
-    <div class="fld rel"><label for="msearch">Meal</label><input id="msearch" type="search" role="combobox" aria-autocomplete="list" aria-controls="mlist" aria-expanded="false" placeholder="Search saved meals or type a name" autocomplete="off"><div id="mlist" class="mlist" role="listbox" aria-label="Your meals"></div></div>
+    <div class="dhd"><h2 id="dmealh" tabindex="-1">Log a meal</h2><button type="button" class="icon" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="fld rel"><label for="msearch">Meal</label><input id="msearch" type="search" maxlength="200" role="combobox" aria-autocomplete="list" aria-controls="mlist" aria-expanded="false" placeholder="Search saved meals or type a name" autocomplete="off"><div id="mlist" class="mlist" role="listbox" aria-label="Your meals"></div></div>
     <div class="grid2">
       <div class="fld"><label for="mi2"><span id="ftype">Insulin</span> taken (units)</label><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input id="mi2" inputmode="decimal" autocomplete="off" placeholder="Units" aria-required="true"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div></div>
       <div class="fld"><label for="mtime">Time eaten</label><div class="tw"><input id="mday" type="date" aria-label="Day" hidden><input id="mtime" type="time"><button type="button" id="mnow">Now</button></div></div>
@@ -509,9 +529,9 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 
 <dialog id="dnote" aria-labelledby="dnoteh">
   <form class="dl" id="fnote">
-    <div class="dhd"><h2 id="dnoteh">Add a note</h2><button type="button" class="icon" data-close aria-label="Close">✕</button></div>
-    <div class="chips" id="nk" role="group" aria-label="Type"><button type="button" class="on" data-k="Exercise" aria-pressed="true">Exercise</button><button type="button" data-k="Alcohol" aria-pressed="false">Alcohol</button><button type="button" data-k="Illness" aria-pressed="false">Illness</button><button type="button" data-k="Stress" aria-pressed="false">Stress</button><button type="button" data-k="Long-acting" aria-pressed="false">Long-acting insulin</button><button type="button" data-k="Other" aria-pressed="false">Other</button></div>
-    <div class="fld"><label for="nt">Note (optional)</label><input id="nt" placeholder="e.g. Walk, 5 km" autocomplete="off"></div>
+    <div class="dhd"><h2 id="dnoteh">Add a note</h2><button type="button" class="icon" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="chips" id="nk" role="radiogroup" aria-label="Type"><button type="button" class="on" data-k="Exercise" role="radio" aria-checked="true">Exercise</button><button type="button" data-k="Alcohol" role="radio" aria-checked="false">Alcohol</button><button type="button" data-k="Illness" role="radio" aria-checked="false">Illness</button><button type="button" data-k="Stress" role="radio" aria-checked="false">Stress</button><button type="button" data-k="Long-acting" role="radio" aria-checked="false">Long-acting insulin</button><button type="button" data-k="Other" role="radio" aria-checked="false">Other</button></div>
+    <div class="fld"><label for="nt">Note (optional)</label><input id="nt" placeholder="e.g. Walk, 5 km" autocomplete="off" maxlength="480"></div>
     <div class="grid2">
       <div class="fld"><label for="ntime">Time</label><div class="tw"><input id="nday" type="date" aria-label="Day" hidden><input id="ntime" type="time"><button type="button" id="nnow">Now</button></div></div>
       <div class="fld"><label for="ndur">Minutes (optional)</label><input id="ndur" inputmode="numeric" autocomplete="off" placeholder="How long it lasted"></div>
@@ -524,11 +544,11 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 <!-- Känning: en egen, kort dialog. Gram först (med de mängder man själv brukar ta), sedan vad och när. -->
 <dialog id="dlow" aria-labelledby="dlowh">
   <form class="dl" id="flow">
-    <div class="dhd"><h2 id="dlowh" tabindex="-1">Log low treatment</h2><button type="button" class="icon" data-close aria-label="Close">✕</button></div>
+    <div class="dhd"><h2 id="dlowh" tabindex="-1">Log low treatment</h2><button type="button" class="icon" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div class="fld"><label for="lg">Fast carbs, grams (optional)</label><input id="lg" class="big" inputmode="decimal" autocomplete="off" placeholder="e.g. 15">
       <div class="chips" id="lgq" role="group" aria-label="Amounts you have logged before" hidden></div></div>
     <div class="grid2">
-      <div class="fld"><label for="lt">What you took (optional)</label><input id="lt" placeholder="e.g. Dextro, juice" autocomplete="off"></div>
+      <div class="fld"><label for="lt">What you took (optional)</label><input id="lt" placeholder="e.g. Dextro, juice" autocomplete="off" maxlength="200"></div>
       <div class="fld"><label for="ltime">Time</label><div class="tw"><input id="lday" type="date" aria-label="Day" hidden><input id="ltime" type="time"><button type="button" id="lnow">Now</button></div></div>
     </div>
     <div class="dft"><button type="button" data-close>Cancel</button><button id="ladd" class="p lowbtn">Log treatment</button></div>
@@ -537,7 +557,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
 
 <dialog id="dpi" aria-labelledby="dpih">
   <div class="dl">
-    <div class="dhd"><div><h2 id="dpih" tabindex="-1">Raspberry Pi</h2><span class="mut fine" id="pisub"></span></div><div class="pih"><button type="button" id="pirf">Refresh</button><button class="icon" data-close aria-label="Close">✕</button></div></div>
+    <div class="dhd"><div><h2 id="dpih" tabindex="-1">Raspberry Pi</h2><span class="mut fine" id="pisub"></span></div><div class="pih"><button type="button" id="pirf">Refresh</button><button class="icon" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div></div>
     <div id="pibody"></div><div id="pisr" class="sr" aria-live="polite"></div>
     <p class="mut fine">From <b>pistatus</b> on the Pi, the same report as in the terminal, plus the dashboard's own health. Public IP addresses are hidden until you click them.</p>
   </div>
@@ -546,15 +566,15 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
   <!-- Som inställningar i en telefon: grupper med en rad per inställning, namnet till vänster och reglaget till höger.
        Förklaringar bara där namnet inte räcker, och då som en kort rad. -->
   <div class="dl">
-    <div class="dhd"><h2 id="dseth" tabindex="-1">Settings</h2><button class="icon" data-close aria-label="Close">✕</button></div>
+    <div class="dhd"><h2 id="dseth" tabindex="-1">Settings</h2><button class="icon" data-close aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <section class="sgw" aria-labelledby="sg1"><h3 class="slab" id="sg1">Appearance</h3><div class="sg">
-      <div class="srow wide"><span class="sname" id="thl">Theme</span><div class="seg" id="theme" role="group" aria-labelledby="thl"><button data-th="" aria-pressed="true">System</button><button data-th="light" aria-pressed="false">Light</button><button data-th="dark" aria-pressed="false">Dark</button></div></div>
-      <div class="srow wide"><span class="sname" id="evsl">Chart events</span><div class="seg" id="evst" role="group" aria-labelledby="evsl"><button data-ev="lane" aria-pressed="true">One row</button><button data-ev="tracks" aria-pressed="false">Food, insulin, other</button></div></div>
+      <div class="srow wide"><span class="sname" id="thl">Theme</span><div class="seg" id="theme" role="radiogroup" aria-labelledby="thl"><button data-th="" role="radio" aria-checked="true">System</button><button data-th="light" role="radio" aria-checked="false">Light</button><button data-th="dark" role="radio" aria-checked="false">Dark</button></div></div>
+      <div class="srow wide"><span class="sname" id="evsl">Chart events</span><div class="seg" id="evst" role="radiogroup" aria-labelledby="evsl"><button data-ev="lane" role="radio" aria-checked="true">One row</button><button data-ev="tracks" role="radio" aria-checked="false">Food, insulin, other</button></div></div>
       <div class="srow"><label class="sname" for="btnsw">Log button<span class="sd">Opens Meal, Note and Low treatment</span></label><input class="swi" id="btnsw" type="checkbox" role="switch" checked></div>
     </div></section>
     <section class="sgw" aria-labelledby="sg2"><h3 class="slab" id="sg2">Your insulin</h3><div class="sg">
-      <div class="srow"><label class="sname" for="ifast">Mealtime</label><div class="sctl"><select id="ifast"></select><input id="ifasto" placeholder="Name of your insulin" aria-label="Name of your mealtime insulin" hidden></div></div>
-      <div class="srow"><label class="sname" for="ilong">Basal</label><div class="sctl"><select id="ilong"></select><input id="ilongo" placeholder="Name of your insulin" aria-label="Name of your basal insulin" hidden></div></div>
+      <div class="srow"><label class="sname" for="ifast">Mealtime</label><div class="sctl"><select id="ifast"></select><input id="ifasto" placeholder="Name of your insulin" aria-label="Name of your insulin, mealtime" maxlength="60" hidden></div></div>
+      <div class="srow"><label class="sname" for="ilong">Basal</label><div class="sctl"><select id="ilong"></select><input id="ilongo" placeholder="Name of your insulin" aria-label="Name of your insulin, basal" maxlength="60" hidden></div></div>
     </div></section>
     <section class="sgw" aria-labelledby="sg8"><h3 class="slab" id="sg8">Target range</h3><div class="sg">
       <div class="srow"><label class="sname" for="tlo">Low limit<span class="sd">mmol/L</span></label><select class="tnum" id="tlo" aria-describedby="tmsg"></select></div>
@@ -562,15 +582,15 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       <div class="srow" id="tstdw"><span class="sname">Standard range<span class="sd">3.9 to 10, the international one</span></span><button id="tstd">Use 3.9–10</button></div>
     </div><span class="fine warnq" id="tmsg" aria-live="polite"></span><p class="sd sintro">Time in range, the colours and the charts follow it. A low is always under 3.9.</p></section>
     <section class="sgw" aria-labelledby="sg3"><h3 class="slab" id="sg3">History</h3><div class="sg">
-      <div class="srow"><span class="sname">Import from LibreView<span class="sd" id="imsg" aria-live="polite">CSV export. Safe to run again.</span></span><div><button id="imbtn" aria-describedby="imsg">Choose file…</button><input id="imfile" type="file" accept=".csv,text/csv" hidden></div></div>
-      <div class="srow"><span class="sname">Export<span class="sd" id="exmsg" aria-live="polite">Readings, meals and notes in one Excel file</span></span><div class="sbtn"><button id="exx" aria-describedby="exmsg">Download</button></div></div>
+      <div class="srow"><span class="sname">Import from LibreView<span class="sd" id="imsg" aria-live="polite">CSV export. Safe to run again.</span></span><div><button id="imbtn" aria-describedby="imsg" aria-label="Choose file to import from LibreView">Choose file…</button><input id="imfile" type="file" accept=".csv,text/csv" hidden></div></div>
+      <div class="srow"><span class="sname">Export<span class="sd" id="exmsg" aria-live="polite">Readings, meals and notes in one Excel file</span></span><div class="sbtn"><button id="exx" aria-describedby="exmsg" aria-label="Download the Excel export">Download</button></div></div>
     </div></section>
     <section class="sgw" id="autosec" aria-labelledby="sg4" hidden><h3 class="slab" id="sg4">Startup</h3><div class="sg">
       <div class="srow"><label class="sname" for="auto">Start with Windows<span class="sd">Minimized in the taskbar</span></label><input class="swi" id="auto" type="checkbox" role="switch"></div>
     </div></section>
     <section class="sgw" aria-labelledby="sg5"><h3 class="slab" id="sg5">Telegram</h3>
-      <p class="sd sintro" id="tgtxt"></p>
-      <form class="tw" id="tgset" hidden><input id="tgtok" type="password" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token"><button id="tgsave">Connect</button></form>
+      <p class="sd sintro" id="tgtxt" aria-live="polite"></p>
+      <form class="tw tgf" id="tgset" hidden><label class="lab" for="tgtok">Bot token</label><input id="tgtok" type="password" autocomplete="off" spellcheck="false" placeholder="From @BotFather, e.g. 123456789:ABC…"><button id="tgsave">Connect</button></form>
       <div class="sg" id="tgon" hidden>
         <div class="srow"><span class="sname" id="tgwho"></span><button id="tgoff" aria-describedby="tgoffq">Disconnect</button></div>
         <div class="srow" id="tgstw" hidden><label class="sname" for="tgst">Message when readings stop</label><input class="swi" id="tgst" type="checkbox" role="switch"></div>
@@ -593,7 +613,7 @@ code{font:.75rem ui-monospace,Consolas,monospace;padding:1px 4px;border-radius:4
       </details>
     </div><span id="keyst" hidden></span></section>
     <section class="sgw" id="llusec" aria-labelledby="sg9" hidden><h3 class="slab" id="sg9">LibreLinkUp</h3><div class="sg">
-      <div class="srow"><label class="sname" for="lluv">App version<span class="sd" id="llumsg" aria-live="polite">Raised by itself when LibreLinkUp asks for a newer one</span></label><div class="sbtn"><input id="lluv" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="llumsg"><button id="llus">Save</button></div></div>
+      <div class="srow"><label class="sname" for="lluv">App version<span class="sd" id="llumsg" aria-live="polite">Raised by itself when LibreLinkUp asks for a newer one</span></label><div class="sbtn"><input id="lluv" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="llumsg"><button id="llus" aria-label="Save the LibreLinkUp app version">Save</button></div></div>
     </div></section>
     <section class="sgw" id="acct" aria-labelledby="sg7" hidden><h3 class="slab" id="sg7">Account</h3><div class="sg">
       <div class="srow"><span class="sname" id="acctu"></span><button id="logout" aria-describedby="logoutq">Log out</button></div>
@@ -641,8 +661,9 @@ const units = n => (Math.round(n * 10) / 10) + (n === 1 ? ' unit' : ' units');
 // Ett tomt dosfält i måltidsdialogen loggas inte längre som 0 enheter (det förstörde insulinsumman utan att synas):
 // man skriver dosen, eller 0 om man inte tog något.
 const readDose = el => {
-  const empty = !el.value.trim(), v = empty ? (el.getAttribute('aria-required') ? NaN : 0) : num(el.value);
-  el.setCustomValidity(!isNaN(v) ? '' : empty ? 'Enter the units you took, or 0 if you took none.' : 'Enter a number of units, e.g. 6.5');
+  // Högst 100 enheter, samma gräns som servern (Telegram, fritexten och sparningen); förut gick 750 att logga här
+  const empty = !el.value.trim(), n = empty ? (el.getAttribute('aria-required') ? NaN : 0) : num(el.value), v = n > 100 ? NaN : n;
+  el.setCustomValidity(!isNaN(v) ? '' : n > 100 ? 'That is more than 100 units. Check the number.' : empty ? 'Enter the units you took, or 0 if you took none.' : 'Enter a number of units, e.g. 6.5');
   if (isNaN(v)) el.reportValidity();
   return v;
 };
@@ -663,18 +684,40 @@ function setHTML(el, html) {
   setHTML.busy = false;
 }
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Radiogrupp (ett val i taget): bara det valda alternativet ligger i tabbordningen; inget valt (t.ex. intervallet när en
+// dag visas) = det första. Piltangenterna flyttar och väljer, som vanliga radioknappar.
+function radios(g) {
+  const bs = [...g.querySelectorAll('[role=radio]')], on = bs.find(b => b.getAttribute('aria-checked') === 'true') || bs[0];
+  bs.forEach(b => b.tabIndex = b === on ? 0 : -1);
+}
+document.addEventListener('keydown', e => {
+  const b = e.target.closest && e.target.closest('[role=radiogroup] [role=radio]'); if (!b) return;
+  const bs = [...b.closest('[role=radiogroup]').querySelectorAll('[role=radio]')].filter(x => !x.disabled && !x.hidden), i = bs.indexOf(b);
+  const j = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: bs.length - 1 }[e.key];
+  if (j === undefined || i < 0) return;
+  e.preventDefault(); e.stopPropagation(); const t = bs[(j + bs.length) % bs.length]; t.focus(); t.click();
+});
 const kbFocus = () => !!(document.activeElement && document.activeElement.matches(':focus-visible'));
-const setStatus = (t, ok = true, live = false, stale = false) => { $('status').lastChild.textContent = t; $('status').className = 'pill' + (!ok ? ' err' : live ? ' ok' : stale ? ' stale' : ''); };
+// Texten byts bara när den ändrats: fältet är en live-region (role=status), så samma text varje minut läses inte upp igen
+const setStatus = (t, ok = true, live = false, stale = false) => { const s = $('status').lastChild; if (s.textContent !== t) s.textContent = t; $('status').className = 'pill' + (!ok ? ' err' : live ? ' ok' : stale ? ' stale' : ''); };
 // Meddelanderutan. Den visas först och fylls sedan, så att skärmläsare läser upp den. Medan musen är över den eller
 // fokus är i den (t.ex. på Undo) står tiden still, så att den inte försvinner mitt i. Dold kan den inte få fokus.
-let tt, tLeft = 0, tFrom = 0;
+// En ruta med en knapp (Undo, Try again) försvinner inte av sig själv: den står kvar tills man stänger den (✕ eller Esc)
+// eller nästa meddelande kommer (WCAG 2.2.1). Förut försvann den efter 8 s, och då gick det inte längre att ångra.
+const XICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+let tt, tLeft = 0, tFrom = 0, tSticky = false;
 const tHold = () => $('toast').matches(':hover') || $('toast').contains(document.activeElement);
-const tArm = ms => { clearTimeout(tt); tLeft = ms; tFrom = Date.now(); if (!tHold()) tt = setTimeout(() => $('toast').classList.remove('on'), ms); };
-const toast = (h, ms = 4000) => { const d = document.querySelector('dialog[open]'), t = $('toast'); if (t.parentNode !== (d || document.body)) (d || document.body).append(t); t.classList.add('on'); t.innerHTML = h; tArm(ms); };
+const tArm = ms => { clearTimeout(tt); tLeft = ms; tFrom = Date.now(); if (!tHold() && !tSticky) tt = setTimeout(() => $('toast').classList.remove('on'), ms); };
+const toast = (h, ms = 4000) => {
+  const d = document.querySelector('dialog[open]'), t = $('toast'); if (t.parentNode !== (d || document.body)) (d || document.body).append(t);
+  tSticky = /<button/.test(h); t.classList.add('on');
+  t.innerHTML = `<span class="tm">${h}</span>` + (tSticky ? `<button class="tx" data-tclose="1" aria-label="Close message">${XICON}</button>` : '');
+  if (tSticky) clearTimeout(tt); else tArm(ms);
+};
 // När dialogen stängs flyttas rutan tillbaka till sidan, så att den inte försvinner med dialogen
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('close', () => { if ($('toast').parentNode === d) document.body.append($('toast')); }));
 const tPause = () => { clearTimeout(tt); tLeft = Math.max(1500, tLeft - (Date.now() - tFrom)); tFrom = Date.now(); };
-const tResume = () => setTimeout(() => { if ($('toast').classList.contains('on') && !tHold()) tArm(tLeft); });
+const tResume = () => setTimeout(() => { if ($('toast').classList.contains('on') && !tHold() && !tSticky) tArm(tLeft); });
 $('toast').addEventListener('pointerenter', tPause); $('toast').addEventListener('focusin', tPause);
 $('toast').addEventListener('pointerleave', tResume); $('toast').addEventListener('focusout', tResume);
 const ARROWS = ['', '↓', '↘', '→', '↗', '↑'], TREND = ['', 'falling quickly', 'falling', 'steady', 'rising', 'rising quickly'];
@@ -692,7 +735,8 @@ const logBack = () => shown($('logbtn')) ? $('logbtn') : $('qlt');
 let lastOld = false, lastZone = null, editLog = null, editNid = null, logLimit = 15; // editNid: id för en anteckning som ändras // editLog: id för en loggad måltid som ändras i dialogen
 let db = { meals: [], log: [], notes: [] }, rd = [], out = {}, st = {}, hrs = 6, selId = null, day = null;
 const dur = ms => { const n = Math.round(ms / 6e4); return n < 60 ? n + ' min' : n < 1440 ? Math.floor(n / 60) + ' h' + (n % 60 ? ' ' + p2(n % 60) + ' min' : '') : Math.floor(n / 1440) + (n < 2880 ? ' day' : ' days') + (Math.floor(n % 1440 / 60) ? ' ' + Math.floor(n % 1440 / 60) + ' h' : ''); };
-const dayLabel = t => new Date(t).toDateString() === new Date().toDateString() ? 'Today' : new Date(t + 864e5).toDateString() === new Date().toDateString() ? 'Yesterday' : stamp(t).slice(0, 10);
+const daysAgo = t => { const a = new Date(t), b = new Date(); a.setHours(12, 0, 0, 0); b.setHours(12, 0, 0, 0); return Math.round((b - a) / 864e5); };
+const dayLabel = t => { const k = daysAgo(t); return k === 0 ? 'Today' : k === 1 ? 'Yesterday' : stamp(t).slice(0, 10); };
 // Kort datum: "Today", "Yesterday" eller "3 Nov". dmid = samma mitt i en mening ("logged today at 07:55").
 const dshort = t => { const d = dayLabel(t); return d.length > 9 ? new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : d; };
 const dmid = t => dshort(t).replace(/^(Today|Yesterday)$/, s => s.toLowerCase());
@@ -725,7 +769,10 @@ function lowWhen(starts) {
   let best = [0, 0]; for (const s of mins.map(m => Math.floor(m / 30) * 30)) { const k = mins.filter(m => ((m - s + 1440) % 1440) < 120).length; if (k > best[1]) best = [s, k]; }
   return { n, k: best[1], from: best[0], text: `${best[1]} of ${n} started between ${hm2(best[0])} and ${hm2(best[0] + 120)}` };
 }
-const tirbar = (x, cls = '') => `<div class="tirbar ${cls}"><i style="width:${x.low}%;background:var(--low)"></i><i style="width:${x.tir}%;background:var(--ok)"></i><i style="width:${x.high}%;background:var(--high-fill)"></i></div>`;
+// Stapeln lågt / i mål / högt: luckor mellan delarna, lågt randigt (inte bara färg: rött och grönt har nästan samma
+// ljushet), och andelarna i ord för skärmläsare. Delar på 0 % ritas inte (de skulle annars ge en tom lucka).
+const tirbar = (x, cls = '') => { const p = v => Math.round(v), seg = (v, c, st) => v > 0 ? `<i class="${c}" style="width:calc(${v}% - 2px);${st}"></i>` : '';
+  return `<div class="tirbar ${cls}" role="img" aria-label="${p(x.low)} % below ${TLO}, ${p(x.tir)} % in range, ${p(x.high)} % above ${THI}">${seg(x.low, 'lo', '')}${seg(x.tir, 'ok', 'background:var(--ok)')}${seg(x.high, 'hi', 'background:var(--high-fill)')}</div>`; };
 
 // Visat tidsfönster: senaste hrs timmar (day = null) eller ett helt kalenderdygn (day = midnatt i ms)
 const shiftDay = (t, n) => { const d = new Date(t); d.setDate(d.getDate() + n); return d.getTime(); };
@@ -757,26 +804,39 @@ function applyLow() {
 const PAGE = uid();
 addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/bye?c=' + PAGE); } catch {} });
 addEventListener('pageshow', e => { if (e.persisted) refresh(); }); // tillbaka från bakåt-cachen: säg till igen
-async function refresh() {
+// Bara en uppdatering åt gången: kommer en ny medan en pågår körs den direkt efter (förut kunde två svar komma i fel
+// ordning och ett äldre skriva över ett nyare). Sidan frågar inte varje minut medan fliken är dold.
+let refreshing = null, refreshAgain = false;
+function refresh() {
+  if (refreshing) { refreshAgain = true; return refreshing; }
+  refreshing = refreshOnce().finally(() => { refreshing = null; if (refreshAgain) { refreshAgain = false; refresh(); } });
+  return refreshing;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+async function refreshOnce() {
+  let n, s, r, o, u, inc;
   try {
     // Varje minut hämtas bara det som kan ha ändrats: utfall för måltider de senaste 4 h (äldre ändras inte) och
     // db.json bara när versionsnumret i /api/now har ändrats. Förut hämtades allt, ~300 kB per minut med 2 års logg.
     // Senaste-timmarna-vyn: bara punkterna efter den senaste vi redan har (~30 kB mindre per minut), äldre än 24 h släpps
-    const lastT = day === null && rd.length ? rd[rd.length - 1][0] : 0, inc = lastT > Date.now() - 24 * 36e5;
-    const u = inc ? '/api/readings?from=' + (lastT + 1) : rdUrl();
-    const [n, s, r, o] = await Promise.all([api('/api/now?c=' + PAGE), api('/api/stats'), api(u), api('/api/outcomes?since=' + (Date.now() - 4 * 36e5))]);
+    const lastT = day === null && rd.length ? rd[rd.length - 1][0] : 0; inc = lastT > Date.now() - 24 * 36e5;
+    u = inc ? '/api/readings?from=' + (lastT + 1) : rdUrl();
+    [n, s, r, o] = await Promise.all([api('/api/now?c=' + PAGE), api('/api/stats'), api(u), api('/api/outcomes?since=' + (Date.now() - 4 * 36e5))]);
+  } catch (e) { console.error('refresh:', e); setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; return; }
+  // Ett fel när sidan ritas är inget avbrott i kontakten: det skrivs ut i konsolen och sägs som det är
+  try {
     if (inc && day === null) { const end = rd.length ? rd[rd.length - 1][0] : 0; rd = [...rd.filter(p => p[0] >= Date.now() - 24 * 36e5), ...r.filter(p => p[0] > end)]; }
     else if (!inc && u === rdUrl()) rd = r; // annars har man bläddrat till en annan dag medan anropet pågick
     out = { ...out, ...o }; st = s;
     // Ändrat från en annan enhet eller Telegram: ta in den nya versionen (men inte mitt i en egen sparning)
     if (!saving && n.rev !== undefined && (!base || n.rev !== base.rev)) {
-      const sdb = await api('/api/db');
+      const sdb = await api('/api/db').catch(e => { console.error('db:', e); return base || {}; });
       if (!saving && (!base || sdb.rev > base.rev)) {
         base = normDb(sdb); db = clone(base); setTarget(db.settings); renderMeals(); if (editId === null) renderLib(); if (!$('dset').open) { renderInsulin(); renderTarget(); }
       }
     }
     // Saknas utfall (första laddningen, eller en måltid loggad i efterhand) hämtas alla en gång; servern svarar för varje måltid
-    if (db.log.some(m => !out[m.id]) || db.notes.some(x => x.kind === LOWT && !out[x.id])) out = { ...out, ...await api('/api/outcomes') };
+    if (db.log.some(m => !out[m.id]) || db.notes.some(x => x.kind === LOWT && !out[x.id])) out = { ...out, ...await api('/api/outcomes').catch(e => (console.error('outcomes:', e), {})) };
     lastNow = n.last || null; snr = n.sensor || null; renderSens();
     const txt = { ok: 'Live', demo: 'Demo mode', starting: 'Connecting…', login: 'Not logged in' }[n.status];
     // Fel från LibreLinkUp: en begriplig mening i fältet; tekniska detaljer (HTTP-koder, adresser) bara som verktygstips
@@ -815,18 +875,18 @@ async function refresh() {
         : (zcls.includes('vlow') ? 'Very low, below 3.0. ' : '') + (since && Date.now() - since >= 6e4 ? `Below 3.9 since ${hhmm(since)} (${dur(Date.now() - since)}). ` : '') + 'Treat it first. You can log it afterwards.';
       document.title = old ? `${f1(v)} (${dur(age * 6e4)} old) · Glucose` : `${f1(v)} ${ARROWS[n.last.trend] || ''} · Glucose`; // syns i fliken även när sidan ligger i bakgrunden
     } else {
-      $('nowbox').classList.remove('old'); $('cur').textContent = '–'; $('cur').style.color = ''; $('arrow').textContent = ''; $('state').hidden = true; $('hero').className = 'card hero'; lowMode(false);
+      // acttop behålls: utan den hittar flikbytet inte kortet, och det kunde bli kvar dolt (eller synas på alla flikar)
+      $('nowbox').classList.remove('old'); $('cur').textContent = '–'; $('cur').style.color = ''; $('arrow').textContent = ''; $('state').hidden = true; $('hero').className = 'card hero acttop'; $('hero').hidden = tabNow !== 'act'; lowMode(false);
       $('age').textContent = 'no current reading'; $('nowbox').setAttribute('aria-label', 'No current glucose reading'); document.title = 'Glucose';
     }
-    piPill();
     // Har under halva dygnet värden (t.ex. efter ett sensorbyte) står täckningen i stället för en procent som bygger på
     // några få värden ("0 % in range" efter en uppvärmning). Samma gräns som dagsstaplarna.
     const d = s['24h'];
-    $('tir24').innerHTML = !d ? '' : d.cov < 50 ? `<span class="mut">Readings cover <b style="color:var(--fg)">${d.cov.toFixed(0)} %</b> of the last 24 h, too few for time in range</span>`
-      : `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h</span></span>`;
+    setHTML($('tir24'), !d ? '' : d.cov < 50 ? `<span class="mut">Readings cover <b style="color:var(--fg)">${d.cov.toFixed(0)} %</b> of the last 24 h, too few for time in range</span>`
+      : `${tirbar(d)}<span><b>${d.tir.toFixed(0)} %</b> <span class="mut">in range, last 24 h${d.low >= .5 ? ` · ${Math.round(d.low)} % below ${TLO}` : ''}</span></span>`);
     drawChart(); renderLog(); showDet(); nowTime(); renderCmp(); if (editId === null) renderLib(); mealWarn(); syncFav();
     if (!$('tab-ins').hidden && iview === 'week') loadWeek();
-  } catch { setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; }
+  } catch (e) { console.error('Showing the data failed:', e); setStatus('Something went wrong showing the data. Reload the page.', false); $('status').title = String(e && e.message || e); }
 }
 
 const cut = (s, n = 18) => s.length > n ? s.slice(0, n - 1) + '…' : s;
@@ -848,6 +908,9 @@ function zoneTrace(id, segs, Y, x0, x1, sw) {
 // Graferna börjar vid 2 mmol/L i stället för 0 (2026-11-17): sensorn visar inget under 2.2, så en fjärdedel av höjden stod
 // tom. Värden under 2 ritas på nederkanten.
 const YMIN = 2;
+// Y-axelns översta värde i fasta steg (14, annars 22, annars så högt som behövs), så att samma kurva ser likadan ut
+// dag för dag och två dagar går att jämföra. Förut räknades toppen om för varje vy, så en dag med en topp såg flackare ut.
+const yTop = max => max <= 13 ? 14 : max <= 17 ? 18 : max <= 21 ? 22 : Math.ceil(max + 1);
 // Y-axelns etiketter: jämna tal, men målområdets gränser utskrivna (och jämna tal som skulle krocka med dem utelämnade)
 const yAxis = (Y, ym, x, z) => {
   const st = Y(4) - Y(6) < 15 * z ? 4 : 2; // låg graf: var 4:e i stället för varannan
@@ -871,7 +934,7 @@ const EVK = {
 EVK.basal = { ...EVK.corr, fill: 'var(--sys)' }; // långverkande insulin: samma spruta, i en annan färg än måltidsinsulinet
 const evKind = (m, note) => note ? (m.kind === LOWT ? 'low' : m.kind === BASAL ? 'basal' : m.kind === 'Exercise' ? 'ex' : 'note') : isCorr(m.name) ? 'corr' : 'meal';
 // Texten i brickan: dosen, för en anteckning längden, för en lågbehandling mängden (t.ex. "20 g"), annars kort text
-const evText = (m, note) => !note ? r1(m.ins) + ' u' : m.kind === BASAL ? ((String(m.text || '').match(/(\d+(?:[.,]\d+)?)\s*units?\b/) || [])[1] || 'Basal') + (/\d\s*units?\b/.test(m.text || '') ? ' u' : '') : m.dur ? dur(m.dur * 6e4) : m.kind === LOWT ? ((String(m.text || '').match(/\d+(?:[.,]\d+)?\s*g\b/) || [])[0] || 'Low') : cut(m.text || kindLabel(m.kind), 14);
+const evText = (m, note) => !note ? units(r1(m.ins)) : m.kind === BASAL ? ((String(m.text || '').match(/(\d+(?:[.,]\d+)?)\s*units?\b/) || [])[1] || 'Basal') + (/\d\s*units?\b/.test(m.text || '') ? ' units' : '') : m.dur ? dur(m.dur * 6e4) : m.kind === LOWT ? ((String(m.text || '').match(/\d+(?:[.,]\d+)?\s*g\b/) || [])[0] || 'Low') : cut(m.text || kindLabel(m.kind), 14);
 // Symbolen (s px stor, centrerad i x, y) i sin färg
 const evIcon = (K, x, y, s) => `<svg x="${(x - s / 2).toFixed(1)}" y="${(y - s / 2).toFixed(1)}" width="${s.toFixed(1)}" height="${s.toFixed(1)}" viewBox="${K.vb || '0 0 24 24'}" overflow="visible" style="color:${K.fill}" ${K.solid ? `fill="${K.fill}"` : `fill="none" stroke="${K.fill}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`}>${K.icon}</svg>`;
 // I en bricka med text: bara symbolen. Ensam: symbolen på en tonad rund platta med diametern d; ringen (halo) syns när
@@ -889,12 +952,14 @@ function drawChart() {
   const H = (cs ? 28 : 24) * z, rh = H + 6 * z, laneH = 10 * z + (tracks ? 3 * rh - 6 * z : H) + 4 * z;
   const w = Math.max(300, Math.round($('chart').clientWidth) || 900), h0 = Math.max(170, Math.min((w < 600 ? 240 : 300) + Math.round((z - 1) * 80), Math.round(innerHeight * (innerHeight < 560 ? .36 : .42)))) - (innerHeight < 560 ? Math.round(laneH / 2) : 0);
   const h = h0 + laneH, l = (tracks ? 58 : 30) * z, r = 8, [t0, t1] = view(), pts = rd.filter(p => p[0] >= t0 && p[0] <= t1);
-  const ym = Math.max(14, Math.ceil(Math.max(0, ...pts.map(p => mm(p[1]))) + 1));
+  const ym = yTop(Math.max(0, ...pts.map(p => mm(p[1]))));
   const X = t => l + (t - t0) / (t1 - t0) * (w - l - r);
   const marks = [...db.log.map(m => ({ m })), ...db.notes.map(m => ({ m, note: true }))].filter(({ m }) => m.t >= t0 && (day === null || m.t < t1)).sort((a, b) => a.m.t - b.m.t);
-  const T = 10 * z, pb = h - B - laneH, lt = pb + 10 * z; // grafens topp och botten, spårets överkant
+  const T = 22 * z, pb = h - B - laneH, lt = pb + 10 * z; // grafens topp (plats för enheten ovanför) och botten, spårets överkant
   const Y = v => pb - (Math.max(v, YMIN) - YMIN) / (ym - YMIN) * (pb - T);
-  let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/>` + yAxis(Y, ym, l - 5 * z, z);
+  // Axlarnas siffror är dolda för skärmläsare (de lästes upp en och en före händelserna); enheten står i grafens övre hörn
+  let s = `<rect x="${l}" y="${Y(HIGH)}" width="${w - l - r}" height="${Y(LOW) - Y(HIGH)}" fill="var(--ok)" opacity=".12"/><g aria-hidden="true">` + yAxis(Y, ym, l - 5 * z, z)
+    + `<text class="axu" x="${l}" y="${(T - 9 * z).toFixed(1)}">mmol/L</text>`;
   // Ny sensor: det första dygnet får ett svagt fält (värdena kan vara mindre exakta då) och en streckad linje vid starten
   let snl = '';
   for (const a of snr ? snr.starts : []) {
@@ -907,6 +972,7 @@ function drawChart() {
   while ((w - l - r) / (span / sp) < 46 * z) sp *= 2; // glesare tider när etiketterna inte får plats bredvid varandra
   // Klockslag nära vänsterkanten börjar vid axeln i stället för att centreras ovanpå y-axelns "0"
   for (let k = Math.ceil(t0 / 36e5) * 36e5; k < t1; k += sp * 36e5) { const x = X(k), near = x - l < 20 * z; if (near && X(k + sp * 36e5) - Math.max(x, l + 2) < 60 * z) continue; s += `<text x="${near ? Math.max(x, l + 2) : x}" y="${h - 6 * z}" text-anchor="${near ? 'start' : 'middle'}">${hhmm(k)}</text>`; }
+  s += '</g>';
   // Kurvan bryts vid luckor över 20 min (t.ex. sensorbyte), i stället för en rak linje som ser ut som mätvärden
   const segs = []; let prev = -Infinity;
   for (const [t, v] of pts) { const p = [X(t), Y(mm(v))]; if (t - prev > 20 * 6e4) segs.push([p]); else segs[segs.length - 1].push(p); prev = t; }
@@ -933,11 +999,11 @@ function drawChart() {
   const items = [];
   for (const { m, note } of marks) {
     const k = evKind(m, note), x = +X(m.t).toFixed(1);
-    if (!tracks) items.push({ m, note, k, x, row: 0, label: note ? evText(m, note) : k === 'corr' ? r1(m.ins) + ' u' : `${cut(m.name, 16)} ${r1(m.ins)} u`, short: !note && k === 'meal' ? r1(m.ins) + ' u' : '' });
+    if (!tracks) items.push({ m, note, k, x, row: 0, label: note ? evText(m, note) : k === 'corr' ? units(r1(m.ins)) : `${cut(m.name, 16)} ${units(r1(m.ins))}`, short: !note && k === 'meal' ? units(r1(m.ins)) : '' });
     else if (note) items.push({ m, note, k, x, row: 2, label: evText(m, note) });
     else {
       if (k === 'meal') items.push({ m, k, x, row: 0, label: cut(m.name, 18), short: cut(m.name, 8), cap: m.ins > 0 }); // cap: inte bredare än dosen under
-      if (m.ins > 0) items.push({ m, k: 'corr', x, row: 1, label: r1(m.ins) + ' u', sub: k === 'meal' });
+      if (m.ins > 0) items.push({ m, k: 'corr', x, row: 1, label: units(r1(m.ins)), sub: k === 'meal' });
     }
   }
   // Placering i varje rad: hel bricka (symbol + text) om den inte når nästa händelse, annars en kortare text (dosen,
@@ -958,7 +1024,7 @@ function drawChart() {
     const list = items.filter(i => i.row === rw).sort((a, b) => a.x - b.x); let right = -Infinity;
     list.forEach((it, i) => {
       const nx = list[i + 1]; let left = Math.max(l, it.x - H / 2), room = (nx ? nx.x - H / 2 - 4 * z : w - r) - left, wd = chipW(it.label);
-      if (it.cap) { const mw = chipW(r1(it.m.ins) + ' u'); it.label = fit(cleanName(it.m.name), mw); it.short = ''; wd = it.label ? mw : H; } // lika bred som dosbrickan under
+      if (it.cap) { const mw = chipW(units(r1(it.m.ins))); it.label = fit(cleanName(it.m.name), mw); it.short = ''; wd = it.label ? mw : H; } // lika bred som dosbrickan under
       if (wd > room && it.short) { it.label = it.short; wd = chipW(it.label); }
       // Sista händelsen nära högerkanten: får texten inte plats till höger om symbolen står den till vänster om den (flip),
       // så att t.ex. dosen syns i stället för bara symbolen. Symbolen står kvar vid händelsens tid.
@@ -981,23 +1047,25 @@ function drawChart() {
   for (const its of [...evs.values()].sort((a, b) => (a[0].m.id === selId) - (b[0].m.id === selId))) { // vald händelse överst
     const it0 = its.find(i => !i.sub) || its[0], { m, note } = it0, K = EVK[it0.k], sel = m.id === selId, q = pts.filter(p => p[0] <= m.t).pop();
     const on = q && m.t - q[0] < 15 * 6e4, py = on ? +Y(mm(q[1])).toFixed(1) : null, x = it0.x;
-    const what = note ? esc(kindLabel(m.kind)) + (m.text ? ': ' + esc(m.text) : '') : `${esc(m.name)}, ${m.ins} units`;
+    const what = note ? esc(kindLabel(m.kind)) + (m.text ? ': ' + esc(m.text) : '') : `${esc(m.name)}, ${esc(units(m.ins))}`;
+    // Hela texten som verktygstips när brickan visar en kortad (namnet eller anteckningen), i alla lägen (förut bara i tracks)
+    const full = note ? (m.text || kindLabel(m.kind)) : m.name;
     let g = '';
     // Längden (en promenad på 30 min): en bred, halvgenomskinlig markering längs kurvan under tiden den pågick
     if (note && m.dur) { const seg = pts.filter(p => p[0] >= m.t && p[0] <= m.t + m.dur * 6e4); if (seg.length > 1) g += `<path d="${line(seg)}" fill="none" stroke="${K.fill}" stroke-width="${8 * z}" stroke-linecap="round" opacity=".35"/>`; }
     // En tunn linje från punkten på kurvan ner till varje bricka (streckad i tracks, där den går genom flera rader)
     const yb = (pb + 2 * z).toFixed(1);
-    lns += `<path class="ln${sel ? ' sel' : ''}" data-id="${m.id}" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${i.bx.toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
+    lns += `<path class="ln${sel ? ' sel' : ''}" data-id="${esc(m.id)}" d="M${x},${on ? (py + 5 * z).toFixed(1) : pb.toFixed(1)} V${yb}${its.map(i => ` M${x},${yb} L${i.bx.toFixed(1)},${i.top.toFixed(1)}`).join('')}" fill="none" stroke="${tracks ? 'var(--mut)' : K.fill}" stroke-width="1"${tracks ? ' stroke-dasharray="2 3"' : ''} opacity=".5"/>`;
     if (on) g += `<circle cx="${x}" cy="${py}" r="${3.5 * z}" fill="${K.fill}" stroke="var(--card)" stroke-width="2"/>`;
     for (const it of its) {
       const k = it.k, bx = it.bx, by = it.top + H / 2;
       g += `<rect x="${it.left.toFixed(1)}" y="${(it.top - hy).toFixed(1)}" width="${it.wd.toFixed(1)}" height="${(H + 2 * hy).toFixed(1)}" fill="transparent"/>`;
-      g += `<g style="--kc:${EVK[k].fill}">` + (it.cap && it.label !== it.m.name ? `<title>${esc(it.m.name)}</title>` : '') + (it.full
+      g += `<g style="--kc:${EVK[k].fill}">` + (!it.sub && !String(it.label).includes(full) ? `<title>${esc(full)}</title>` : '') + (it.full
         ? `<rect class="pl" x="${it.left.toFixed(1)}" y="${it.top.toFixed(1)}" width="${it.wd.toFixed(1)}" height="${H}" rx="${H / 2}"/>`
           + evBadge(k, bx, by, H - 6 * z, true) + `<text class="pt" x="${(it.flip ? it.left + 9 * z : it.left + H + 1 * z).toFixed(1)}" y="${(by + 4.2 * z).toFixed(1)}" style="font-size:${12 * z}px">${esc(it.label)}</text>`
         : evBadge(k, bx, by, H - 2 * z)) + '</g>';
     }
-    evg += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${m.id}" data-t="${m.t}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
+    evg += `<g class="mk ev${sel ? ' sel' : ''}" style="--kc:${K.fill}" data-id="${esc(m.id)}" data-t="${+m.t}" tabindex="0" role="button" aria-label="${what}, ${spanTxt(m)}. Show details">${g}</g>`;
   }
   s += `<g pointer-events="none" aria-hidden="true">${lns}</g>` + evg;
   // role="group", inte "img": en bild gör innehållet till dekoration, och markeringarna (som går att tabba till) försvann för skärmläsare
@@ -1083,7 +1151,7 @@ function renderLog() {
     const lt = n && n.kind === LOWT && out[n.id], up = lt && lt.up;
     const ltRes = !lt || !lt.b ? '' : `<span class="oc"><span style="color:${col(mm(lt.b[1]))}">${f1(mm(lt.b[1]))}</span></span> `
       + `<span class="ocn">${up ? `when treated, back above 3.9 after ${dur(up[0] - n.t)}` : lt.lo && lt.lo[1] >= 70 ? 'when treated, stayed above 3.9' : lt.done ? 'not back above 3.9 within 3 h' : 'when treated, waiting to be back above 3.9'}</span>`;
-    if (n) return `<div class="li" data-row="${n.id}">${tm(n.t, n.dur)}<div><button class="lk" data-open="${n.id}" aria-expanded="${isOpen(n.id)}"><span class="chev" aria-hidden="true"></span><span class="sr">${esc(kindLabel(n.kind))}: </span><b>${esc(n.text || kindLabel(n.kind))}</b><span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="ins" aria-hidden="true">${n.text ? `<b class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</b>` : ''}</div><div class="res">${ltRes}</div><div class="acts"></div></div>${slot(n.id)}`;
+    if (n) return `<div class="li" data-row="${esc(n.id)}">${tm(n.t, n.dur)}<div><button class="lk" data-open="${esc(n.id)}" aria-expanded="${isOpen(n.id)}"><span class="chev" aria-hidden="true"></span><span class="sr">${esc(kindLabel(n.kind))}: </span><b>${esc(n.text || kindLabel(n.kind))}</b><span class="sr">, ${dshort(n.t)} ${hhmm(n.t)}</span></button></div><div class="ins" aria-hidden="true">${n.text ? `<b class="k${n.kind === LOWT ? ' kl' : ''}">${esc(kindLabel(n.kind))}</b>` : ''}</div><div class="res">${ltRes}</div><div class="acts"></div></div>${slot(n.id)}`;
     // Utfallet: start → topp, och en känning inom 3 h när det blev en. Förut syntes bara toppen, så en måltid som
     // slutade på 2.7 såg ut som en av de bästa. "→" läses som "to" av skärmläsare, inte "rightwards arrow".
     // Correction (insulin utan mat): start → lägsta, eftersom det är sänkningen som spelar roll, inte en topp.
@@ -1099,13 +1167,13 @@ function renderLog() {
       : `${b[1] < 70 ? 'started low, ' : ''}peak${live ? ' so far' : ''}`;
     const res = !b ? '' : `<span class="oc">${sNum}${end ? ` ${arrow} <b style="color:${col(mm(end[1]))}">${f1(mm(end[1]))}</b>` : ''}</span> <span class="ocn">${lab}</span>`
       + (low ? `<span class="lowres">${lowWord(lo[1])} <b>${f1(mm(lo[1]))}</b> <span class="nw">after ${dur(lo[0] - m.t)}</span></span>` : '');
-    return `<div class="li" data-row="${m.id}">${tm(m.t)}<div><button class="lk" data-open="${m.id}" aria-expanded="${isOpen(m.id)}"><span class="chev" aria-hidden="true"></span><b>${esc(m.name)}</b><span class="sr">, ${dshort(m.t)} ${hhmm(m.t)}</span></button></div><div class="ins"><b>${units(m.ins)}</b>${m.type ? `<span>${esc(m.type)}</span>` : ''}</div><div class="res">${res}</div><div class="acts">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : `<button data-keep="${m.id}" title="Add to your saved meals with this dose">Save to Meals</button>`}</div></div>${slot(m.id)}`;
+    return `<div class="li" data-row="${esc(m.id)}">${tm(m.t)}<div><button class="lk" data-open="${esc(m.id)}" aria-expanded="${isOpen(m.id)}"><span class="chev" aria-hidden="true"></span><b>${esc(m.name)}</b><span class="sr">, ${dshort(m.t)} ${hhmm(m.t)}</span></button></div><div class="ins"><b>${units(m.ins)}</b>${m.type ? `<span>${esc(m.type)}</span>` : ''}</div><div class="res">${res}</div><div class="acts">${libMeal(cleanName(m.name)) || isCorr(m.name) ? '' : `<button data-keep="${esc(m.id)}" title="Add to your saved meals with this dose">Save to Meals</button>`}</div></div>${slot(m.id)}`;
   });
   // Fler än som visas: en knapp för äldre (förut tog listan slut vid 15 rader, och äldre gick bara att nå via grafens datum)
   const more = all.length > logLimit ? `<div class="more"><button id="more">Show older</button><span class="mut fine">${all.length - logLimit} more</span></div>` : '';
   renderTreat();
   setHTML($('log'), rows.join('') + more || (q ? `<div class="empty">Nothing matches “${esc($('lq').value.trim())}”. <button id="lqclear">Clear filter</button></div>`
-    : `<div class="empty">Nothing logged yet. ${btnsHidden() ? 'Write what you ate in the field at the top, e.g. <b>pizza 7.5 units</b>.' : 'Use <b>Log</b> to log your first meal.'}</div>`));
+    : !base ? '<div class="empty" role="status">Loading your log…</div>' : `<div class="empty">Nothing logged yet. ${btnsHidden() ? 'Write what you ate in the field at the top, e.g. <b>pizza 7.5 units</b>.' : 'Use <b>Log</b> to log your first meal.'}</div>`));
   placeDet();
 }
 
@@ -1180,7 +1248,7 @@ function ghostHTML(m) {
   if (!me || !others.length || me.pts.length < 2) return `<div class="ghost">${head}<div class="ghc mut fine">${need.length ? 'Drawing the curves…' : 'Not enough readings after this meal to draw the curves.'}</div></div>`;
   const z = chartScale(), w = Math.round(Math.min(760, Math.max(280, mdetEl.clientWidth || 600))), h = Math.round(190 * z), l = 30 * z, r = 12 * z, T = 10 * z, B = 20 * z;
   const vals = [me, ...others.map(x => curv[x.id])].flatMap(c => c.pts.map(p => mm(p[1])));
-  const ym = Math.max(14, Math.ceil(Math.max(...vals) + 1)), X = t => l + Math.max(0, Math.min(180, t)) / 180 * (w - l - r), Y = v => T + (1 - (Math.min(Math.max(v, YMIN), ym) - YMIN) / (ym - YMIN)) * (h - T - B);
+  const ym = yTop(Math.max(...vals)), X = t => l + Math.max(0, Math.min(180, t)) / 180 * (w - l - r), Y = v => T + (1 - (Math.min(Math.max(v, YMIN), ym) - YMIN) / (ym - YMIN)) * (h - T - B);
   // En linje genom punkterna, med ett avbrott där det saknas värden i mer än 20 min (äldre värden kommer var 15:e minut)
   const path = ps => { let d = '', pt = null; for (const [t, v] of ps) { if (t < -4 || t > 181) continue; d += (pt === null || t - pt > 20 ? 'M' : 'L') + X(t).toFixed(1) + ',' + Y(mm(v)).toFixed(1); pt = t; } return d; };
   let sv = `<rect x="${l}" y="${Y(THI).toFixed(1)}" width="${(w - l - r).toFixed(1)}" height="${(Y(TLO) - Y(THI)).toFixed(1)}" style="fill:color-mix(in srgb,var(--ok) 9%,transparent)"/>`;
@@ -1238,7 +1306,7 @@ function renderCmp() {
     // data-label: på smala skärmar visas varje rad som ett kort med etiketter i stället för en tabell att scrolla i sidled
     + shown.map(({ n, s }) => { const k = n.toLowerCase(); return `<tr role="row"><td role="cell"><button class="lk cmpb" data-cmp="${esc(encodeURIComponent(k))}" aria-expanded="${cmpOpen.has(k)}" title="Show every time"><span class="chev" aria-hidden="true"></span>${esc(n)}</button></td><td role="cell" data-label="Times">${s.n}</td><td role="cell" data-label="Avg units">${r1(s.ins)}</td><td role="cell" data-label="Avg rise">${sg(mm(s.rise))}</td><td role="cell" data-label="Avg peak"${em(col(mm(s.peak)))}>${f1(mm(s.peak))}</td><td role="cell" class="cmpo" data-label="How it went">${outBar(s)}</td></tr>`
       + (cmpOpen.has(k) ? cmpRow(n, true) : ''); }).join('') + '</tbody></table>'
-    + `<div class="yrlg cmplg" aria-hidden="true"><span><i style="background:var(--low)"></i>Went low</span><span><i style="background:var(--ok)"></i>Stayed in range</span><span><i style="background:var(--high-fill)"></i>Went high</span></div>`
+    + `<div class="yrlg cmplg" aria-hidden="true"><span><i class="lo"></i>Went low</span><span><i style="background:var(--ok)"></i>Stayed in range</span><span><i style="background:var(--high-fill)"></i>Went high</span></div>`
     + (nOnce && many.length ? `<button class="lk cmpall" id="cmpall" aria-expanded="${cmpAll}">${cmpAll ? 'Hide' : 'Show'} ${nOnce} ${nOnce === 1 ? 'meal' : 'meals'} counted only once</button>` : '')
     : `<div class="empty">${cmpPer && db.log.some(m => !isCorr(m.name) && !inPer(m.t)) ? `No meals in the last ${cmpPer} days with 3 hours of readings after. Choose <b>All time</b> to see older ones.` : 'Meals show up here once they have 3 hours of readings after them.'}</div>`);
 }
@@ -1248,7 +1316,7 @@ const CMP_COLS = [{ k: 'meal', l: 'Meal' }, { k: 'n', l: 'Times', v: s => s.n },
   { k: 'peak', l: 'Avg peak', v: s => s.peak }, { k: 'out', l: 'How it went', d: 'share that stayed in range', o: 'Stayed in range', v: s => (s.n - s.hiOnly - s.lo) / s.n + (s.n - s.hiOnly - s.lo) * 1e-6 }];
 const outBar = s => {
   const hi = s.hiOnly, lo = s.lo, ok = s.n - hi - lo, pc = x => (x / s.n * 100).toFixed(1), say = [ok && `${ok} stayed in range`, hi && `${hi} went high`, lo && `${lo} went low`].filter(Boolean).join(', ');
-  return `<span class="obar" role="img" aria-label="Of ${s.n}: ${say}" title="Of ${s.n}: ${say}"><i style="width:${pc(lo)}%;background:var(--low)"></i><i style="width:${pc(ok)}%;background:var(--ok)"></i><i style="width:${pc(hi)}%;background:var(--high-fill)"></i></span>`;
+  return `<span class="obar" role="img" aria-label="Of ${s.n}: ${say}" title="Of ${s.n}: ${say}">${[[lo, 'lo', ''], [ok, 'ok', 'background:var(--ok)'], [hi, 'hi', 'background:var(--high-fill)']].filter(([x]) => x > 0).map(([x, c, st]) => `<i class="${c}" style="width:calc(${pc(x)}% - 2px);${st}"></i>`).join('')}</span>`;
 };
 let cmpSort = { k: 'n', dir: -1 };
 try { const s = JSON.parse(localStorage.getItem('cmpSort')); if (s && CMP_COLS.some(c => c.k === s.k) && (s.dir === 1 || s.dir === -1)) cmpSort = s; } catch {}
@@ -1297,7 +1365,7 @@ function occList(n) {
       + `<span role="cell">${res.join('<span class="mut">, then </span>')}${why ? `<span class="ncw">${why === 'Not' ? 'Not in the averages' : why + ', not in the averages'}</span>` : ''}</span></div>`;
   };
   return `<div class="occ" role="table" aria-label="Every time with ${esc(n)}"><div class="occr occh" role="row"><span role="columnheader">When</span><span role="columnheader">Units</span><span role="columnheader">Glucose</span><span role="columnheader">What happened</span></div>${all.map(row).join('')}</div>`
-    + (!libMeal(cleanName(n)) && all[0] ? `<p class="occsv"><button data-keepm="${all[0].id}">Save to Meals</button> <span class="mut fine">with the dose from the last time, ${units(all[0].ins)}</span></p>` : '')
+    + (!libMeal(cleanName(n)) && all[0] ? `<p class="occsv"><button data-keepm="${esc(all[0].id)}">Save to Meals</button> <span class="mut fine">with the dose from the last time, ${units(all[0].ins)}</span></p>` : '')
 ;
 }
 $('cmp').addEventListener('click', e => {
@@ -1330,7 +1398,7 @@ function profHtml(el, prof, per, parts = '') {
   if (!ok.length) return parts ? '<h3 class="grp">A typical day</h3>' + parts : '';
   const z = chartScale(), B = 22 * z;
   const w = Math.max(300, Math.round(el.clientWidth) || 900), h = (w < 600 ? 220 : 260) + Math.round((z - 1) * 60), l = 30 * z, r = 8;
-  const ym = Math.max(14, Math.ceil(Math.max(...ok.map(([, q]) => q[4])) + 1));
+  const ym = yTop(Math.max(...ok.map(([, q]) => q[4])));
   const X = i => l + (i + .5) / 48 * (w - l - r), Y = v => h - B - (Math.max(v, YMIN) - YMIN) / (ym - YMIN) * (h - B - 18 * z);
   const line = k => ok.map(([i, q]) => X(i).toFixed(1) + ',' + Y(q[k]).toFixed(1));
   const band = (a, b) => [...line(a), ...line(b).reverse()].join(' ');
@@ -1412,8 +1480,8 @@ function renderMeals() {
     ? `<div class="opt free${i === act ? ' act' : ''}" id="mo${i}" data-corr="1" role="option" aria-selected="${i === act}"><b>Insulin, no food</b><span class="dose">Correction</span></div>`
     : o.free
     ? `<div class="opt free${i === act ? ' act' : ''}" id="mo${i}" data-free="1" role="option" aria-selected="${i === act}"><b>${esc(t)}</b><span class="dose">Log once</span></div>`
-    : `<div class="opt${o.id === selMeal ? ' on' : ''}${i === act ? ' act' : ''}" id="mo${i}" data-id="${o.id}" role="option" aria-selected="${i === act}"><b>${esc(o.name)}</b>${dose(o)}</div>`).join('')
-    || `<p class="mut m6">No saved meals yet. Type a name to log it once.</p>`;
+    : `<div class="opt${o.id === selMeal ? ' on' : ''}${i === act ? ' act' : ''}" id="mo${i}" data-id="${esc(o.id)}" role="option" aria-selected="${i === act}"><b>${esc(o.name)}</b>${dose(o)}</div>`).join('')
+    || `<div class="opt mut" role="option" aria-disabled="true" aria-selected="false">No saved meals yet. Type a name to log it once.</div>`;
   $('msearch').setAttribute('aria-expanded', ddOpen);
   if (ddOpen && act >= 0) { $('msearch').setAttribute('aria-activedescendant', 'mo' + act); $('mo' + act).scrollIntoView({ block: 'nearest' }); }
   else $('msearch').removeAttribute('aria-activedescendant');
@@ -1433,9 +1501,9 @@ function renderLib() {
   const cnt = new Map(); for (const x of db.log) { const k = cleanName(x.name).toLowerCase(); cnt.set(k, (cnt.get(k) || 0) + 1); }
   const n = m => cnt.get(m.name.toLowerCase()) || 0;
   setHTML($('lib'), [...db.meals].sort((a, b) => n(b) - n(a) || a.name.localeCompare(b.name)).map(m => m.id === editId
-    ? `<div class="opt edit"><input class="en" value="${esc(m.name)}" aria-label="Meal name"><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input class="ei" inputmode="decimal" autocomplete="off" value="${m.ins}" aria-label="Usual dose (units)"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div><button class="p" data-save="1">Save</button><button data-cancel="1">Cancel</button><button class="danger" data-rm="${m.id}">Remove meal</button></div>`
-    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${m.id}" aria-label="Edit ${esc(m.name)}">Edit</button></div>${libOpen.has(m.name.toLowerCase()) && hist(m.name).length ? libRow(m.name, true) : ''}`).join('')
-    || '<div class="empty">Save the meals you eat often. They show up first when you log a meal.</div>');
+    ? `<div class="opt edit"><input class="en" value="${esc(m.name)}" aria-label="Meal name"><div class="step"><button type="button" data-d="-0.5" aria-label="0.5 units less">−</button><input class="ei" inputmode="decimal" autocomplete="off" value="${esc(m.ins)}" aria-label="Usual dose (units)"><button type="button" data-d="0.5" aria-label="0.5 units more">+</button></div><button class="p" data-save="1">Save</button><button data-cancel="1">Cancel</button><button class="danger" data-rm="${esc(m.id)}">Remove meal</button></div>`
+    : `<div class="opt"><b>${esc(m.name)}</b>${libHist(m.name)}${dose(m)}<button class="rm" data-edit="${esc(m.id)}" aria-label="Edit ${esc(m.name)}">Edit</button></div>${libOpen.has(m.name.toLowerCase()) && hist(m.name).length ? libRow(m.name, true) : ''}`).join('')
+    || (!base ? '<div class="empty" role="status">Loading your saved meals…</div>' : '<div class="empty">Save the meals you eat often. They show up first when you log a meal.</div>'));
 }
 function saveEdit() {
   const row = $('lib').querySelector('.edit'), n = row.querySelector('.en'), name = n.value.trim();
@@ -1475,17 +1543,20 @@ async function push(fn) {
     const d = clone(base); fn(d);
     const r = await fetch('/api/db', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(normDb(d)) }), j = await r.json();
     if (r.status === 409) { base = normDb(j.db); continue; }
-    if (!r.ok) throw new Error(j.error);
+    if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), { status: r.status });
     base = normDb({ ...d, rev: j.rev }); return;
   }
-  throw new Error('conflict');
+  throw Object.assign(new Error('conflict'), { status: 409 });
 }
 // Gick sparningen inte igenom visas sidan som servern har den (ändringen syns inte längre), men ändringen finns kvar
-// här: "Try again" gör om den, så att inget behöver skrivas in på nytt. Rutan står kvar längre än vanligt.
+// här: "Try again" gör om den, så att inget behöver skrivas in på nytt. Rutan står kvar tills man stänger den.
+// Meddelandet säger varför (förut stod det alltid att servern inte svarade, även när den sa nej till ändringen).
 let failed = null;
+const saveErr = e => e.status === 409 ? 'another device kept changing the data at the same time.' : e.status === 413 ? 'the change was too large.'
+  : e.status >= 400 && e.status < 500 ? `the dashboard server refused the change (${esc(e.message)}).` : 'no contact with the dashboard server.';
 function save(fn) {
   fn(db); db = normDb(db); renderAll(); saving++;
-  queue = queue.then(() => push(fn)).catch(() => { failed = fn; toast('Not saved: the dashboard server did not answer. Start it, then try again.<button data-retry="1">Try again</button>', 15000); })
+  queue = queue.then(() => push(fn)).catch(e => { console.error('save:', e); failed = fn; toast(`Not saved: ${saveErr(e)}<button data-retry="1">Try again</button>`, 15000); })
     .finally(() => { if (--saving) return; if (base) db = clone(base); renderAll(); loadOut(); });
 }
 
@@ -1517,7 +1588,7 @@ function showDet() {
     : `<div class="det">
     ${head(m.name, m)}
     <div class="tiles">
-      ${tile('Insulin taken', m.ins, (m.ins === 1 ? 'unit' : 'units') + (m.type ? ' ' + esc(m.type) : ''))}
+      ${tile('Insulin taken', esc(m.ins), (m.ins === 1 ? 'unit' : 'units') + (m.type ? ' ' + esc(m.type) : ''))}
       ${tile(isCorr(m.name) ? 'Glucose when taken' : 'Glucose at meal', b ? f1(mm(b[1])) : '–', b ? 'mmol/L' : 'no reading', b && col(mm(b[1])))}
       ${pk ? tile(live ? 'Peak so far' : 'Peak within 3 h', f1(mm(pk[1])), 'after ' + dur(pk[0] - m.t) + (b ? ` · ${sg(mm(pk[1] - b[1]))}` : ''), col(mm(pk[1]))) : tile('Peak', '–', 'not enough data yet')}
       ${lo && (lo[1] < 70 || ((!b || lo[1] <= b[1] - 5) && lo[0] - m.t >= 10 * 6e4)) ? tile(live ? 'Lowest so far' : 'Lowest within 3 h', f1(mm(lo[1])), (lo[1] < 70 ? lowWord(lo[1]) + ', ' : '') + 'after ' + dur(lo[0] - m.t), col(mm(lo[1]))) : ''}
@@ -1631,7 +1702,7 @@ $('fmeal').onsubmit = ev => {
   const e = { id: uid(), t, name, ins, ...(type && { type }) };
   selMeal = null; $('msearch').value = ''; $('mi2').value = ''; $('mhint').textContent = ''; mclock.reset();
   // Undo även här (förut bara efter fritexten): ett skrivfel upptäcks oftast just när bekräftelsen syns
-  $('dmeal').close(); toast(`Logged <b>${esc(name)}</b>, ${units(ins)}, ${when(t)}.<button data-undo="${e.id}">Undo</button>`, 8000);
+  $('dmeal').close(); toast(`Logged <b>${esc(name)}</b>, ${units(ins)}, ${when(t)}.<button data-undo="${esc(e.id)}">Undo</button>`, 8000);
   focusUndo(kb);
   save(d => d.log.push({ ...e }));
 };
@@ -1661,7 +1732,7 @@ function undoableEdit(list, id, msg, fn, kb, back) {
   toast(`${msg}<button data-restore="${rid}">Undo</button>`, 8000); focusUndo(kb, back);
   save(fn);
 }
-$('toast').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); $('toast').classList.remove('on'); toastBack(); } });
+$('toast').addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); $('toast').classList.remove('on'); tSticky = false; toastBack(); } });
 // Öppna en loggad måltid eller anteckning i detaljvyn. Ligger den utanför grafens tidsfönster visas den dagen.
 let detFrom = null; // id när detaljvyn öppnats från listan: då får den "Back to list"
 // detPrev: grafens läge innan detaljvyn bytte dag, så att den går tillbaka dit när detaljvyn stängs (förut stannade
@@ -1708,7 +1779,7 @@ $('ql').addEventListener('click', e => {
   const text = $('qlt').value.trim().slice(0, 200), kb = kbFocus(); if (!text) return;
   const e2 = { id: uid(), t: Date.now(), kind: 'Other', text };
   $('qlt').value = ''; $('qlerr').hidden = true; $('qlt').removeAttribute('aria-invalid');
-  toast(`Added a note: ${esc(text)}.<button data-undo="${e2.id}">Undo</button>`, 8000); focusUndo(kb, $('qlt'));
+  toast(`Added a note: ${esc(text)}.<button data-undo="${esc(e2.id)}">Undo</button>`, 8000); focusUndo(kb, $('qlt'));
   save(d => d.notes.push({ ...e2 }));
 });
 $('qlt').addEventListener('input', () => { if (!$('qlerr').hidden) { $('qlerr').hidden = true; $('qlt').removeAttribute('aria-invalid'); } });
@@ -1747,9 +1818,10 @@ $('login').onsubmit = async e => {
   $('lmsg').textContent = 'Logging in…'; $('lmsg').className = 'mut';
   try {
     const r = await api('/api/login', { method: 'POST', body: JSON.stringify({ email: $('lem').value.trim(), password: $('lpw').value, remember: $('lrem').checked }) });
-    if (r.error) { $('lmsg').textContent = r.error; $('lmsg').className = 'err'; }
+    const bad = !!r.error; ['lem', 'lpw'].forEach(k => bad ? $(k).setAttribute('aria-invalid', 'true') : $(k).removeAttribute('aria-invalid'));
+    if (bad) { $('lmsg').textContent = r.error; $('lmsg').className = 'err'; $('lpw').focus(); }
     else { $('lpw').value = ''; refresh(); }
-  } catch { $('lmsg').textContent = 'No contact with the server. Is node server.js running?'; $('lmsg').className = 'err'; }
+  } catch (e) { console.error('login:', e); $('lmsg').textContent = 'No contact with the dashboard server. Check that it is running, then try again.'; $('lmsg').className = 'err'; }
   finally { b.disabled = false; }
 };
 // Två steg i stället för webbläsarens confirm(), samma mönster som "Log anyway": första trycket visar följden och
@@ -1812,9 +1884,11 @@ const mclock = clock('mtime', 'mnow', 'mday'), nclock = clock('ntime', 'nnow', '
 ['mtime', 'mday'].forEach(k => $(k).addEventListener('input', () => { disarm(); mealWarn(); })); // ny tid: kolla dubbelloggning igen
 $('mnow').addEventListener('click', () => { disarm(); mealWarn(); });
 const nowTime = () => clocks.forEach(c => c.sync());
-const when = t => (new Date(t).toDateString() === new Date().toDateString() ? '' : 'yesterday ') + 'at ' + hhmm(t);
+// 'at 12:00', 'yesterday at 12:00', 'on 3 Nov at 12:00' (förut blev allt som inte var i dag 'yesterday', även fyra dagar bakåt)
+const onDay = t => { const k = daysAgo(t); return k === 0 ? '' : k === 1 ? 'yesterday ' : 'on ' + new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' '; };
+const when = t => onDay(t) + 'at ' + hhmm(t);
 // Med längd: "13:58–14:28" (förut "at 13:58–14:28")
-const whenSpan = (t, mins) => mins ? (new Date(t).toDateString() === new Date().toDateString() ? '' : 'yesterday ') + hhmm(t) + '–' + hhmm(t + mins * 6e4) : when(t);
+const whenSpan = (t, mins) => mins ? onDay(t) + hhmm(t) + '–' + hhmm(t + mins * 6e4) : when(t);
 // "at 17:05", eller "17:05–17:10" för en anteckning med längd (t.ex. en promenad)
 const spanTxt = x => x.dur ? hhmm(x.t) + '–' + hhmm(x.t + x.dur * 6e4) : 'at ' + hhmm(x.t);
 
@@ -1823,13 +1897,13 @@ const isoDay = t => { const d = new Date(t); return d.getFullYear() + '-' + p2(d
 function syncNav() {
   $('dpick').value = isoDay(day ?? Date.now()); $('dpick').max = isoDay(Date.now());
   $('dnext').disabled = day === null; $('dlive').hidden = day === null;
-  document.querySelectorAll('#rng button').forEach(x => { const on = day === null && +x.dataset.h === hrs; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+  document.querySelectorAll('#rng button').forEach(x => { const on = day === null && +x.dataset.h === hrs; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); }); radios($('rng'));
 }
 function setDay(d, keep) {
   if (!keep) detPrev = null; // själv bläddrat: detaljvyn ska inte flytta tillbaka grafen när den stängs
   day = d === null || d > today() ? null : d; syncNav();
   const u = rdUrl();
-  api(u).then(r => { if (u === rdUrl()) { rd = r; drawChart(); } }).catch(() => {});
+  api(u).then(r => { if (u === rdUrl()) { rd = r; drawChart(); } }).catch(e => console.error('readings:', e));
 }
 $('dprev').onclick = () => setDay(shiftDay(day ?? today(), -1));
 $('dlive').onclick = () => { setDay(null); $('rng').querySelector('.on').focus(); }; // knappen försvinner; fokus till valt intervall
@@ -1842,7 +1916,7 @@ document.querySelectorAll('#rng button').forEach(b => b.onclick = () => { hrs = 
 let nkind = 'Exercise';
 function setKind(k) {
   nkind = k;
-  $('nk').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-pressed', x.dataset.k === k); });
+  $('nk').querySelectorAll('button').forEach(x => { x.classList.toggle('on', x.dataset.k === k); x.setAttribute('aria-checked', x.dataset.k === k); }); radios($('nk'));
   $('nt').placeholder = k === 'Alcohol' ? 'e.g. Two beers' : k === BASAL ? `e.g. ${(db.settings && db.settings.long) || 'Lantus'} 14 units` : 'e.g. Walk, 5 km';
 }
 $('nk').onclick = e => { const b = e.target.closest('button'); if (b) setKind(b.dataset.k); };
@@ -1859,7 +1933,7 @@ $('fnote').onsubmit = e => {
   const e2 = { id: uid(), t, kind: nkind, ...(text && { text }), ...(mins && { dur: mins }) };
   $('nt').value = ''; $('ndur').value = ''; nclock.reset();
   $('dnote').close();
-  toast(`Added <b>${esc(nkind)}</b>${text ? ': ' + esc(text) : ''}, ${whenSpan(t, mins)}.<button data-undo="${e2.id}">Undo</button>`, 8000);
+  toast(`Added <b>${esc(nkind)}</b>${text ? ': ' + esc(text) : ''}, ${whenSpan(t, mins)}.<button data-undo="${esc(e2.id)}">Undo</button>`, 8000);
   focusUndo(kb, logBack());
   save(d => d.notes.push({ ...e2 }));
 };
@@ -1908,7 +1982,7 @@ $('flow').onsubmit = e => {
   if (editNid) { const id = editNid; $('dlow').close(); saveNote(id, t, LOWT, text, 0, kb); return; }
   const e2 = { id: uid(), t, kind: LOWT, ...(text && { text }) };
   $('lg').value = ''; $('lt').value = ''; lclock.reset(); $('dlow').close();
-  toast(`Logged low treatment${text ? ` (${esc(text)})` : ''} ${when(t)}.<button data-undo="${e2.id}">Undo</button>`, 8000);
+  toast(`Logged low treatment${text ? ` (${esc(text)})` : ''} ${when(t)}.<button data-undo="${esc(e2.id)}">Undo</button>`, 8000);
   focusUndo(kb, shown($('openLow')) ? $('openLow') : logBack());
   save(d => d.notes.push({ ...e2 }));
 };
@@ -1986,7 +2060,7 @@ const ikpi = (lab, val, sub, c, goal) => `<div class="kpi"><span>${lab}</span><b
 // Med en jämförelse står den under talet; utan står målet.
 // Jämförelsen i en ruta: "October: 86 %" på en rad, på mobilen på två rader ("October:" / "86 %") och "Last week" i
 // stället för "Week before", så att inget bryts mitt i ett tal eller ett ord i de smala rutorna
-const cmpTxt = (pl, val) => { val = String(val).replace(/ %$/, '&nbsp;%'); return `<span class="sl">${pl}: ${val}</span><span class="ss">${pl === 'Week before' ? 'Last&nbsp;week' : pl}:<br>${val}</span>`; };
+const cmpTxt = (pl, val) => { val = String(val).replace(/ %$/, '&nbsp;%'); return `<span class="sl">${pl}: ${val}</span><span class="ss">${pl === '7 days before' ? 'Before' : pl}:<br>${val}</span>`; };
 function ikpis(c, p, pl, lowsCur, lowsPrev) {
   const was = (v, f) => p ? cmpTxt(pl, f(v)) : '';
   // Målen (internationella, för 3.9–10): under talet när det inte finns någon jämförelse, annars på en egen rad under den.
@@ -2019,17 +2093,28 @@ function heatSvg(el, q, rhFit) {
   const every = Math.ceil(12 * z / rh); // låga rader: dagsetikett bara på var n:te rad (räknat från den senaste), så att texten inte krockar
   const h = Math.round(rh * n + 20 * z), cw = (w - l - r) / 96, X = i => l + i * cw;
   let sv = '';
+  // Rutorna under målområdet är randiga (ett mönster, inte bara färgen), och varje färgsteg har en egen rad i förklaringen
+  const pid = 'hp' + (el.id || 'x'), fillOf = b => b < 0 ? 'var(--sub)' : b < 2 ? `url(#${pid}${b})` : HZ[b][1];
+  const defs = `<defs>${[0, 1].map(b => `<pattern id="${pid}${b}" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:${HZ[b][1]}"/><rect width="2.4" height="6" style="fill:var(--card)" opacity=".45"/></pattern>`).join('')}</defs>`;
   q.forEach(([t, vals], j) => {
     const y = j * rh, last = j === n - 1;
     for (let i = 0; i < 96;) {
       const b = hzBin(vals[i]); let k = i + 1; while (k < 96 && hzBin(vals[k]) === b) k++;
-      sv += `<rect x="${X(i).toFixed(1)}" y="${y.toFixed(1)}" width="${((k - i) * cw + .4).toFixed(1)}" height="${(rh - gap).toFixed(1)}" style="fill:${b < 0 ? 'var(--sub)' : HZ[b][1]}" data-tip="${dDate(t)}, ${qTime(i)}–${qTime(k)}: ${b < 0 ? 'no readings' : HZ[b][2] + ' mmol/L'}"/>`;
+      sv += `<rect x="${X(i).toFixed(1)}" y="${y.toFixed(1)}" width="${((k - i) * cw + .4).toFixed(1)}" height="${(rh - gap).toFixed(1)}" style="fill:${fillOf(b)}" data-tip="${dDate(t)}, ${qTime(i)}–${qTime(k)}: ${b < 0 ? 'no readings' : HZ[b][2] + ' mmol/L'}"/>`;
       i = k;
     }
-    if ((n - 1 - j) % every === 0) sv += `<text class="rt${last && qLab(t, true) === 'Today' ? ' td' : ''}" x="${(l - 8 * z).toFixed(1)}" y="${(y + (rh - gap) / 2 + 4 * z).toFixed(1)}" text-anchor="end">${qLab(t, last)}</text>`;
+    if ((n - 1 - j) % every === 0) sv += `<text class="rt${last && qLab(t, true) === 'Today' ? ' td' : ''}" x="${(l - 8 * z).toFixed(1)}" y="${(y + (rh - gap) / 2 + 4 * z).toFixed(1)}" text-anchor="end" aria-hidden="true">${qLab(t, last)}</text>`;
   });
-  return `<svg class="hmap" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Glucose every 15 minutes, one row per day, coloured by value: red under ${TLO}, green ${TLO} to ${THI}, ochre over ${THI}.">${sv}${qHours(z, i => l + i * cw, h - 5 * z)}</svg>`
-    + `<div class="yrlg" aria-hidden="true"><span><i style="background:${HZ[0][1]}"></i>Under ${TLO}</span><span><i style="background:linear-gradient(90deg,${HZ[2][1]},${HZ[5][1]})"></i>${TLO}–${THI}</span><span><i style="background:linear-gradient(90deg,${HZ[6][1]},${HZ[8][1]})"></i>Over ${THI}</span><span><i style="background:var(--sub)"></i>No readings</span></div>`;
+  const sw = (b, lab) => `<span><i style="background:${b < 2 ? `repeating-linear-gradient(135deg,${HZ[b][1]} 0 3px,color-mix(in srgb,${HZ[b][1]} 55%,var(--card)) 3px 5px)` : HZ[b][1]}"></i>${lab}</span>`;
+  return `<svg class="hmap tipnav" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" tabindex="0" role="img" aria-label="Glucose every 15 minutes, one row per day, coloured by value: striped red under ${TLO}, green ${TLO} to ${THI}, ochre over ${THI}. Use the arrow keys to read each part.">${defs}${sv}<g aria-hidden="true">${qHours(z, i => l + i * cw, h - 5 * z)}</g></svg>`
+    + `<div class="yrlg hzlg" aria-hidden="true">${HZ.map(([, , lab], b) => sw(b, lab)).join('')}<span><i style="background:var(--sub)"></i>No readings</span></div>`
+    + heatTable(q);
+}
+// Samma värden som tabell för skärmläsare: timmar under, i och över målområdet per dag (kvartarna räknade ihop)
+function heatTable(q) {
+  const h = c => String(c / 4);
+  const rows = q.map(([t, vals]) => { const c = [0, 0, 0, 0]; for (const v of vals) c[v == null ? 3 : tLo(v) ? 0 : tHi(v) ? 2 : 1]++; return `<tr><th scope="row">${esc(dDate(t))}</th>${c.map(x => `<td>${h(x)} h</td>`).join('')}</tr>`; }).join('');
+  return `<table class="sr"><caption>Hours each day below ${TLO}, in range and above ${THI} mmol/L</caption><thead><tr><th scope="col">Day</th><th scope="col">Below</th><th scope="col">In range</th><th scope="col">Above</th><th scope="col">No readings</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 const qViews = (el, q) => q && q.length ? `<h3 class="grp">Day by day</h3>${heatSvg(el, q)}` : '';
 // Dygnets fyra delar: tid i mål, en stapel låg / i mål / hög och perioden före (pl = vad den heter, som under nyckeltalen).
@@ -2042,14 +2127,22 @@ function partsHtml(P, pl, cmp) {
     if (!c) return `<div class="kpi">${head}<b class="mut">–</b><span>Too few readings</span></div>`;
     const p = cmp && P.prev && P.prev[i], d = p ? Math.round(c.tir) - Math.round(p.tir) : 0;
     const arrow = Math.abs(d) >= 2 ? ` <span class="pdl ${d > 0 ? 'up' : 'dn'}" aria-hidden="true">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}</span>` : '';
-    return `<div class="kpi" data-tip="${Math.round(c.low)} % under ${TLO}, ${Math.round(c.high)} % over ${THI}">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)}&nbsp;%${arrow}</b>${tirbar(c)}`
+    return `<div class="kpi" data-tip="${Math.round(c.low)} % under ${TLO}, ${Math.round(c.high)} % over ${THI}">${head}<b style="color:var(${c.tir >= 70 ? '--ok' : '--high'})">${Math.round(c.tir)}&nbsp;%${arrow}${arrow ? `<span class="sr"> (${d > 0 ? 'up' : 'down'} ${Math.abs(d)})</span>` : ''}</b>${tirbar(c)}`
       + `<span>${p ? cmpTxt(pl, Math.round(p.tir) + ' %') : `${Math.round(c.low)} % under ${TLO} · ${Math.round(c.high)} % over ${THI}`}</span></div>`;
   }).join('') + '</div>';
 }
 
-const loadWeek = () => api('/api/weekly').then(w => { wk = w; renderWeek(); }).catch(() => {});
-const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(() => {});
-const loadYear = () => api('/api/year').then(x => { yr = x; renderYear(); }).catch(() => {});
+// Medan en vy hämtas första gången står "Loading…" i den, och går hämtningen inte att göra står det, med en knapp för att
+// försöka igen. Förut var vyn tom i båda fallen.
+const insLoading = id => { const el = $(id); if (!el.innerHTML.trim()) el.innerHTML = '<p class="empty" role="status">Loading…</p>'; };
+const insFail = (id, have, again) => e => {
+  console.error(id, e); if (have()) return; // en äldre version finns redan på skärmen: den står kvar
+  const el = $(id); el.innerHTML = '<div class="empty" role="status">This view could not be loaded. <button type="button" class="insretry">Try again</button></div>';
+  el.querySelector('.insretry').onclick = () => { el.innerHTML = ''; insLoading(id); again(); };
+};
+const loadWeek = () => api('/api/weekly').then(w => { wk = w; renderWeek(); }).catch(insFail('wk', () => wk, () => loadWeek()));
+const loadMonth = k => api('/api/month' + (k ? '?m=' + encodeURIComponent(k) : '')).then(x => { mo = x; moKey = x.m || null; renderMonth(); }).catch(insFail('mo', () => mo, () => loadMonth(k)));
+const loadYear = () => api('/api/year').then(x => { yr = x; renderYear(); }).catch(insFail('yr', () => yr, () => loadYear()));
 function loadIns() { return iview === 'month' ? loadMonth(moKey) : iview === 'year' ? loadYear() : loadWeek(); }
 // De andra vyerna hämtas i bakgrunden när Insights öppnas, så att ett byte visar dem direkt i stället för först tomt
 // och sedan fyllt (två höjdändringar). De ritas först när de visas, då bredden går att mäta.
@@ -2057,10 +2150,11 @@ const reloadIns = () => { if (wk) loadWeek(); if (mo) loadMonth(moKey); if (yr) 
 const preloadIns = () => setTimeout(() => { if (!wk) loadWeek(); if (!mo) loadMonth(moKey); if (!yr) loadYear(); }, 400);
 function setView(v) {
   iview = v; try { localStorage.setItem('insv', v); } catch {}
-  document.querySelectorAll('#iseg button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-pressed', b.dataset.v === v); });
+  document.querySelectorAll('#iseg button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-checked', b.dataset.v === v); }); radios($('iseg'));
   $('wk').hidden = v !== 'week'; $('mo').hidden = v !== 'month'; $('yr').hidden = v !== 'year'; $('monav').hidden = v !== 'month' || !(mo && mo.months && mo.months.length);
   // Redan hämtad: ritas direkt (i rätt bredd nu när den syns) och uppdateras sedan i bakgrunden
   if (v === 'week' && wk) renderWeek(); else if (v === 'month' && mo) renderMonth(); else if (v === 'year' && yr) renderYear();
+  else insLoading(IVIEW[v]);
   return loadIns();
 }
 // Efter ett byte: syns inte hela vyn scrollar sidan så långt att den gör det, men högst tills kortet står strax under
@@ -2107,9 +2201,9 @@ function renderWeek() {
   // Med nästan ingen data (t.ex. första timmen efter ett uppehåll) blir "100 % in range, no lows" missvisande
   if (!c || c.cov < 20) { el.innerHTML = `<div class="empty">Too few readings in the last 7 days to sum up${c ? ` (${c.cov.toFixed(0)} % of the week has readings)` : ''}. They build up while the server runs.</div>`; return; }
   const both = p && p.cov >= 50 && c.cov >= 50, days = wk.days || [];
-  const bars = profHtml(el, wk.prof, 'the last 7 days', partsHtml(wk.parts, 'Week before', both)) + qViews(el, wk.q);
+  const bars = profHtml(el, wk.prof, 'the last 7 days', partsHtml(wk.parts, '7 days before', both)) + qViews(el, wk.q);
   // Bara nyckeltalen och graferna (Highlights, Lows och Meals togs bort 2026-11-14); en varning om veckan har för lite värden
-  el.innerHTML = ikpis(c, both ? p : null, 'Week before', c.lows.length, both ? p.lows.length : null) + bars
+  el.innerHTML = ikpis(c, both ? p : null, '7 days before', c.lows.length, both ? p.lows.length : null) + bars
     + (c.cov < 70 ? `<div class="ifoot"><span>Readings cover ${c.cov.toFixed(0)} % of the week. Treat these numbers with caution.</span></div>` : '');
 }
 
@@ -2144,7 +2238,7 @@ function renderYear() {
     const lo = had.reduce((a, d) => a + d[3], 0) / had.length, hi = had.reduce((a, d) => a + d[4], 0) / had.length, nl = wd.reduce((a, d) => a + d[2], 0);
     const hl = lo > 0 ? Math.max(1.5, lo / 100 * BH) : 0, hh = hi / 100 * BH;
     sv += `<g data-tip="Week of ${dDate(wd[0][0])}: ${Math.round(100 - lo - hi)} % in range, ${Math.round(lo)} % under ${TLO}, ${Math.round(hi)} % over ${THI}, ${lowsN(nl)}">`
-      + `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--ok)"/><rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${hh.toFixed(1)}" style="fill:var(--high-fill)"/><rect x="${x}" y="${(BT + BH - hl).toFixed(1)}" width="${c}" height="${hl.toFixed(1)}" style="fill:var(--low)"/></g>`;
+      + `<rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${BH}" rx="2" style="fill:var(--ok)"/><rect x="${x}" y="${BT.toFixed(1)}" width="${c}" height="${hh.toFixed(1)}" style="fill:var(--high-fill)"/><rect x="${x}" y="${(BT + BH - hl).toFixed(1)}" width="${c}" height="${hl.toFixed(1)}" style="fill:url(#yrlo)"/></g>`;
   }
   sv += `<line x1="${l}" x2="${W - g}" y1="${BY(70).toFixed(1)}" y2="${BY(70).toFixed(1)}" style="stroke:var(--fg)" stroke-width="1.2" stroke-dasharray="4 3" opacity=".75" pointer-events="none"/><text x="${l - 6 * z}" y="${(BY(70) + 4 * z).toFixed(1)}" text-anchor="end">70 %</text>`;
   const good = have.filter(d => d[1] >= 70).length, byM = new Map();
@@ -2159,9 +2253,9 @@ function renderYear() {
   // Varje färg har en egen etikett (förut en skala med text bara i ändarna, som var svår att läsa).
   const sw = (bg, t, dot) => `<span><i style="background:${bg}${dot ? ';border-radius:50%;width:9px;height:9px' : ''}"></i>${t}</span>`;
   const dayLg = `<div class="yrlg yrtop" aria-hidden="true"><b>In range each day</b>${sw(yrFill(60), 'Under 70 %')}${sw(yrFill(75), '70–79 %')}${sw(yrFill(85), '80–89 %')}${sw(yrFill(95), '90 % or more')}${sw('var(--low)', 'A low', 1)}</div>`;
-  const weekLg = `<div class="yrlg" aria-hidden="true"><b>Each week</b>${sw('var(--high-fill)', 'Over ' + THI)}${sw('var(--ok)', 'In range')}${sw('var(--low)', 'Under ' + TLO)}</div>`;
+  const weekLg = `<div class="yrlg" aria-hidden="true"><b>Each week</b>${sw('var(--high-fill)', 'Over ' + THI)}${sw('var(--ok)', 'In range')}${sw('var(--lowpat)', 'Under ' + TLO)}</div>`;
   const yc = yr.cur && yr.cur.cov >= 20 ? yr.cur : null; // nyckeltalen för hela perioden, mot målen
-  el.innerHTML = (yc ? ikpis(yc, null, '', yc.lows, null) : '') + `<h3 class="grp">${since}</h3>${dayLg}<div class="yrw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(say)}">${sv}</svg></div>${weekLg}`
+  el.innerHTML = (yc ? ikpis(yc, null, '', yc.lows, null) : '') + `<h3 class="grp">${since}</h3>${dayLg}<div class="yrw" role="region" aria-label="Each day and week of the year. Scrolls sideways."><svg class="tipnav" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" tabindex="0" role="img" aria-label="${esc(say)} Use the arrow keys to read each day and week."><defs><pattern id="yrlo" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><rect width="6" height="6" style="fill:var(--low)"/><rect width="2.4" height="6" style="fill:var(--card)" opacity=".45"/></pattern></defs>${sv}</svg></div>${weekLg}`
     + `<div class="yrst"><span><b>${good}</b> of ${have.length} days at 70 % or more</span>${best ? `<span>Best month <b>${new Date(best.t).toLocaleDateString('en-GB', { month: 'long' })}</b>, ${Math.round(best.s / best.n)} %</span>` : ''}</div>`;
   const yw = el.querySelector('.yrw'); if (yw) yw.scrollLeft = yw.scrollWidth; // de senaste veckorna syns först
 }
@@ -2179,14 +2273,32 @@ function renderMonth() {
     + (c.cov < 70 ? `<div class="ifoot"><span>The sensor was active ${c.cov.toFixed(0)} % of the month. Treat these numbers with caution.</span></div>` : '');
 }
 // Pekarrutan: texten från närmaste data-tip, placerad vid pekaren och inom fönstret. Följer med när pekaren rör sig.
-{ const tip = $('itip'), hide = () => tip.classList.remove('on');
-  $('tab-ins').addEventListener('pointermove', e => {
-    const el = e.pointerType === 'touch' ? null : e.target.closest('[data-tip]'); if (!el) return hide();
-    if (tip.textContent !== el.dataset.tip) tip.textContent = el.dataset.tip;
-    const w = tip.offsetWidth, h = tip.offsetHeight, x = Math.min(e.clientX + 14, innerWidth - w - 8), y = e.clientY + 18 + h > innerHeight - 8 ? e.clientY - h - 10 : e.clientY + 18;
+// Även med tangentbordet (fokusera grafen och använd piltangenterna; texten läses också upp) och med fingret (ett tryck
+// visar rutan för det man trycker på). Esc döljer den. Förut gick värdena bara att läsa med en mus.
+{ const tip = $('itip'), hide = () => { tip.classList.remove('on'); document.querySelectorAll('.tipon').forEach(x => x.classList.remove('tipon')); };
+  const place = (text, x0, y0) => {
+    if (tip.textContent !== text) tip.textContent = text;
+    const w = tip.offsetWidth, h = tip.offsetHeight, x = Math.min(x0 + 14, innerWidth - w - 8), y = y0 + 18 + h > innerHeight - 8 ? y0 - h - 10 : y0 + 18;
     tip.style.left = Math.max(8, x) + 'px'; tip.style.top = y + 'px'; tip.classList.add('on');
+  };
+  const at = el => { const b = el.getBoundingClientRect(); place(el.dataset.tip, b.left + b.width / 2, b.top + b.height / 2); };
+  $('tab-ins').addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const el = e.target.closest('[data-tip]'); if (!el) return hide();
+    place(el.dataset.tip, e.clientX, e.clientY);
   });
-  $('tab-ins').addEventListener('pointerleave', hide); addEventListener('scroll', hide, { passive: true });
+  $('tab-ins').addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') return; const el = e.target.closest('[data-tip]'); if (el) at(el); else hide(); });
+  $('tab-ins').addEventListener('pointerleave', e => { if (e.pointerType !== 'touch') hide(); }); let kbAt = 0; addEventListener('scroll', () => { if (Date.now() - kbAt > 500) hide(); }, { passive: true });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && tip.classList.contains('on')) hide(); });
+  $('tab-ins').addEventListener('focusout', e => { if (e.target.classList && e.target.classList.contains('tipnav')) hide(); });
+  $('tab-ins').addEventListener('keydown', e => {
+    const box = e.target.classList && e.target.classList.contains('tipnav') ? e.target : null; if (!box) return;
+    const els = [...box.querySelectorAll('[data-tip]')]; if (!els.length) return;
+    const i = els.findIndex(x => x.classList.contains('tipon')), j = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i < 0 ? els.length - 1 : i - 1, ArrowUp: i < 0 ? els.length - 1 : i - 1, Home: 0, End: els.length - 1 }[e.key];
+    if (j === undefined) return;
+    e.preventDefault(); const k = Math.max(0, Math.min(els.length - 1, j)); hide(); kbAt = Date.now(); els[k].classList.add('tipon'); if (els[k].scrollIntoView) els[k].scrollIntoView({ block: 'nearest', inline: 'nearest' }); at(els[k]);
+    $('isr').textContent = els[k].dataset.tip;
+  });
 }
 $('mprev').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i > 0) loadMonth(L[i - 1]); };
 $('mnext').onclick = () => { const L = mo.months, i = L.indexOf(mo.m); if (i >= 0 && i < L.length - 1) loadMonth(L[i + 1]); };
@@ -2211,17 +2323,18 @@ const msgHTML = m => m.role === 'user' ? esc(m.content) : m.content ? md(m.conte
 const renderChat = lastOnly => {
   const c = $('chat'), m = chat[chat.length - 1];
   if (lastOnly && c.lastElementChild && m) { c.lastElementChild.innerHTML = msgHTML(m); return; }
-  c.innerHTML = chat.map(m => `<div class="msg ${m.role === 'user' ? 'u' : 'a'}">${msgHTML(m)}</div>`).join('');
+  c.innerHTML = chat.map(m => `<div class="msg ${m.role === 'user' ? 'u' : 'a'}"${m.lang ? ` lang="${m.lang}"` : ''}>${msgHTML(m)}</div>`).join('');
 };
 const setAsking = on => { $('askb').textContent = on ? 'Stop' : 'Ask'; $('askb').classList.toggle('p', !on); $('chat').setAttribute('aria-busy', on); };
 async function ask(q) {
   q = q.trim(); if (!q || asking) return;
   const a = { role: 'assistant', content: '' }, history = chat.filter(m => !m.err && m.content).concat({ role: 'user', content: q });
-  chat.push({ role: 'user', content: q }, a); $('askq').value = ''; renderChat();
+  chat.push({ role: 'user', content: q, lang: /[åäö]|(?<![\p{L}])(jag|hur|vad|varför|när)(?![\p{L}])/iu.test(q) ? 'sv' : '' }, a); $('askq').value = ''; renderChat();
   const ac = asking = new AbortController(); setAsking(true);
   try {
     const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history }), signal: ac.signal });
     if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'HTTP ' + r.status); }
+    a.lang = /^(sv|en)$/.test(r.headers.get('content-language') || '') ? r.headers.get('content-language') : ''; if (a.lang && $('chat').lastElementChild) $('chat').lastElementChild.lang = a.lang;
     const rd = r.body.getReader(), dec = new TextDecoder();
     for (;;) { const { done, value } = await rd.read(); if (done) break; a.content += dec.decode(value, { stream: true }); renderChat(true); }
   } catch (e) {
@@ -2234,7 +2347,7 @@ async function ask(q) {
 }
 $('askf').onsubmit = e => { e.preventDefault(); if (asking) asking.abort(); else ask($('askq').value); };
 $('sugg').onclick = e => { const b = e.target.closest('button'); if (b) ask(b.dataset.q); };
-$('askq').onfocus = () => api('/api/ai?warm=1').catch(() => {}); // ladda modellen medan frågan skrivs
+$('askq').onfocus = () => api('/api/ai/warm', { method: 'POST', body: '{}' }).catch(() => {}); // ladda modellen medan frågan skrivs
 // Är AI:n inte igång går förslagsknapparna inte att trycka på (förut gav de bara ett felmeddelande i chatten)
 // Samma för frågefältet: allt som behöver AI:n är avstängt tillsammans, med en knapp för att kolla igen (servern försöker
 // då starta den lokala AI:n). Loggning med egna ord fungerar ändå, med den enkla tolkaren.
@@ -2244,28 +2357,33 @@ const aiStatus = () => { $('aist').textContent = 'Checking the local AI…'; $('
   $('sugg').querySelectorAll('button').forEach(b => b.disabled = !s.ok); $('askq').disabled = $('askb').disabled = !s.ok && !asking; $('sugg').hidden = $('askf').hidden = $('chat').hidden = !s.ok;
   $('askq').placeholder = s.ok ? 'Ask anything about your readings, meals and notes' : 'Available when the local AI is running';
   if ($('aichk')) $('aichk').onclick = () => aiStatus().then(() => { if ($('aichk')) $('aichk').focus(); else $('askq').focus(); });
-}).catch(() => { $('aist').textContent = ''; }); };
+}).catch(e => { console.error('ai:', e); $('aist').textContent = ''; }); };
 
 // Logga med egna ord. Servern (lokal AI, annars en enkel tolkare) gör om texten till en måltid eller anteckning och sparar den.
 $('ql').onsubmit = async e => {
   e.preventDefault();
   const text = $('qlt').value.trim(), kb = kbFocus(); if (!text) { $('qlt').focus(); return; }
-  const b = $('qlb'); b.disabled = true;
+  // Medan texten tolkas (upp till 45 s med en AI som inte är laddad): fältet låst, och en rad som säger vad som händer,
+  // så att ingen skriver om det och loggar två gånger
+  const b = $('qlb'); b.disabled = true; $('qlt').readOnly = true; $('ql').setAttribute('aria-busy', 'true');
+  const slow = setTimeout(() => { $('qlst').textContent = 'Reading what you wrote…'; }, 400);
   try {
     const r = await api('/api/quicklog', { method: 'POST', body: JSON.stringify({ text }) });
     if (r.error) { $('qlerr').innerHTML = `${esc(r.error)} <button type="button" id="qlnote">Save it as a note</button>`; $('qlerr').hidden = false; $('qlt').setAttribute('aria-invalid', 'true'); $('qlt').focus(); return; }
     $('qlt').value = '';
+    // Tiden som texten sa ("igår kl 12", "i förrgår") följer med till dialogen, med datumfältet synligt. Förut fylldes bara
+    // klockslaget i, och måltiden sparades på dagens datum.
     if (r.need) { // dosen saknas: öppna måltidsdialogen med maten och tiden ifyllda och fråga efter dosen
       openMeal(); const m = libMeal(r.name);
       if (m) pick(m.id); else { selMeal = null; $('msearch').value = r.name; pickFree(); }
-      $('mi2').value = ''; mclock.set = true; $('mtime').value = hhmm(r.t);
+      $('mi2').value = ''; mclock.edit(r.t);
       $('mhint').textContent = 'How many units did you take? Fill in the dose and press Log meal.'; mealWarn(); $('mi2').focus();
       return;
     }
     if (r.check) { // dosen långt från den vanliga: inget loggat än; öppna dialogen ifylld så att man kan rätta eller bekräfta
       openMeal(); const m = libMeal(r.name);
       if (m) pick(m.id); else { selMeal = null; $('msearch').value = r.name; pickFree(); }
-      mclock.set = true; $('mtime').value = hhmm(r.t);
+      mclock.edit(r.t);
       if (/^Is \d/.test(r.check)) { // ett tal utan "units": dosen fylls inte i; man skriver den eller trycker på knappen
         $('mi2').value = ''; disarm(); $('mhint').className = 'warn';
         $('mhint').innerHTML = `You wrote “${esc(String(r.ins))}” without “units”. How many units did you take? <button type="button" id="useg" data-g="${esc(String(r.ins))}">Use ${esc(units(r.ins))}</button>`;
@@ -2279,12 +2397,13 @@ $('ql').onsubmit = async e => {
     toast(`Logged ${what}, ${whenSpan(x.t, x.dur)}.<button data-undo="${esc(x.id)}">Undo</button>`, 8000);
     focusUndo(kb, $('qlt')); // som efter dialogerna: Undo nås direkt, Esc går tillbaka till rutan
     refresh();
-  } catch { $('qlerr').textContent = 'No contact with the dashboard server. Your text is still here; try again in a moment.'; $('qlerr').hidden = false; }
-  finally { b.disabled = false; }
+  } catch (e) { console.error('quicklog:', e); $('qlerr').textContent = 'No contact with the dashboard server. Your text is still here; try again in a moment.'; $('qlerr').hidden = false; }
+  finally { clearTimeout(slow); $('qlst').textContent = ''; b.disabled = false; $('qlt').readOnly = false; $('ql').removeAttribute('aria-busy'); }
 };
 // Undo i meddelanderutan: data-undo ångrar en nyss loggad rad, data-restore lägger tillbaka något som tagits bort
 $('toast').onclick = e => {
-  const ds = e.target.dataset || {};
+  const ds = (e.target.closest && e.target.closest('button') || e.target).dataset || {};
+  if (ds.tclose) { $('toast').classList.remove('on'); tSticky = false; toastBack(); return; }
   if (ds.retry && failed) { const fn = failed; failed = null; $('toast').classList.remove('on'); save(fn); return; }
   if (ds.undo) { // ångra en nyss loggad rad, och säg vilken
     const id = ds.undo, x = db.log.find(y => y.id === id) || db.notes.find(y => y.id === id);
@@ -2307,12 +2426,17 @@ async function loadTg() {
   let s; try { s = await api('/api/telegram'); } catch { return; }
   $('tgset').hidden = s.on; $('tgon').hidden = !s.on;
   const bot = `<a href="https://t.me/${esc(s.bot)}" target="_blank" rel="noopener">@${esc(s.bot)}</a>`;
-  $('tgtxt').innerHTML = (!s.on ? 'Log meals from your phone by writing to your own Telegram bot, from anywhere. In Telegram, open <b>@BotFather</b>, send <code>/newbot</code> and follow the steps. Then paste the token it gives you here.'
-    : !s.chat ? `Now open ${bot} in Telegram and send this message:<br><code>/start ${esc(s.code)}</code>`
+  // Parkopplingen: en länk som öppnar boten med koden ifylld (Telegrams start-länk), och koden att skriva för hand som
+  // reserv. Koden gäller i 15 minuter; har den gått ut finns en knapp för en ny.
+  const link = s.code ? `https://t.me/${encodeURIComponent(s.bot)}?start=${encodeURIComponent(s.code)}` : '';
+  setHTML($('tgtxt'), (!s.on ? 'Log meals from your phone by writing to your own Telegram bot, from anywhere. In Telegram, open <b>@BotFather</b>, send <code>/newbot</code> and follow the steps. Then paste the token it gives you here.'
+    : !s.chat && s.code ? `Now <a href="${esc(link)}" target="_blank" rel="noopener">open ${esc('@' + s.bot)} in Telegram</a> and press <b>Start</b>. Or send it this message: <code>/start ${esc(s.code)}</code><br><span class="mut">The code works until ${hhmm(s.codeEnds)}.</span>`
+    : !s.chat ? `The code to link ${bot} has run out. <button type="button" id="tgcode">Get a new code</button>`
     : '')
-    + (s.error ? `<br><span class="err">${esc(s.error)}</span>` : '');
+    + (s.error ? `<br><span class="err">${esc(s.error)}</span>` : ''));
   $('tgwho').innerHTML = s.chat ? `${bot}<span class="sd">Linked to ${esc(s.who || 'your Telegram')}. Never sends single readings.</span>` : `${bot}<span class="sd">Waiting for your message…</span>`;
   $('tgrepw').hidden = $('tgstw').hidden = $('tgpiw').hidden = !(s.on && s.chat); $('tgpi').checked = s.piw !== false; $('tgrep').checked = !!s.report; $('tgst').checked = s.stale !== false;
+  if ($('tgcode')) $('tgcode').onclick = async () => { await api('/api/telegram/code', { method: 'POST', body: '{}' }).catch(() => {}); await loadTg(); const a = $('tgtxt').querySelector('a'); if (a) a.focus(); };
   clearTimeout(tgPoll); if (s.on && !s.chat && $('dset').open) tgPoll = setTimeout(loadTg, 3000);
 }
 $('tgsave').onclick = async () => {
@@ -2359,8 +2483,8 @@ $('auto').onchange = async () => {
 function setTheme(t) {
   if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   try { if (t) localStorage.setItem('theme', t); else localStorage.removeItem('theme'); } catch {}
-  $('theme').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.th === (t || '')));
-  $('theme').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.th === (t || '')));
+  $('theme').querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.th === (t || '')));
+  $('theme').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.th === (t || ''))); radios($('theme'));
 }
 setTheme(document.documentElement.dataset.theme || '');
 $('theme').onclick = e => { const b = e.target.closest('button'); if (b) setTheme(b.dataset.th); };
@@ -2409,14 +2533,18 @@ document.addEventListener('click', e => { if (!$('qfavl').hidden && !e.target.cl
 // Hur måltider och anteckningar visas under grafen: "lane" = ett spår, "tracks" = mat, insulin och övrigt på var sin rad
 function setEvStyle(v) {
   evStyle = v === 'tracks' ? 'tracks' : 'lane'; try { localStorage.setItem('evstyle', evStyle); } catch {}
-  $('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); });
+  $('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-checked', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); }); radios($('evst'));
   drawChart();
 }
 $('evst').onclick = e => { const b = e.target.closest('button'); if (b) setEvStyle(b.dataset.ev); };
-$('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); });
+$('evst').querySelectorAll('button').forEach(b => { b.setAttribute('aria-checked', b.dataset.ev === evStyle); b.classList.toggle('on', b.dataset.ev === evStyle); }); radios($('evst'));
 // Kortkommandon med en tangent: på som standard, går att stänga av (sparat i webbläsaren)
 const keysOn = () => { try { return localStorage.getItem('keys') !== 'off'; } catch { return true; } };
-const syncKeys = () => { $('keys').checked = keysOn(); $('keyst').textContent = keysOn() ? 'On' : 'Off'; document.documentElement.classList.toggle('nokeys', !keysOn()); };
+// Avstängda kortkommandon tas också bort ur aria-keyshortcuts, så att skärmläsare inte nämner tangenter som inte gör något
+const syncKeys = () => {
+  const on = keysOn(); $('keys').checked = on; $('keyst').textContent = on ? 'On' : 'Off'; document.documentElement.classList.toggle('nokeys', !on);
+  document.querySelectorAll('[aria-keyshortcuts],[data-ks]').forEach(el => { if (!el.dataset.ks) el.dataset.ks = el.getAttribute('aria-keyshortcuts'); if (on) el.setAttribute('aria-keyshortcuts', el.dataset.ks); else el.removeAttribute('aria-keyshortcuts'); });
+};
 $('keys').onchange = () => { try { localStorage.setItem('keys', $('keys').checked ? 'on' : 'off'); } catch {} syncKeys(); };
 syncKeys();
 // Hoppa förbi huvudkortet och grafens markeringar till flikarna (den valda fliken får fokus)
@@ -2424,28 +2552,22 @@ $('skip').onclick = e => { e.preventDefault(); const t = document.querySelector(
 // Raspberry Pi: rapporten från pistatus på Pi:n och dashboardens egen hälsa (/api/pi). Pricken på knappen visar
 // varningar (gul) eller problem (röd), utan att man behöver öppna sidan. Publika IP-adresser döljs tills man klickar,
 // så att de inte kommer med på en skärmbild.
-const PUBIP = /\b(?!(?:10|127)\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254\.)\d{1,3}(?:\.\d{1,3}){3}\b/g;
+// Även globala IPv6-adresser (2000::/3), som också pekar ut hemmet
+const PUBIP = /\b(?!(?:10|127)\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254\.)\d{1,3}(?:\.\d{1,3}){3}\b|\b[23][0-9a-f]{3}(?::[0-9a-f]{0,4}){2,7}\b/gi;
 const piV = v => esc(v).replace(PUBIP, ip => `<button type="button" class="ipm" data-ip="${ip}" title="Public IP address. Click to show it">hidden IP</button>`);
 const piN = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 let piLast = null;
-// Ett problem eller en varning på Pi:n står i klartext i statusfältet, men bara när där annars står "Live": att värdena
-// inte kommer eller att servern inte svarar är viktigare och står kvar. Röd vid problem, gul vid varning.
-// Publika IP-adresser döljs, som på Pi-sidan.
-function piPill() {
-  const st = $('status'), p = piLast; if (!p || !st.classList.contains('ok')) return;
-  const crit = p.crit || [], msgs = [...crit, ...(p.warn || [])].map(m => String(m).replace(PUBIP, 'hidden IP')); if (!msgs.length) return;
-  setStatus('Raspberry Pi: ' + msgs[0] + (msgs.length > 1 ? ` (and ${msgs.length - 1} more)` : ''), !crit.length, false, true);
-  st.title = msgs.join('\n');
-}
+// Pi:ns varningar visas bara på Pi-knappen (pricken) och i dess ruta. Förut tog de över statusfältet, som ska säga om
+// glukosvärdena kommer: en varm Pi gick inte att skilja från att värdena slutat komma.
 function renderPi(p) {
   piLast = p;
   const app = p.app || { rows: [], warn: [] }, crit = p.crit || [], warn = [...(p.warn || []), ...app.warn.map(x => 'dashboard: ' + x)];
   const lvl = crit.length ? 'crit' : warn.length ? 'warn' : 'ok';
-  piPill();
   $('pibtn').dataset.lvl = lvl; $('pibtn').setAttribute('aria-label', 'Raspberry Pi status' + (lvl === 'ok' ? '' : ': ' + [crit.length && piN(crit.length, 'problem'), warn.length && piN(warn.length, 'warning')].filter(Boolean).join(', ')));
   if (!$('dpi').open) return;
   const model = ((p.sections || []).find(x => x.h === 'System') || { rows: [] }).rows.find(r => r.k === 'Model');
-  $('pisub').textContent = [p.host, model && model.v, 'updated ' + hhmm(p.at)].filter(Boolean).join(' · ');
+  // Datorns namn döljs som de publika adresserna, så att det inte kommer med på en skärmbild
+  $('pisub').innerHTML = [p.host && `<button type="button" class="ipm" data-ip="${esc(p.host)}" title="The computer's name. Click to show it">name hidden</button>`, model && esc(model.v), 'updated ' + hhmm(p.at)].filter(Boolean).join(' · ');
   const row = r => r.list
     ? `<div class="pir pil"><span class="mut">${esc(r.k)}</span><ul>${r.list.map(x => `<li>${piV(x)}</li>`).join('')}</ul></div>`
     : `<div class="pir"><span class="mut">${esc(r.k)}</span><span>${r.s ? `<i class="pd" data-s="${r.s}" aria-hidden="true"></i>` : ''}${piV(r.v)}${r.s === 'warn' ? '<span class="sr"> (warning)</span>' : r.s === 'crit' ? '<span class="sr"> (problem)</span>' : ''}</span></div>`;
@@ -2458,17 +2580,24 @@ function renderPi(p) {
 async function loadPi(fresh) {
   const b = $('pirf'); b.disabled = true; b.textContent = 'Checking…';
   if ($('dpi').open && !piLast) setHTML($('pibody'), '<p class="mut">Running pistatus on the Pi. It takes a few seconds.</p>');
-  try { renderPi(await api('/api/pi' + (fresh ? '?fresh=1' : ''))); }
-  catch { if ($('dpi').open) setHTML($('pibody'), '<p class="mut">The dashboard server did not answer. Try again in a moment.</p>'); }
+  try { renderPi(await (fresh ? api('/api/pi/refresh', { method: 'POST', body: '{}' }) : api('/api/pi'))); }
+  catch (e) { console.error('pi:', e); if ($('dpi').open) setHTML($('pibody'), '<p class="mut">The dashboard server did not answer. Try again in a moment.</p>'); }
   finally { b.disabled = false; b.textContent = 'Refresh'; }
 }
 $('pibtn').onclick = () => { $('dpi').showModal(); $('dpih').focus(); if (piLast) renderPi(piLast); loadPi(false); };
 $('pirf').onclick = () => loadPi(true);
-$('pibody').addEventListener('click', e => { const b = e.target.closest('.ipm'); if (b) b.replaceWith(document.createTextNode(b.dataset.ip)); });
+$('dpi').addEventListener('click', e => { const b = e.target.closest('.ipm'); if (b) b.replaceWith(document.createTextNode(b.dataset.ip)); });
 setTimeout(() => loadPi(false), 4000); setInterval(() => loadPi(false), 10 * 6e4); // pricken på knappen och statusfältet, var tionde minut
 $('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { renderTarget(); $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); };
 document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
-document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+// Klick utanför dialogen stänger den, men inte när något redan är ifyllt (då går det inte förlorat av misstag; Cancel
+// och Esc stänger), och bara när både tryck och släpp var utanför (en markering som drogs ut ur rutan stängde den förut).
+const dirty = d => ['dmeal', 'dnote', 'dlow'].includes(d.id) && [...d.querySelectorAll('input:not([type=checkbox]):not([type=date]):not([type=time]):not([type=file])')].some(i => !i.hidden && !i.readOnly && i.value.trim());
+document.querySelectorAll('dialog').forEach(d => {
+  let down = null;
+  d.addEventListener('pointerdown', e => { down = e.target; });
+  d.addEventListener('click', e => { const out = e.target === d && down === d; down = null; if (out && !dirty(d)) d.close(); });
+});
 $('dmeal').addEventListener('close', () => {
   // Ändringsläget gäller bara den gången; avbryts det töms fälten så att nästa loggning börjar tom
   if (editLog) { editLog = null; selMeal = null; $('msearch').value = ''; $('mi2').value = ''; $('mhint').textContent = ''; $('dmealh').textContent = 'Log a meal'; disarm(); }
@@ -2486,8 +2615,10 @@ $('dlow').addEventListener('close', () => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && selId && !document.querySelector('dialog[open]') && !(e.target.closest && e.target.closest('input,select,textarea'))) { const kb = kbFocus() || document.activeElement === $('dtitle'), inList = detFrom === selId; if (inList) { closeFold(kb); return; } closeDet(); if (kb && $('chsvg')) $('chsvg').focus(); return; }
   if (!keysOn()) return; // avstängda under Settings (WCAG 2.1.4: enkeltangenter ska gå att stänga av)
-  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || document.querySelector('dialog[open]') || (e.target.closest && e.target.closest('input,select,textarea'))) return;
-  const k = e.key.toLowerCase();
+  // [ och ] kräver AltGr på svenska och tyska tangentbord (Ctrl+Alt i Windows, Alt på Mac): de godtas med den, andra
+  // tangenter med Ctrl, Alt eller Cmd gör inget (förut fungerade [ och ] aldrig på ett svenskt tangentbord)
+  const k = e.key.toLowerCase(), altgr = (k === '[' || k === ']') && !e.metaKey && (e.getModifierState && e.getModifierState('AltGraph') || e.altKey);
+  if (((e.ctrlKey || e.metaKey || e.altKey) && !altgr) || e.repeat || document.querySelector('dialog[open]') || (e.target.closest && e.target.closest('input,select,textarea'))) return;
   if (k === 'l') { e.preventDefault(); openMeal(); }
   if (k === 'n') { e.preventDefault(); openNote(); }
   if (k === 't') { e.preventDefault(); openLow(); }
@@ -2527,14 +2658,14 @@ let mview = 'cmp';
 try { if (localStorage.getItem('mealv') === 'lib') mview = 'lib'; } catch {}
 function setMView(v) {
   unhold(); mview = v; $('mv-cmp').hidden = v !== 'cmp'; $('mv-lib').hidden = v !== 'lib'; $('cper').hidden = v !== 'cmp';
-  document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.mv === v); b.setAttribute('aria-pressed', b.dataset.mv === v); });
+  document.querySelectorAll('#mseg button').forEach(b => { b.classList.toggle('on', b.dataset.mv === v); b.setAttribute('aria-checked', b.dataset.mv === v); }); radios($('mseg'));
   try { localStorage.setItem('mealv', v); } catch {}
 }
 document.querySelectorAll('#mseg button').forEach(b => b.onclick = () => setMView(b.dataset.mv));
 // Compared: de senaste 90 dagarna (förvalt, så att gamla doser och vanor inte blandas in) eller all tid. Valet sparas.
 function setCmpPer(d) {
   cmpPer = d; try { localStorage.setItem('cmpPer', d ? String(d) : 'all'); } catch {}
-  document.querySelectorAll('#cper button').forEach(b => { b.classList.toggle('on', +b.dataset.per === d); b.setAttribute('aria-pressed', +b.dataset.per === d); });
+  document.querySelectorAll('#cper button').forEach(b => { b.classList.toggle('on', +b.dataset.per === d); b.setAttribute('aria-checked', +b.dataset.per === d); }); radios($('cper'));
   renderCmp(); if (editId === null) renderLib();
 }
 document.querySelectorAll('#cper button').forEach(b => b.onclick = () => setCmpPer(+b.dataset.per));
@@ -2576,6 +2707,9 @@ $('logmenu').onclick = e => {
   ({ meal: () => openMeal(), note: () => openNote(), low: () => openLow() })[b.dataset.log]();
 };
 document.addEventListener('click', e => { if (!$('logmenu').hidden && !e.target.closest('.logw')) logMenu(false); });
+// Tab ut ur menyn (eller favoritlistan) stänger den, så att den inte ligger kvar öppen bakom fokus
+$('logmenu').parentNode.addEventListener('focusout', e => { if (!$('logmenu').hidden && !e.currentTarget.contains(e.relatedTarget) && e.relatedTarget) logMenu(false); });
+$('ql').addEventListener('focusout', e => { if (!$('qfavl').hidden && e.relatedTarget && !e.relatedTarget.closest('#qfav,#qfavl')) favOpen(false); });
 $('logmenu').parentNode.addEventListener('keydown', e => {
   if ($('logmenu').hidden) return;
   if (e.key === 'Escape') { e.stopPropagation(); logMenu(false); $('logbtn').focus(); return; }
@@ -2589,12 +2723,41 @@ document.querySelector('.tabs').addEventListener('keydown', e => {
   e.preventDefault(); showTab(tabs[j].dataset.tab); tabs[j].focus();
 });
 
+// LibreView-exporten (CSV). Fälten delas enligt RFC 4180 (citattecken, kommatecken och "" inne i fält), kolumnerna
+// hittas på rubrikraden (Device Timestamp, Record Type, Historic/Scan Glucose med enheten i rubriken) och datumet tolkas
+// i det format filen har: DD-MM-YYYY (Europa), MM/DD/YYYY med AM/PM (USA) eller YYYY-MM-DD. Förut antogs Europas format
+// och fasta kolumner, så en amerikansk export avvisades eller fick dag och månad omkastade.
+function csvRows(txt) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const c = txt[i];
+    if (q) { if (c === '"') { if (txt[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; continue; }
+    if (c === '"') q = true; else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && txt[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
 function parseCsv(txt) {
-  const k = /mg\/dL/.test(txt.slice(0, 600)) ? 1 : 18.016, out = [];
-  for (const line of txt.split(/\r?\n/)) {
-    const c = line.replace(/"(\d+),(\d+)"/g, '$1.$2').split(','), m = (c[2] || '').match(/^(\d\d)-(\d\d)-(\d{4}) (\d\d):(\d\d)$/);
-    const v = parseFloat(c[3] === '0' ? c[4] : c[3] === '1' ? c[5] : '');
-    if (m && v > 0) out.push([new Date(+m[3], m[2] - 1, +m[1], +m[4], +m[5]).getTime(), Math.round(v * k)]);
+  const rows = csvRows(txt), hi = rows.findIndex(r => r.some(c => /timestamp|zeitstempel|tidsstämpel/i.test(c)) && r.some(c => /glucose|glukos/i.test(c)));
+  const H = hi >= 0 ? rows[hi].map(c => c.trim()) : [], col = re => H.findIndex(c => re.test(c));
+  const iT = hi >= 0 ? col(/timestamp|zeitstempel|tidsstämpel/i) : 2, iR = hi >= 0 ? col(/record type|aufzeichnungstyp|posttyp/i) : 3;
+  const iH = hi >= 0 ? col(/historic|historisch|historisk/i) : 4, iS = hi >= 0 ? col(/scan/i) : 5;
+  const mg = re => { const c = H.find(x => re.test(x)); return c ? /mg\/dl/i.test(c) : /mg\/dL/.test(txt.slice(0, 2000)); };
+  const kH = mg(/historic|historisch|historisk/i) ? 1 : 18.016, kS = mg(/scan/i) ? 1 : 18.016;
+  const D = /^(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*([AP]M)?$/i, data = rows.slice(hi + 1);
+  // Dag först eller månad först: ett första tal över 12 betyder dag, ett andra över 12 betyder månad; annars Europas
+  let dmy = true; for (const r of data) { const m = (r[iT] || '').trim().match(D); if (!m || m[1].length === 4) continue; if (+m[1] > 12) { dmy = true; break; } if (+m[2] > 12) { dmy = false; break; } }
+  const out = [];
+  for (const r of data) {
+    const m = (r[iT] || '').trim().match(D); if (!m) continue;
+    let [, a, b, c, hh, mi, ap] = m, y, mo, d; hh = +hh;
+    if (a.length === 4) [y, mo, d] = [+a, +b, +c]; else [y, mo, d] = dmy ? [+c, +b, +a] : [+c, +a, +b];
+    if (y < 100) y += 2000; if (ap) hh = (hh % 12) + (/pm/i.test(ap) ? 12 : 0);
+    const type = (r[iR] || '').trim(), raw = type === '0' ? r[iH] : type === '1' ? r[iS] : '';
+    const v = parseFloat(String(raw || '').replace(',', '.')), k = type === '0' ? kH : kS;
+    if (v > 0 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31) out.push([new Date(y, mo - 1, d, hh, +mi).getTime(), Math.round(v * k)]);
   }
   return out;
 }
@@ -2623,18 +2786,20 @@ $('imfile').onchange = async () => {
   $('imsg').textContent = 'Reading file…';
   try {
     const rows = parseCsv(await f.text());
-    if (!rows.length) { $('imsg').textContent = 'No glucose readings found. Expected a LibreView export with DD-MM-YYYY HH:mm timestamps.'; return; }
-    $('imsg').textContent = `Uploading ${rows.length} readings…`;
+    if (!rows.length) { $('imsg').textContent = 'No glucose readings found. Expected the CSV export from LibreView (Glucose History).'; return; }
+    const t0 = rows.reduce((m, r) => Math.min(m, r[0]), Infinity), t1 = rows.reduce((m, r) => Math.max(m, r[0]), 0), span = `${new Date(t0).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} to ${new Date(t1).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    $('imsg').textContent = `Uploading ${rows.length} readings from ${span}…`;
     const r = await api('/api/import', { method: 'POST', body: JSON.stringify(rows) });
-    $('imsg').textContent = r.error ? 'Import failed: ' + r.error : `Done. ${r.added} new readings added, ${r.skipped} already there or not valid.`;
+    $('imsg').textContent = r.error ? 'Import failed: ' + r.error : `Done: ${span}. ${r.added} new readings added, ${r.skipped} already there or not valid.`;
     refresh(); reloadIns();
-  } catch { $('imsg').textContent = 'Import failed. Is the server running?'; } finally { $('imfile').value = ''; }
+  } catch (e) { console.error('import:', e); $('imsg').textContent = 'Import failed: no contact with the dashboard server.'; } finally { $('imfile').value = ''; }
 };
+document.querySelectorAll('[role=radiogroup]').forEach(radios);
 nowTime();
 try { const k = localStorage.getItem('tab'); if (k && $('tab-' + k)) showTab(k); } catch {}
 api('/api/db').then(d => { base = normDb(d); db = clone(base); }).catch(() => {}).finally(() => { setTarget(db.settings); renderMeals(); renderLib(); renderInsulin(); renderTarget(); syncNav(); refresh(); });
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawChart(); if (!$('tab-ins').hidden) { renderWeek(); renderMonth(); renderYear(); } }, 150); });
-setInterval(refresh, 6e4);
+setInterval(() => { if (!document.hidden) refresh(); }, 6e4); // inte medan fliken är dold (då släpper servern också AI-modellen)
 </script>
 </body>
 </html>

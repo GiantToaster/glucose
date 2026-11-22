@@ -1,0 +1,11 @@
+{
+  "name": "glucose",
+  "private": true,
+  "description": "A personal glucose dashboard for FreeStyle Libre via LibreLinkUp. No packages to install.",
+  "engines": { "node": ">=18.17" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "build": "node web/build.js"
+  }
+}

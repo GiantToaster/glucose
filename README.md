@@ -15,19 +15,21 @@ Byggd med Claude Code som ett bidrag till SweClockers × ASUS ProArt (november 2
 ## Viktigt
 
 Det här är ett informationsverktyg för eget bruk. Det ger **aldrig dosråd** och ersätter inte Libre-appen eller dess
-larm. Frågor om doser besvaras av servern med ett fast svar innan de når AI:n.
+larm. Frågor om doser besvaras av servern med ett fast svar innan de når AI:n, och AI:ns svar kontrolleras mening för
+mening innan de visas: ser en mening ut som ett dosråd stoppas svaret där.
 
 ## Kör den
 
-Node.js 18 eller senare, inga paket att installera. Två filer: `server.js` och `index.html`.
+Node.js 18.17 eller senare, inga paket att installera. Två filer: `server.js` och `index.html`.
 
 ```bash
 DEMO=1 node server.js     # påhittad person, ingen inloggning: http://localhost:3000
 node server.js            # på riktigt: logga in med ett LibreLinkUp-konto
 ```
 
-Testerna (spärren mot dosfrågor, loggningen, skydden, Excel-exporten och LibreLinkUp-versionen) körs med `node --test`
-från projektmappen, också utan paket.
+Testerna (spärren mot dosfrågor och mot dosråd i svaren, loggningen, inloggningen, kontrollen av det som sparas, skydden,
+definitionen av en känning, Excel-exporten och LibreLinkUp-versionen) körs med `node --test` (eller `npm test`) från
+projektmappen, också utan paket.
 
 Under Settings finns export av värden, måltider och anteckningar som en Excel-fil, och LibreLinkUp-appens version. Den höjs av sig själv när
 LibreLinkUp säger vilken version som krävs. Lägg gärna dashboarden på mobilens hemskärm, då får den en egen ikon.

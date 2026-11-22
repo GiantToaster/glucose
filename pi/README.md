@@ -38,8 +38,9 @@ scp data/db.json data/readings.jsonl data/session.json data/telegram.json pi@ras
 cd ~/glucose && HOST=0.0.0.0 sudo -E bash pi/install.sh
 ```
 
-Skriptet sätter tidszonen till Europe/Stockholm, installerar Node.js om det saknas och gör dashboarden till
-tjänsten `glucose-dashboard`, som startar med Pi:n och startar om sig själv om den stannar.
+Skriptet installerar Node.js från Debians egna paket om det saknas (18.17 eller nyare behövs) och gör dashboarden till
+tjänsten `glucose-dashboard`, som startar med Pi:n och startar om sig själv om den stannar. Tjänsten räknar i
+Europe/Stockholm (`TZ_NAME`) utan att ändra hela Pi:ns tidszon, och den får läsa men inte ändra systemets filer.
 `HOST=0.0.0.0` gör den nåbar i hemnätet; utan den nås den bara på Pi:n själv. Har Pi:n fler nät (till exempel
 en egen WiFi-accesspunkt på wlan0) lägger man till `LAN_IFACE=eth0`: då får bara enheter på hemnätet svar, och
 enheterna på det andra nätet får "403".
@@ -83,8 +84,10 @@ Ett kommando i PowerShell, från projektmappen:
 .\pi\deploy.ps1
 ```
 
-Det kopierar filerna, startar om tjänsten om `server.js` har ändrats (`index.html` läses vid varje sidladdning, så
-den behöver ingen omstart) och kontrollerar att Pi:n har samma filer som datorn och att dashboarden svarar.
+Det kör först `node --check` och testerna (`-SkipTests` hoppar över testerna), kopierar sedan filerna till en tillfällig
+mapp på Pi:n och byter ut dem med ett namnbyte, så att en sidladdning aldrig får en halvt kopierad fil. De förra filerna
+sparas i `glucose/.previous`. Tjänsten startas om om `server.js` har ändrats (`index.html` läses vid varje sidladdning,
+så den behöver ingen omstart). Svarar dashboarden inte efteråt läggs de förra filerna tillbaka automatiskt.
 `.\pi\deploy.ps1 -Restart` startar om även när `server.js` är oförändrad. Ladda sedan om dashboarden i webbläsaren.
 
 Omstarten kräver `sudo`, så skriptet frågar efter Pi:ns lösenord när den behövs. Vill du slippa det kör du det här
@@ -117,10 +120,13 @@ avstängda. En gång på datorn (PowerShell som administratör):
 
 ```powershell
 [Environment]::SetEnvironmentVariable('OLLAMA_HOST', '0.0.0.0', 'User')   # Ollama lyssnar även i hemnätet
-New-NetFirewallRule -DisplayName 'Ollama for the glucose Pi' -Direction Inbound -Protocol TCP -LocalPort 11434 -RemoteAddress PI-IP-ADRESS -Action Allow
+New-NetFirewallRule -DisplayName 'Ollama for the glucose Pi' -Direction Inbound -Protocol TCP -LocalPort 11434 -RemoteAddress PI-IP-ADRESS -Profile Private -Action Allow
 ```
 
-Avsluta sedan Ollama i aktivitetsfältet (Quit Ollama) och starta det igen. Byt PI-IP-ADRESS mot Pi:ns adress. Brandväggsregeln släpper bara in Pi:n.
+Avsluta sedan Ollama i aktivitetsfältet (Quit Ollama) och starta det igen. Byt PI-IP-ADRESS mot Pi:ns adress. Brandväggsregeln släpper bara in Pi:n,
+och bara när datorn är på ett nätverk som Windows kallar Privat (hemnätet). Ollama har inget eget lösenord, så på andra nätverk
+(Offentligt) når ingen den. Har Windows själv lagt till en regel för ollama.exe när den startades första gången: ta bort den
+(Windows Defender-brandväggen → Inkommande regler), annars släpper den in alla.
 
 Vill du att Ollama startar dolt när du loggar in (inget fönster, ingen ikon): kopiera `pc\ollama-hidden.vbs` till
 Autostart-mappen (Win+R, skriv `shell:startup`, Enter). Starta inte Ollama-appen samtidigt; båda vill ha port 11434.

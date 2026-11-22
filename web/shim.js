@@ -15,13 +15,16 @@
     rmSync: p => { files.delete(p); },
     renameSync: (a, b) => { files.set(b, files.get(a)); files.delete(a); },
     readFile: (p, cb) => setTimeout(() => files.has(p) ? cb(null, files.get(p)) : cb(enoent(p))),
-    statSync: p => ({ size: (files.get(p) || '').length, mtimeMs: Date.now(), isFile: () => true }),
+    statSync: p => { if (!files.has(p)) throw enoent(p); return { size: files.get(p).length, mtimeMs: Date.now(), isFile: () => true }; },
+    stat: (p, cb) => setTimeout(() => files.has(p) ? cb(null, { size: files.get(p).length, mtimeMs: 0 }) : cb(enoent(p))),
+    chmodSync() {},
   };
   const path = { join: (...a) => a.join('/').replace(/\/+/g, '/'), dirname: p => p.replace(/\/[^/]*$/, '') || '/', isAbsolute: p => p.startsWith('/') };
   const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
   const nodeCrypto = {
     randomBytes: n => ({ toString: () => hex(n) }),
     randomInt: (a, b) => a + Math.floor(Math.random() * (b - a)),
+    timingSafeEqual: (a, b) => String(a) === String(b),
     createHash: () => ({ update() { return this; }, digest: () => '0'.repeat(64) }),
   };
   const os = { hostname: () => 'demo', networkInterfaces: () => ({}) };
@@ -40,14 +43,14 @@
   // Nodes timers har unref(); webbläsarens ger bara ett tal. Objektet blir talet igen när det skickas till clearTimeout.
   const timer = f => (...a) => { const id = f(...a); return { unref() { return this; }, ref() { return this; }, [Symbol.toPrimitive]: () => id }; };
   new Function('require', 'process', 'Buffer', '__dirname', 'console', 'fetch', 'setTimeout', 'setInterval', SRC)(
-    n => mods[n], process, Buffer, '/app', quiet, offline, timer(setTimeout.bind(window)), timer(setInterval.bind(window)));
+    n => { if (!(n in mods)) throw new Error(`web/shim.js: no stand-in for require('${n}')`); return mods[n]; }, process, Buffer, '/app', quiet, offline, timer(setTimeout.bind(window)), timer(setInterval.bind(window)));
 
   // Sidans anrop till /api/... går till serverns hanterare med en låtsad förfrågan och ett låtsat svar
   // Text som text, och binärt (t.ex. Excel-exporten) oförändrat
   const bin = d => d instanceof Uint8Array ? d : String(d);
   const call = (u, init) => new Promise(resolve => {
     const on = {}, h = new Headers(init.headers || {}), body = init.body == null ? '' : String(init.body);
-    const req = { method: (init.method || 'GET').toUpperCase(), url: u.pathname + u.search, socket: { remoteAddress: '127.0.0.1' },
+    const req = { method: (init.method || 'GET').toUpperCase(), url: u.pathname + u.search, socket: { remoteAddress: '127.0.0.1' }, resume() {},
       headers: { host: 'localhost', 'content-type': h.get('content-type') || '', 'content-length': String(body.length) },
       on(ev, f) { (on[ev] ||= []).push(f); return req; } };
     let status = 200, head = {}, out = [], closed = [];
@@ -80,7 +83,7 @@
     },
   }), { headers: { 'content-type': 'text/plain; charset=utf-8' } });
   const recorded = (u, init) => {
-    if (u.pathname === '/api/ai') return Promise.resolve(Response.json({ ok: true, model: AI.model + ' (recorded answers)' }));
+    if (u.pathname === '/api/ai' || u.pathname === '/api/ai/warm') return Promise.resolve(Response.json({ ok: true, model: AI.model + ' (recorded answers)' }));
     let q = ''; try { const m = JSON.parse(init.body).messages; q = m[m.length - 1].content; } catch {}
     const a = AI.answers[q];
     if (!a) return call(u, init);
@@ -90,6 +93,6 @@
   window.fetch = (input, init = {}) => {
     const u = new URL(typeof input === 'string' ? input : input.url, location.href);
     if (u.origin !== location.origin || !u.pathname.startsWith('/api/')) return realFetch(input, init);
-    return AI && (u.pathname === '/api/ai' || u.pathname === '/api/ask') ? recorded(u, init) : call(u, init);
+    return AI && (u.pathname === '/api/ai' || u.pathname === '/api/ai/warm' || u.pathname === '/api/ask') ? recorded(u, init) : call(u, init);
   };
 })();

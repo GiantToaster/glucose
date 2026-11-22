@@ -48,6 +48,6 @@ fs.writeFileSync(path.join(out, 'journey.html'), journey);
 // Bilderna till resan och historiken (contest/img med undermappar)
 fs.cpSync(path.join(root, 'contest', 'img'), path.join(out, 'img'), { recursive: true });
 fs.copyFileSync(path.join(root, 'contest', 'historik.html'), path.join(out, 'historik.html'));
-for (const f of ['icon.svg', 'apple-touch-icon.png', 'icon-512.png', 'manifest.webmanifest']) fs.copyFileSync(path.join(root, f), path.join(out, f));
+for (const f of ['icon.svg', 'apple-touch-icon.png', 'icon-512.png', 'icon-192.png', 'icon-maskable-512.png', 'manifest.webmanifest']) fs.copyFileSync(path.join(root, f), path.join(out, f));
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
 console.log(`docs/index.html: ${Math.round(page.length / 1024)} kB, AI answers: ${answers ? Object.keys(answers.answers).length : 0}${repo ? ', source link ' + repo : ', no source link (no git remote yet)'}`);

@@ -1,4 +1,4 @@
-// Libre dashboard. Requires Node 18+, no packages to install.
+// Libre dashboard. Requires Node 18.17+ (AbortSignal.any), no packages to install.
 //
 // 1) In the LibreLink app, invite a DIFFERENT email address (Connected apps > LibreLinkUp > Add connection).
 //    Log in with that address in the LibreLinkUp app and accept the terms. That account is used here.
@@ -7,7 +7,7 @@
 //    never written to disk. With "Stay logged in" ticked, the login key (token) LibreLinkUp hands out is saved
 //    in data/session.json so you skip the login after a restart. "Log out" deletes it.
 //
-// Log in your own words: type "pizza 7,5 enheter" or "promenad 45 min" in the box at the top of the dashboard, or send it
+// Write what you ate or did: type "pizza 7,5 enheter" or "promenad 45 min" in the box at the top of the dashboard, or send it
 //    to your own Telegram bot from your phone (Settings > Telegram shows how to create and connect it). The computer
 //    fetches the messages itself, so nothing is opened in the router, and messages wait at Telegram for up to 24 h if
 //    the computer is off. Only the meal texts pass through Telegram, never glucose readings. A weekly and monthly summary
@@ -27,18 +27,26 @@
 
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto'), os = require('os');
 const { LLU_EMAIL, LLU_PASSWORD, DEMO, PORT = 3000, HOST = '127.0.0.1', LLU_VERSION = '4.16.0', OLLAMA_URL = 'http://127.0.0.1:11434', OLLAMA_MODEL, OLLAMA_AUTOSTART, TELEGRAM_API = 'https://api.telegram.org' } = process.env;
-// Skyddsnät: ett missat fel i ett asynkront anrop ska skrivas ut, inte stänga av servern
-process.on('unhandledRejection', e => console.error('Unhandled:', e));
+// Ett missat fel i ett asynkront anrop: skriv ut det och avsluta, så att tjänsten (systemd, Restart=always) startar om
+// från ett känt läge i stället för att köra vidare i ett okänt. Förut skrevs felet bara ut och servern fortsatte.
+process.on('unhandledRejection', e => { console.error('Unhandled:', e); process.exit(1); });
 
 const DIR = path.join(__dirname, DEMO ? 'data-demo' : 'data'), RF = path.join(DIR, 'readings.jsonl'), DBF = path.join(DIR, 'db.json'), SF = path.join(DIR, 'session.json');
-fs.mkdirSync(DIR, { recursive: true });
+// Mappen och filerna med inloggningsnyckeln och bot-token kan bara läsas av användaren som kör servern (700/600)
+fs.mkdirSync(DIR, { recursive: true, mode: 0o700 });
+try { fs.chmodSync(DIR, 0o700); } catch {}
+const writePrivate = (f, data) => { fs.writeFileSync(f, data, { mode: 0o600 }); try { fs.chmodSync(f, 0o600); } catch {} };
 const R = new Map(); // tid (ms, hel minut) -> mg/dL
 // LLU_API: en annan adress till LibreLinkUp, bara för testerna (test/), som kör mot en låtsasserver
 const BASE = process.env.LLU_API || 'https://api.libreview.io';
 let creds = LLU_EMAIL && LLU_PASSWORD ? { email: LLU_EMAIL, password: LLU_PASSWORD } : null; // lösenordet finns bara i minnet
 let last = null, loginErr = '', base = BASE, token = null, acct, pid, user = null, gen = 0; // gen räknas upp vid in/utloggning
+// LibreLinkUp-adressen kommer från svaret vid inloggningen (region) och från session.json. Bara LibreLinkUps egna adresser
+// godtas, så att ett manipulerat svar eller en ändrad fil inte kan skicka lösenordet eller nyckeln någon annanstans.
+const okBase = b => b === BASE || /^https:\/\/api-[a-z0-9]{2,8}\.libreview\.io$/.test(String(b));
+const regionBase = r => { const b = `https://api-${String(r).toLowerCase()}.libreview.io`; if (!/^[a-z0-9]{2,8}$/i.test(String(r)) || !okBase(b)) throw new Error('LibreLinkUp answered with an unknown region.'); return b; };
 // Sparad inloggning från förra körningen: bara token, aldrig lösenordet.
-try { const s = JSON.parse(fs.readFileSync(SF, 'utf8')); if (!DEMO && !creds && !(s.expires * 1000 < Date.now())) ({ token, acct, base, user } = s); } catch {}
+try { const s = JSON.parse(fs.readFileSync(SF, 'utf8')); if (!DEMO && !creds && !(s.expires * 1000 < Date.now()) && okBase(s.base)) ({ token, acct, base, user } = s); } catch {}
 let status = DEMO ? 'demo' : creds || token ? 'starting' : 'login';
 const forget = () => fs.rmSync(SF, { force: true });
 
@@ -65,24 +73,33 @@ let lluVer = LLU_VERSION;
 try { const v = JSON.parse(fs.readFileSync(VF, 'utf8')).version; if (okVer(v)) lluVer = v; } catch {}
 const setVer = v => { lluVer = okVer(v) ? v : LLU_VERSION; if (lluVer === LLU_VERSION) fs.rmSync(VF, { force: true }); else fs.writeFileSync(VF, JSON.stringify({ version: lluVer })); };
 const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
-const hdr = () => ({ 'content-type': 'application/json', product: 'llu.android', version: lluVer, ...(token && { authorization: 'Bearer ' + token, 'account-id': acct }) });
-async function call(p, body, again = true) {
+// auth = { token, acct } för just det anropet; utan auth används den aktuella inloggningen. at = adressen (standard: base).
+const hdr = (auth = { token, acct }) => ({ 'content-type': 'application/json', product: 'llu.android', version: lluVer, ...(auth.token && { authorization: 'Bearer ' + auth.token, 'account-id': auth.acct }) });
+async function call(p, body, again = true, at = base, auth) {
   // Timeout: ett anrop som hänger får inte blockera alla följande minuters hämtningar
-  const r = await fetch(base + p, { method: body ? 'POST' : 'GET', headers: hdr(), body: body && JSON.stringify(body), signal: AbortSignal.timeout(20e3) });
+  const r = await fetch(at + p, { method: body ? 'POST' : 'GET', headers: hdr(auth), body: body && JSON.stringify(body), signal: AbortSignal.timeout(20e3) });
   const j = await r.json().catch(() => ({}));
   const min = j.data && j.data.minimumVersion;
-  if (j.status === 920 && again && okVer(min) && newer(min, lluVer)) { console.log(`LibreLinkUp wants app version ${min} (was ${lluVer}). Using it from now on.`); setVer(min); return call(p, body, false); }
+  if (j.status === 920 && again && okVer(min) && newer(min, lluVer)) { console.log(`LibreLinkUp wants app version ${min} (was ${lluVer}). Using it from now on.`); setVer(min); return call(p, body, false, at, auth); }
   if (!r.ok || (j.status && j.status !== 0)) throw Object.assign(new Error(`${p}: HTTP ${r.status} ${JSON.stringify(j).slice(0, 200)}`), { http: r.status, llu: j.status });
   return j;
 }
-async function login(c) {
-  const b = { email: c.email, password: c.password };
-  token = null; pid = null; base = BASE;
-  let j = await call('/llu/auth/login', b);
-  if (j.data.redirect) { base = `https://api-${j.data.region}.libreview.io`; j = await call('/llu/auth/login', b); }
-  token = j.data.authTicket.token; user = c.email;
-  acct = crypto.createHash('sha256').update(j.data.user.id).digest('hex');
-  if (c.remember) fs.writeFileSync(SF, JSON.stringify({ token, acct, base, user, expires: j.data.authTicket.expires })); else forget();
+// Loggar in utan att röra den aktuella inloggningen: allt räknas fram i egna variabler och sparas först när
+// LibreLinkUp har godkänt. Förut nollställdes token innan svaret kom, så ett enda misslyckat försök (fel lösenord,
+// vem som helst i nätverket) raderade en sparad inloggning och hämtningen slutade tyst. Bara en inloggning åt gången.
+let loginQ = Promise.resolve();
+function login(c) {
+  const run = async () => {
+    const b = { email: c.email, password: c.password }, none = { token: null };
+    let at = BASE, j = await call('/llu/auth/login', b, true, at, none);
+    if (j.data.redirect) { at = regionBase(j.data.region); j = await call('/llu/auth/login', b, true, at, none); }
+    const t = j.data.authTicket.token, a = crypto.createHash('sha256').update(j.data.user.id).digest('hex');
+    token = t; acct = a; base = at; pid = null; user = c.email;
+    if (c.remember) writePrivate(SF, JSON.stringify({ token, acct, base, user, expires: j.data.authTicket.expires })); else forget();
+  };
+  const p = loginQ.catch(() => {}).then(run);
+  loginQ = p;
+  return p;
 }
 function logout(err = '') { gen++; creds = token = pid = last = user = null; base = BASE; loginErr = err; status = DEMO ? 'demo' : 'login'; forget(); }
 // LibreLinkUp status 2 = fel e-post/lösenord, 4 = villkor måste godkännas i appen
@@ -114,9 +131,10 @@ async function pollOnce(retry = true) {
     if (g0 !== gen) return; // in- eller utloggad medan anropet pågick
     seenSensor(d.connection && d.connection.sensor);
     // Inget aktuellt värde (t.ex. sensorbyte eller uppvärmning): spara historiken och behåll senaste kända värdet.
-    [...(d.graphData || []), ...(g ? [g] : [])].forEach(x => add(ts(x.FactoryTimestamp), x.ValueInMgPerDl ?? x.Value));
-    const t = g && ts(g.FactoryTimestamp);
-    if (Number.isFinite(t)) last = { t, v: g.ValueInMgPerDl ?? g.Value, trend: g.TrendArrow };
+    // Bara ValueInMgPerDl: Value är i kontots egen enhet (mmol/L i Europa), så 6.2 skulle läsas som 6 mg/dL ("Very low")
+    [...(d.graphData || []), ...(g ? [g] : [])].forEach(x => add(ts(x.FactoryTimestamp), x.ValueInMgPerDl));
+    const t = g && ts(g.FactoryTimestamp), v = g && Math.round(g.ValueInMgPerDl);
+    if (okT(t) && okV(v)) last = { t, v, trend: g.TrendArrow };
     status = 'ok';
   } catch (e) {
     console.error(e.message);
@@ -131,8 +149,9 @@ async function pollOnce(retry = true) {
 
 // ---------- Sensorn: när den startades ----------
 // LibreLinkUp skickar sensorns starttid (connection.sensor.a, unix-sekunder) och uppvärmningen i minuter (w), men inte
-// hur länge den håller: Plus-sensorn håller 15 dagar (SENSOR_DAYS). Starterna sparas, så att äldre byten kan markeras i grafen.
-const SNF = path.join(DIR, 'sensors.json'), SENSOR_DAYS = 15;
+// hur länge den håller: Plus-sensorerna håller 15 dagar, Libre 2 och 3 14 dagar. SENSOR_DAYS (miljövariabel, 14 eller 15)
+// väljer; standard 15. Starterna sparas, så att äldre byten kan markeras i grafen.
+const SNF = path.join(DIR, 'sensors.json'), SENSOR_DAYS = [14, 15].includes(+process.env.SENSOR_DAYS) ? +process.env.SENSOR_DAYS : 15;
 let sens = { starts: [], warm: 60 };
 if (DEMO) for (let k = 6; k >= 0; k--) sens.starts.push(Math.round(Date.now() - (8.4 + 14 * k) * 864e5));
 else try { const j = JSON.parse(fs.readFileSync(SNF, 'utf8')); sens = { starts: (j.starts || []).filter(Number.isFinite), warm: j.warm > 0 ? j.warm : 60 }; } catch {}
@@ -298,16 +317,20 @@ function profileRange(from, to) {
 }
 
 // ---------- En period: tid i mål, känningar m.m. ----------
-// a = mätvärden sorterade på tid inom [from, to). En känning = minst 15 min i följd under 70 mg/dL (internationell definition).
+// a = mätvärden sorterade på tid inom [from, to). En känning = minst 15 min i följd under 70 mg/dL, och den är slut först
+// när värdet har legat på minst 70 i 15 min i följd (den internationella definitionen, Battelino m.fl. 2019/2023). Förut
+// avslutades den av första värdet på 3.9, så ett värde som studsade runt 3.9 räknades som två känningar. En lucka över
+// 20 min avslutar den också. dur = tiden under 70.
 const sorted = (from, to) => range(from, to);
 function period(a, from, to) {
-  let w = 0, s = 0, lo = 0, hi = 0, ev = null, mn = null, mx = null; const lows = [];
+  let w = 0, s = 0, lo = 0, hi = 0, ev = null, upAt = null, mn = null, mx = null; const lows = [];
   for (let i = 0; i < a.length; i++) {
     const [t, v] = a[i], next = a[i + 1] ? a[i + 1][0] : to, d = Math.min(next - t, 15 * 6e4);
     w += d; s += v * d; if (below(v)) lo += d; else if (above(v)) hi += d;
     if (!mn || v < mn[1]) mn = [t, v]; if (!mx || v > mx[1]) mx = [t, v];
-    if (v < 70) { if (!ev) lows.push(ev = { t, dur: 0, min: v }); ev.dur += d; ev.min = Math.min(ev.min, v); }
-    if (v >= 70 || next - t > 20 * 6e4) ev = null; // ett värde i mål eller en lucka avslutar känningen
+    if (v < 70) { if (!ev) lows.push(ev = { t, dur: 0, min: v }); ev.dur += d; ev.min = Math.min(ev.min, v); upAt = null; }
+    else if (ev) { upAt ??= t; if (next - upAt >= 15 * 6e4) { ev = null; upAt = null; } } // tillbaka på 3.9: slut efter 15 min i följd
+    if (ev && next - t > 20 * 6e4) { ev = null; upAt = null; } // en lucka avslutar känningen
   }
   if (!w) return null;
   return { avg: s / w, low: lo / w * 100, high: hi / w * 100, tir: (w - lo - hi) / w * 100, cov: Math.min(100, w / (to - from) * 100), min: mn, max: mx,
@@ -485,8 +508,9 @@ async function aiModel() {
   if (!m) throw new Error('No AI model is installed. Run: ollama pull gemma4:12b');
   return m;
 }
+// Utan egen AI-dator och utan autostart (t.ex. en Raspberry Pi utan OLLAMA_URL) finns det ingen Ollama att starta här
 const aiErr = e => e.name === 'TimeoutError' ? 'The local AI took too long to answer. Try again.'
-  : e.cause || e.name === 'TypeError' ? (OLLAMA_HERE ? 'The local AI is not running. Start Ollama and try again.'
+  : e.cause || e.name === 'TypeError' ? (OLLAMA_HERE ? (OLLAMA_AUTOSTART === '0' && !process.env.OLLAMA_URL ? 'No local AI is set up for this dashboard. Free text still works with the simple reader.' : 'The local AI is not running. Start Ollama and try again.')
     : `The AI computer (${new URL(OLLAMA_URL).hostname}) is not answering. It may be off or asleep.`) : e.message;
 // Ollamas standardfönster är ofta bara 4096 tokens, och då kapas BÖRJAN av texten (dagens datum, sammanfattningen och de
 // senaste måltiderna) utan varning. Samma storlek i alla anrop, annars laddar Ollama om modellen mellan dem.
@@ -601,17 +625,45 @@ DATA
 // ska jag ta", "behöver jag korrigera", "är 5 enheter lagom"). Frågor om vad som HAR hänt ("hur mycket insulin har jag
 // tagit", "tog jag", "brukar jag ta") och varför-frågor går till AI:n, som får räkna på loggade doser men aldrig föreslå
 // en. Förut stoppades också faktafrågor med ett fast svar, medan "Behöver jag korrigera nu?" slank igenom.
-const DOSE_W = '(units?|insulin\\w*|doses?|dosing|bolus|basal|ratio|correct\\w*|enhet\\w*|dos(en|er|erna|era)?|kvot\\w*|korrig\\w*|korrektion\\w*)';
-const ADVICE = '(should|shall|ought|do i need|need to|must|recommend\\w*|suggest\\w*|advi[cs]e\\w*|ska|skall|bör|borde|behöver|måste|rekommender\\w*|föreslå\\w*|råd\\w*)';
-const AMOUNT = '(too much|too little|enough|lagom|för mycket|för lite|tillräckligt)';
+// Granskningen 2026-11-22 visade att spärren släppte igenom de vanligaste dosfrågorna ("How many units for pizza?",
+// "Ge mig en dos för pizza", "Vilken dos passar till tacos?"), och att allt som började med "Varför" gick förbi, även
+// "Varför går jag högt? Ska jag ta mer insulin?". Nu bedöms varje mening för sig, och varför-frågor släpps bara förbi
+// mönstren som beskriver ett behov ("Varför behöver jag mer insulin på morgonen?"), aldrig de som ber om en dos.
+// Frågor om det som HAR hänt ("hur mycket insulin tog jag igår") går fortfarande till AI:n.
+const W = '(?![\\p{L}])'; // slutet av ett ord (\b räknar å, ä och ö som ordgräns)
+const DOSE_W = `(?<![\\p{L}])(units?|insulin\\w*|doses?|dosing|bolus\\w*|basal|ratio|correct\\w*|enhet\\w*|dos(en|er|erna|era)?|kvot\\w*|korrig\\w*|korrektion\\w*|ie|iu)${W}`;
+const DOSE_N = `(?<![\\p{L}])(units?|doses?|dosing|bolus\\w*|ratio|enhet\\w*|dos(en|er|erna|era)?|kvot\\w*)${W}`; // dosen själv, inte ordet insulin
+const STRONG = `(should|shall|ought|must|recommend\\w*|suggest\\w*|advi[cs]e\\w*|ska|skall|bör|borde|måste|rekommender\\w*|föreslå\\w*|råd\\w*)${W}`;
+const NEEDISH = `(do i need|need to|behöver)${W}`;
+const AMOUNT = `(too much|too little|enough|lagom|för mycket|för lite|tillräckligt)${W}`;
 // "Which meal needs more insulin than I usually take?" slank förut igenom: "needs" fanns inte bland orden, och
 // "more/less insulin" är en fråga om att ändra dosen även utan "should". Därför egna mönster för båda.
-const NEED = '(needs?|needed|requires?|kräver|krävs|behövs)';
-const MORE = '(more|less|fewer|extra|higher|lower|mer|mera|mindre|färre|högre|lägre|större)';
-const DOSE_Q = new RegExp([`${ADVICE}.{0,60}${DOSE_W}`, `${DOSE_W}.{0,60}${ADVICE}`, `${AMOUNT}.{0,30}${DOSE_W}`, `${DOSE_W}.{0,30}${AMOUNT}`,
-  `${NEED}.{0,60}${DOSE_W}`, `${MORE}\\s+(\\p{L}+\\s+)?${DOSE_W}`].map(x => `(^|[^\\p{L}])(${x})`).join('|'), 'iu');
-const WHY_Q = /^\s*(varför|why|hur kommer det sig|how come)\b/i;
-const doseQ = q => DOSE_Q.test(q) && !WHY_Q.test(q);
+const NEED = `(needs?|needed|requires?|kräver|krävs|behövs)${W}`;
+const MORE = `(more|less|fewer|extra|higher|lower|mer|mera|mindre|färre|högre|lägre|större)${W}`;
+const HOWMUCH = '(how many|how much|hur många|hur mycket)';
+const GIVE = `(give|calculate|compute|estimate|work out|figure out|ge|räkna ut|beräkna|uppskatta)${W}`;
+const RIGHT = `(right|best|ideal|optimal|good|okay|ok|fits?|suits?|rätt|rätta|bästa|bra|passar|funkar|fungerar)${W}`;
+const WHICH = `(which|what|vilken|vilket|vilka)${W}`;
+const FOR = `(for|per|för|till|mot)${W}`;
+// Det som redan hänt: "did I", "har jag tagit", "brukar jag", "igår". Släpper bara förbi mängdfrågorna (FACT).
+const PAST = /(^|[^\p{L}])(did|have i|have you|has|had|took|taken|was|were|used|usually|logged|last time|yesterday|brukar|tog|har jag|hade|tagit|tagits|loggade|loggat|var|blev|förra gången|senast|igår|i går)(?![\p{L}])/iu;
+const pat = (...xs) => new RegExp(xs.map(x => `(^|[^\\p{L}])(${x})`).join('|'), 'iu');
+// Ber alltid om ett råd eller ett omdöme om en dos
+const ASKS = pat(`${STRONG}.{0,60}${DOSE_W}`, `${DOSE_W}.{0,60}${STRONG}`, `${RIGHT}.{0,40}${DOSE_N}`, `${DOSE_N}.{0,40}${RIGHT}`, `${AMOUNT}.{0,30}${DOSE_W}`, `${DOSE_W}.{0,30}${AMOUNT}`);
+// Frågar efter en mängd ("how many units for pizza", "ge mig en dos", "vilken dos"): stoppas om den inte gäller det som hänt
+const FACT = pat(`${HOWMUCH}.{0,40}${DOSE_W}`, `${DOSE_W}\\s+${FOR}\\s*\\p{L}`, `${GIVE}.{0,40}${DOSE_N}`, `${WHICH}\\s+(\\p{L}+\\s+){0,2}${DOSE_N}`);
+// Beskriver ett behov ("behöver mer insulin"): stoppas, utom i en varför-fråga
+const DESCRIBE = pat(`${NEEDISH}.{0,60}${DOSE_W}`, `${DOSE_W}.{0,60}${NEEDISH}`, `${NEED}.{0,60}${DOSE_W}`, `${MORE}\\s+(\\p{L}+\\s+)?${DOSE_W}`);
+const WHY_Q = /^\s*(varför|why|hur kommer det sig|how come)(?![\p{L}])/iu;
+const doseSentence = s => ASKS.test(s) || (FACT.test(s) && !PAST.test(s)) || (DESCRIBE.test(s) && !WHY_Q.test(s));
+const doseQ = q => String(q).replace(/(\d),(\d)/g, '$1.$2').split(/[.!?;]+(?=\s|$)|\n+/).some(s => s.trim() && doseSentence(s.trim()));
+// Svaret kontrolleras också, mening för mening innan den skickas: en dos eller en kvot som förslag stoppar svaret.
+// Doser som redan loggats får nämnas ("du tog 6 enheter"), så meningar i dåtid släpps igenom.
+const OUT_DOSE = /\d+(?:[.,]\d+)?\s*(?:units?|u|e|ie|iu|enheter|enhet)(?![\p{L}])/iu;
+const OUT_RATIO = /(?:1\s*(?:units?|u|e|enhet)?\s*(?:per|\/|:)\s*\d+\s*(?:g|gram|grams)\b)|(?:\d+\s*(?:g|gram|grams)\s*(?:per|\/)\s*(?:units?|u|e|enhet)\b)|(?:carb ratio|kolhydratkvot|insulinkvot|insulin-to-carb)\D{0,20}\d/iu;
+const OUT_ADVICE = /(^|[^\p{L}])(should|could|might|would|try|consider|recommend\w*|suggest\w*|maybe|perhaps|increase|decrease|raise|reduce|lower|add|take|inject|bör|borde|kan|kanske|prova|överväg\w*|rekommender\w*|föreslå\w*|öka|minska|höj|sänk|ta|injicera|lägg till)(?![\p{L}])/iu;
+const OUT_PAST = /(^|[^\p{L}])(took|taken|logged|was|were|had|tog|tagit|loggade|loggat|var|hade|blev)(?![\p{L}])/iu;
+const adviceOut = s => OUT_RATIO.test(s) || (OUT_DOSE.test(s) && OUT_ADVICE.test(s) && !OUT_PAST.test(s));
 const DOSE_NO = sv => sv
   ? 'Jag kan inte ge råd om doser eller ändringar i behandlingen. Det beslutet är ditt och ditt diabetesteams.\n\nNär du loggar en måltid visar appen hur det gick de senaste gångerna du åt samma sak, och under Meals → Compared jämförs dina måltider. Jag kan gärna beskriva vad som hände efter en viss måltid, till exempel: "Hur har det gått de senaste gångerna jag ätit pizza?"'
   : 'I can\'t give advice on doses or treatment changes. That decision is yours and your diabetes team\'s.\n\nWhen you log a meal, the app shows how it went the last times you had the same thing, and Meals → Compared compares your meals. I can describe what happened after a meal, for example: "How did it go the last times I had pizza?"';
@@ -825,10 +877,15 @@ function removeEntry(id) {
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
 // fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
 // knapparna fanns har fått dem en gång.
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true, piw: true, piKey: '' };
+// code/codeAt/tries: parkopplingskoden gäller i 15 minuter och för högst 5 felaktiga försök, sedan behövs en ny från Settings
+// (förut gällde den tills någon kopplade in, och vem som helst som kände till boten kunde gissa obegränsat).
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', codeAt: 0, tries: 0, offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true, piw: true, piKey: '' };
+const CODE_MS = 15 * 6e4, CODE_TRIES = 5;
+const codeOk = () => !!tg.code && Date.now() - (tg.codeAt || 0) < CODE_MS && (tg.tries || 0) < CODE_TRIES;
+const newCode = () => ({ code: String(crypto.randomInt(10000000, 100000000)), codeAt: Date.now(), tries: 0 });
 let tg = { ...TG0 }, tgErr = '', tgAbort = null, tgPending = null;
 try { tg = { ...TG0, ...JSON.parse(fs.readFileSync(TF, 'utf8')) }; } catch {}
-const saveTg = () => { fs.writeFileSync(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
+const saveTg = () => { writePrivate(TF + '.tmp', JSON.stringify(tg)); fs.renameSync(TF + '.tmp', TF); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function tgApi(method, body, signal, token = tg.token) {
   const r = await fetch(`${TELEGRAM_API}/bot${token}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}), signal: signal || AbortSignal.timeout(15e3) });
@@ -837,9 +894,13 @@ async function tgApi(method, body, signal, token = tg.token) {
   return j.result;
 }
 const he = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const whenTxt = t => { const d = new Date(t).toDateString(); return (d === new Date().toDateString() ? '' : d === new Date(Date.now() - 864e5).toDateString() ? 'yesterday ' : ymd(t) + ' ') + hm(t); };
+// Dagar räknas mellan midnätter (inte 24 h bakåt), så att "yesterday" stämmer även natten efter ett byte till sommartid
+const daysAgo = t => { const a = new Date(t), b = new Date(); a.setHours(12, 0, 0, 0); b.setHours(12, 0, 0, 0); return Math.round((b - a) / 864e5); };
+const whenTxt = t => { const k = daysAgo(t); return (k === 0 ? '' : k === 1 ? 'yesterday ' : ymd(t) + ' ') + hm(t); };
+// Samma namn på anteckningstyperna som på dashboarden ("Low treatment", inte datans "Low treated")
+const kindLabel = k => k === 'Low treated' ? 'Low treatment' : k === 'Long-acting' ? 'Long-acting insulin' : k;
 const describe = e => e.name !== undefined ? `<b>${he(e.name)}</b> · ${e.ins} ${e.ins === 1 ? 'unit' : 'units'} · ${whenTxt(e.t)}`
-  : `<b>${he(e.kind)}</b>${e.text ? ': ' + he(e.text) : ''} · ${whenTxt(e.t)}${e.dur ? '–' + hm(e.t + e.dur * 6e4) : ''}`;
+  : `<b>${he(kindLabel(e.kind))}</b>${e.text ? ': ' + he(e.text) : ''} · ${whenTxt(e.t)}${e.dur ? '–' + hm(e.t + e.dur * 6e4) : ''}`;
 // Ett svar utan egna knappar tar med favoritknapparna, så att de alltid ligger kvar under skrivfältet och följer det man
 // ätit på sistone, utan att man behöver skriva /fav. (Ett meddelande kan bara ha en sorts knappar, så svar med Undo
 // eller dosknappar lämnar dem som de är.)
@@ -1009,12 +1070,14 @@ async function tgHandle(u) {
   }
   const m = u.message; if (!m || !m.chat) return;
   const text = (m.text || '').trim();
-  if (m.chat.id !== tg.chat) { // parkoppling: "/start 123456" med koden från Settings, bara i en privat chatt
-    const c = text.match(/^\/start\s+(\d{6})$/);
-    if (!tg.chat && tg.code && c && c[1] === tg.code && m.chat.type === 'private') {
-      tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; tg.favSent = true; saveTg();
-      await tgSay('Connected to your glucose dashboard. 👋\n\n' + HELP);
-    }
+  if (m.chat.id !== tg.chat) { // parkoppling: "/start 12345678" med koden från Settings (länken där skickar den), bara i en privat chatt
+    const c = text.match(/^\/start\s+(\d{6,8})$/);
+    if (tg.chat || !c || m.chat.type !== 'private') return;
+    if (!codeOk()) return;
+    const a = Buffer.from(c[1]), b = Buffer.from(tg.code);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) { tg.tries = (tg.tries || 0) + 1; saveTg(); return; }
+    tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; tg.favSent = true; saveTg();
+    await tgSay('Connected to your glucose dashboard. 👋\n\n' + HELP);
     return;
   }
   if (!text) return tgSay('I can only read text. Use the microphone on your keyboard to dictate.');
@@ -1071,7 +1134,21 @@ async function tgLoop() {
   }
 }
 const LOCALHOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
-const file = (res, f, type) => fs.readFile(path.join(__dirname, f), (e, d) => { res.writeHead(e ? 404 : 200, { 'content-type': e ? 'text/plain' : type, 'cache-control': 'no-cache' }); res.end(e ? 'not found' : d); });
+// Sidan och ikonerna läses från disken vid varje anrop (så att en ny index.html gäller direkt, utan omstart), men med
+// ETag: oförändrad fil ger 304 utan innehåll. Text komprimeras med gzip när webbläsaren tar emot det (sidan är ~260 kB).
+function file(req, res, f, type) {
+  const p = path.join(__dirname, f), miss = () => { res.writeHead(f === 'index.html' ? 500 : 404, { 'content-type': 'text/plain', ...SEC }); res.end(f === 'index.html' ? 'index.html missing' : 'not found'); };
+  fs.stat(p, (e, st) => {
+    if (e) return miss();
+    const etag = `"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`, h = { 'content-type': type, 'cache-control': 'no-cache', etag, ...SEC };
+    if (req.headers['if-none-match'] === etag) { res.writeHead(304, h); return res.end(); }
+    fs.readFile(p, (e2, d) => {
+      if (e2) return miss();
+      if (!(zlib && zlib.gzip && /^(text|application\/(manifest\+)?json|image\/svg)/.test(type) && /\bgzip\b/.test(req.headers['accept-encoding'] || ''))) { res.writeHead(200, h); return res.end(d); }
+      zlib.gzip(d, (e3, z) => { if (e3) { res.writeHead(200, h); return res.end(d); } res.writeHead(200, { ...h, 'content-encoding': 'gzip', vary: 'accept-encoding' }); res.end(z); });
+    });
+  });
+}
 
 // ---------- Excel-fil (.xlsx) utan paket ----------
 // En .xlsx är en zip med några XML-filer. Celler: tal, text, { t: ms } (tid, visas som 2026-11-17 18:05 i serverns
@@ -1080,12 +1157,15 @@ const file = (res, f, type) => fs.readFile(path.join(__dirname, f), (e, d) => { 
 let zlib = null; try { zlib = require('zlib'); } catch {}
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 const crc32 = b => { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
-function zip(files) {
+// Komprimeringen görs asynkront (zlib.deflateRaw i Nodes trådpool), så att en export av flera års värden inte stoppar
+// hämtningarna, Telegram och alla andra anrop medan den pågår. Förut deflateRawSync på huvudtråden.
+const deflate = raw => zlib && zlib.deflateRaw ? new Promise((ok, fail) => zlib.deflateRaw(raw, (e, d) => e ? fail(e) : ok(new Uint8Array(d)))) : Promise.resolve(null);
+async function zip(files) {
   const enc = new TextEncoder(), parts = [], dir = []; let off = 0;
   const hdr = (n, f) => { const b = new Uint8Array(n); f(new DataView(b.buffer)); return b; };
   for (const [name, text] of files) {
     const nm = enc.encode(name), raw = enc.encode(text), crc = crc32(raw);
-    const z = zlib && zlib.deflateRawSync ? new Uint8Array(zlib.deflateRawSync(raw)) : null, data = z || raw, method = z ? 8 : 0;
+    const z = await deflate(raw), data = z || raw, method = z ? 8 : 0;
     // Lokalt filhuvud (30 byte) och posten i innehållsförteckningen (46 byte). 0x21 = 1980-01-01, datumet spelar ingen roll.
     parts.push(hdr(30, v => { v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(8, method, true); v.setUint16(12, 0x21, true);
       v.setUint32(14, crc, true); v.setUint32(18, data.length, true); v.setUint32(22, raw.length, true); v.setUint16(26, nm.length, true); }), nm, data);
@@ -1129,27 +1209,61 @@ function xlsx(sheets) {
 // db.json: måltider, logg, anteckningar och inställningar. rev räknas upp vid varje sparning, så att två
 // enheter (t.ex. datorn och mobilen) inte skriver över varandras ändringar: en sparning från en äldre
 // version avvisas med 409 och den aktuella versionen, och sidan gör om sin ändring på den.
-const isArr = Array.isArray, validDb = o => o && typeof o === 'object' && !isArr(o) && isArr(o.meals) && isArr(o.log) && (o.notes === undefined || isArr(o.notes));
+// Varje rad kontrolleras när sidan sparar (PUT /api/db): id, tider, doser och texter av rätt slag och storlek. Förut
+// kontrollerades bara att listorna fanns, så vad som helst kunde sparas (en dos som text, ett id med HTML i) och sedan
+// visas på sidan. Okända fält får finnas kvar (äldre versioner sparade t.ex. "rise" på en måltid).
+const isArr = Array.isArray, isObj = o => !!o && typeof o === 'object' && !isArr(o);
+const okId = x => typeof x === 'string' && /^[\w-]{1,64}$/.test(x), okNum = (x, a, b) => typeof x === 'number' && Number.isFinite(x) && x >= a && x <= b;
+const okStr = (x, n) => typeof x === 'string' && x.length <= n, optStr = (x, n) => x === undefined || okStr(x, n);
+const okTime = t => okNum(t, Date.UTC(2010, 0, 1), Date.now() + 864e5);
+const okEntry = { log: m => isObj(m) && okId(m.id) && okTime(m.t) && okStr(m.name, 200) && okNum(m.ins, 0, 100) && optStr(m.type, 60),
+  notes: n => isObj(n) && okId(n.id) && okTime(n.t) && okStr(n.kind, 40) && optStr(n.text, 500) && (n.dur === undefined || okNum(n.dur, 1, 1440)),
+  meals: m => isObj(m) && okId(m.id) && okStr(m.name, 200) && okNum(m.ins, 0, 100) };
+const validDb = o => isObj(o) && isArr(o.meals) && isArr(o.log) && (o.notes === undefined || isArr(o.notes));
+// Det som skickas in: samma form som filen, och dessutom varje rad, inställningarna och versionsnumret (krävs)
+const dbProblem = o => {
+  if (!validDb(o)) return 'bad data';
+  if (!Number.isInteger(o.rev)) return 'rev missing';
+  for (const k of ['log', 'notes', 'meals']) { const i = (o[k] || []).findIndex(x => !okEntry[k](x)); if (i >= 0) return `bad ${k} entry ${i}`; }
+  if (o.settings !== undefined && !isObj(o.settings)) return 'bad settings';
+  const s = o.settings || {};
+  if (!optStr(s.fast, 60) || !optStr(s.long, 60) || (s.lo !== undefined && !okTarget(s.lo, s.hi))) return 'bad settings';
+  return null;
+};
+// db.json läses om bara när filen har ändrats (tid och storlek), i stället för att läsas och tolkas vid nästan varje
+// anrop och varje Telegram-svar. Den som ändrar det som kommer tillbaka sparar med writeDb.
+let dbCache = null;
 const readDb = () => {
+  let st = null; try { st = fs.statSync(DBF); } catch {}
+  const key = st && st.mtimeMs + ':' + st.size;
+  if (dbCache && key && dbCache.key === key) return { ...dbCache.o };
   let o; try { o = JSON.parse(fs.readFileSync(DBF, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') console.error('db.json could not be read:', e.message); }
-  return validDb(o) ? { notes: [], settings: {}, rev: 0, ...o } : { meals: [], log: [], notes: [], settings: {}, rev: 0 };
+  const d = validDb(o) ? { notes: [], settings: {}, rev: 0, ...o } : { meals: [], log: [], notes: [], settings: {}, rev: 0 };
+  dbCache = key ? { key, o: d } : null;
+  return { ...d };
 };
 // Skriv till en temporär fil och byt namn, så att ett avbrott mitt i skrivningen aldrig lämnar en halv db.json
-const writeDb = o => { fs.writeFileSync(DBF + '.tmp', JSON.stringify(o)); fs.renameSync(DBF + '.tmp', DBF); dbRev = o.rev; tgtC = null; };
+const writeDb = o => {
+  try { fs.writeFileSync(DBF + '.tmp', JSON.stringify(o)); fs.renameSync(DBF + '.tmp', DBF); } finally { dbCache = null; }
+  dbRev = o.rev; tgtC = null;
+};
 // Senaste versionsnumret, så att sidan kan se om db.json ändrats utan att hämta hela filen varje minut
 let dbRev = null;
 const currentRev = () => dbRev ??= readDb().rev;
-const send = (res, o, c = 200) => { res.writeHead(c, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(JSON.stringify(o)); };
+// Säkerhetshuvuden på varje svar: sidan får inte visas i en ram på en annan webbplats (clickjacking), webbläsaren gissar
+// aldrig filtyp, och ingen adress skickas vidare när man följer en länk.
+const SEC = { 'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY', 'content-security-policy': "frame-ancestors 'none'", 'referrer-policy': 'no-referrer' };
+const send = (res, o, c = 200, extra) => { res.writeHead(c, { 'content-type': 'application/json', 'cache-control': 'no-store', ...SEC, ...extra }); res.end(JSON.stringify(o)); };
 // Läser JSON-kroppen. Kräver content-type application/json, så att andra webbsidor i webbläsaren
 // inte kan skicka hit anrop (t.ex. falska mätvärden) utan en CORS-förfrågan som servern aldrig godkänner.
-// Högst 64 MB: räcker för en import av flera års mätvärden, men ett jättestort anrop kan inte fylla minnet.
-const MAX_BODY = 64 * 2 ** 20;
-const body = (req, res, fn) => {
+// Högst 64 MB för importen och hela db.json (flera års mätvärden), högst 256 kB för allt annat.
+const MAX_BODY = 64 * 2 ** 20, MAX_SMALL = 256 * 1024;
+const body = (req, res, fn, max = MAX_SMALL) => {
   if (!/^application\/json/.test(req.headers['content-type'] || '')) return send(res, { error: 'expected JSON' }, 415);
   const parts = []; let n = 0;
-  req.on('data', c => { n += c.length; if (n <= MAX_BODY) parts.push(c); else parts.length = 0; }); // för stort: läses men sparas inte
+  req.on('data', c => { n += c.length; if (n <= max) parts.push(c); else parts.length = 0; }); // för stort: läses men sparas inte
   req.on('end', () => {
-    if (n > MAX_BODY) return send(res, { error: 'too large' }, 413);
+    if (n > max) return send(res, { error: 'too large' }, 413);
     let o; try { o = JSON.parse(Buffer.concat(parts).toString('utf8')); } catch { return send(res, { error: 'invalid JSON' }, 400); }
     // Fångar fel både i vanliga och asynkrona hanterare
     Promise.resolve().then(() => fn(o === null ? {} : o)).catch(e => { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); });
@@ -1174,7 +1288,8 @@ const otherName = h => { const n = String(h || '').toLowerCase().replace(/:\d+$/
 // LAN_IFACE=eth0 (flera med komma): bara klienter på det nätets adresser, och datorn själv via 127.0.0.1, får svar.
 // På en Pi som också är WiFi-accesspunkt (wlan0) nådde enheter på det nätet annars dashboarden utan inloggning.
 // Att bara lyssna på eth0-adressen räcker inte: Linux tar emot paket till den adressen även när de kommer in via wlan0.
-// Saknar nätverkskortet adress (t.ex. kabeln urdragen) släpps alla in, så att man inte låser sig ute av misstag.
+// Saknar nätverkskortet adress (t.ex. kabeln urdragen, eller innan DHCP svarat) får ingen svar utom datorn själv. Förut
+// släpptes då alla in, även enheterna på det andra nätet som regeln skulle stänga ute.
 const LAN = (process.env.LAN_IFACE || '').split(',').map(x => x.trim()).filter(Boolean);
 const ipInt = ip => ip.split('.').reduce((n, x) => ((n << 8) | +x) >>> 0, 0);
 function fromLan(addr) {
@@ -1182,13 +1297,13 @@ function fromLan(addr) {
   const ip = String(addr || '').replace(/^::ffff:/, '');
   if (ip === '::1' || ip.startsWith('127.')) return true;
   const nets = LAN.flatMap(n => (os.networkInterfaces()[n] || []).filter(i => i.family === 'IPv4'));
-  if (!nets.length) return true;
+  if (!nets.length) return false;
   if (!/^\d+\.\d+\.\d+\.\d+$/.test(ip)) return false;
   const a = ipInt(ip);
   return nets.some(i => ((a & ipInt(i.netmask)) >>> 0) === ((ipInt(i.address) & ipInt(i.netmask)) >>> 0));
 }
 const server = http.createServer((req, res) => {
-  if (!fromLan(req.socket.remoteAddress)) { res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('The glucose dashboard only answers on the home network.'); }
+  if (!fromLan(req.socket.remoteAddress)) { res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', ...SEC }); return res.end('The glucose dashboard only answers on the home network.'); }
   if (!okHost(req.headers.host)) return send(res, { error: 'forbidden host' }, 403);
   if (otherName(req.headers.host)) {
     const to = `http://${SITE}${PORT == 80 ? '' : ':' + PORT}${req.method === 'GET' ? req.url : '/'}`;
@@ -1203,7 +1318,9 @@ server.on('error', e => {
   throw e;
 });
 server.listen(PORT, HOST, () => {
-  console.log(`Dashboard: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}${DEMO ? ' (demo mode)' : creds ? '' : token ? ` (saved login: ${user})` : ' (open it and log in)'}`);
+  // Den verkliga porten (PORT=0 ger en ledig port, som testerna använder)
+  const port = (server.address && server.address() && server.address().port) || PORT;
+  console.log(`Dashboard: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${port}${DEMO ? ' (demo mode)' : creds ? '' : token ? ` (saved login: ${user})` : ' (open it and log in)'}`);
   if (!LOCAL) console.log(LAN.length ? 'Answers only clients on ' + LAN.join(', ') + ' (LAN_IFACE). Anyone on that network can open the dashboard and see your data.' : 'Warning: HOST is not 127.0.0.1, so anyone on your network can open the dashboard and see your data.');
   if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
   // Hämtningar startar först när porten är vår
@@ -1277,13 +1394,27 @@ function piStatus(force) {
   }).then(r => { piBusy = null; piCache = r; return r; });
 }
 
+// Vilka metoder varje adress tar emot. Annan metod ger 405 med Allow, en okänd /api-adress 404 (förut fick båda sidan
+// index.html med 200, så ett stavfel syntes som ett JSON-fel långt senare). Anrop som gör något är POST.
+const ROUTES = { '/api/bye': 'POST', '/api/now': 'GET', '/api/llu': 'POST', '/api/export': 'GET', '/api/stats': 'GET', '/api/pi': 'GET', '/api/pi/refresh': 'POST',
+  '/api/readings': 'GET', '/api/outcomes': 'GET', '/api/profile': 'GET', '/api/login': 'POST', '/api/logout': 'POST', '/api/import': 'POST', '/api/db': 'GET,PUT',
+  '/api/quicklog': 'POST', '/api/telegram': 'GET,POST', '/api/telegram/off': 'POST', '/api/telegram/code': 'POST', '/api/autostart': 'GET,POST', '/api/telegram/pi': 'POST',
+  '/api/telegram/stale': 'POST', '/api/telegram/report': 'POST', '/api/weekly': 'GET', '/api/year': 'GET', '/api/curves': 'GET', '/api/month': 'GET',
+  '/api/ai/context': 'GET', '/api/ai': 'GET', '/api/ai/warm': 'POST', '/api/ask': 'POST' };
+const STATIC = { '/icon.svg': 'image/svg+xml', '/apple-touch-icon.png': 'image/png', '/icon-512.png': 'image/png', '/icon-192.png': 'image/png', '/icon-maskable-512.png': 'image/png', '/manifest.webmanifest': 'application/manifest+json' };
+// Inloggning: högst 5 försök per kvart, så att formuläret inte kan användas för att gissa lösenord (och låsa kontot)
+let loginTries = [];
 function route(req, res) {
-  const u = new URL(req.url, 'http://x');
-  if (u.pathname === '/icon.svg') return file(res, 'icon.svg', 'image/svg+xml');
-  // Ikonen på mobilens hemskärm och manifestet med appens namn
-  if (u.pathname === '/apple-touch-icon.png' || u.pathname === '/icon-512.png') return file(res, u.pathname.slice(1), 'image/png');
-  if (u.pathname === '/manifest.webmanifest') return file(res, 'manifest.webmanifest', 'application/manifest+json');
-  if (u.pathname === '/api/bye') { pageGone(u.searchParams.get('c')); res.writeHead(204); return res.end(); }
+  const u = new URL(req.url, 'http://x'), m = req.method === 'HEAD' ? 'GET' : req.method;
+  if (STATIC[u.pathname]) return m === 'GET' ? file(req, res, u.pathname.slice(1), STATIC[u.pathname]) : send(res, { error: 'method not allowed' }, 405, { allow: 'GET' });
+  if (u.pathname.startsWith('/api/')) {
+    const allow = ROUTES[u.pathname];
+    if (!allow) return send(res, { error: 'not found' }, 404);
+    if (!allow.split(',').includes(m)) return send(res, { error: 'method not allowed' }, 405, { allow });
+  }
+  // sendBeacon skickar text/plain, så det här anropet läser ingen kropp: id:t står i adressen. Det gör inget annat än att
+  // låta servern släppa AI-modellen tidigare.
+  if (u.pathname === '/api/bye') { req.resume(); pageGone(u.searchParams.get('c')); res.writeHead(204, SEC); return res.end(); }
   if (u.pathname === '/api/now') pageSeen(u.searchParams.get('c'));
   if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev(), sensor: { starts: sens.starts.slice(-40), warm: sens.warm, life: SENSOR_DAYS }, llu: { version: lluVer, std: LLU_VERSION } });
   // Settings → LibreLinkUp: appversionen som skickas. Tom = standard (LLU_VERSION).
@@ -1294,21 +1425,26 @@ function route(req, res) {
   });
   // Settings → Export: en Excel-fil (.xlsx) med två blad, värdena och loggen (måltider och anteckningar). Förut CSV, men
   // där visade Excel tiden som ##### (kolumnen för smal) och svenska Excel kan läsa decimalpunkt och komma fel.
+  // Ett blad rymmer 1 048 576 rader i Excel; med minutvärden räcker det ungefär två år. Fler värden delas på flera blad
+  // ("Readings", "Readings 2", …), så att filen alltid går att öppna.
   if (u.pathname === '/api/export') {
     const d = readDb();
-    const log = [...d.log.map(m => [m.t, 'Meal', m.name, Number.isFinite(m.ins) ? m.ins : '', m.type || '']), ...d.notes.map(n => [n.t, n.kind || 'Note', n.text || '', '', ''])]
+    const log = [...d.log.map(m => [m.t, 'Meal', m.name, Number.isFinite(m.ins) ? m.ins : '', m.type || '']), ...d.notes.map(n => [n.t, kindLabel(n.kind || 'Note'), n.text || '', '', ''])]
       .filter(r => Number.isFinite(r[0])).sort((a, b) => a[0] - b[0]).map(([t, ...r]) => [{ t }, ...r]);
-    const file = xlsx([
-      { name: 'Readings', widths: [18, 9, 9], rows: [['Time', 'mmol/L', 'mg/dL'], ...S.map(([t, v]) => [{ t }, { n1: Math.round(v / 18.016 * 10) / 10 }, v])] },
-      { name: 'Meals and notes', widths: [18, 14, 34, 8, 12], rows: [['Time', 'Type', 'What', 'Units', 'Insulin'], ...log] },
-    ]);
-    res.writeHead(200, { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'content-disposition': 'attachment; filename="glucose.xlsx"', 'cache-control': 'no-store' });
-    return res.end(file);
+    const ROWS = 1e6, readings = [];
+    for (let i = 0; i === 0 || i < S.length; i += ROWS)
+      readings.push({ name: i ? `Readings ${i / ROWS + 1}` : 'Readings', widths: [18, 9, 9], rows: [['Time', 'mmol/L', 'mg/dL'], ...S.slice(i, i + ROWS).map(([t, v]) => [{ t }, { n1: Math.round(v / 18.016 * 10) / 10 }, v])] });
+    return xlsx([...readings, { name: 'Meals and notes', widths: [18, 14, 34, 8, 12], rows: [['Time', 'Type', 'What', 'Units', 'Insulin'], ...log] }]).then(file => {
+      res.writeHead(200, { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'content-disposition': 'attachment; filename="glucose.xlsx"', 'cache-control': 'no-store', ...SEC });
+      res.end(file);
+    }, e => { console.error(e); send(res, { error: 'export failed' }, 500); });
   }
   if (u.pathname === '/api/stats') return send(res, stats());
-  if (u.pathname === '/api/pi') { piStatus(u.searchParams.has('fresh')).then(p => send(res, { ...p, app: appHealth() })); return; }
+  if (u.pathname === '/api/pi') { piStatus(false).then(p => send(res, { ...p, app: appHealth() })); return; }
+  if (u.pathname === '/api/pi/refresh') return body(req, res, () => piStatus(true).then(p => send(res, { ...p, app: appHealth() })));
+  // Högst 400 dygn per anrop (sidan ber om ett dygn i taget); förut gav from=0 hela historiken i ett svar
   if (u.pathname === '/api/readings') {
-    const q = u.searchParams, from = +q.get('from') || Date.now() - (+q.get('hours') || 24) * 36e5, to = +q.get('to') || Infinity;
+    const q = u.searchParams, to = +q.get('to') || Infinity, from = Math.max(+q.get('from') || Date.now() - Math.min(+q.get('hours') || 24, 9600) * 36e5, Math.min(to, Date.now()) - 400 * 864e5);
     return send(res, range(from, to + 1)); // to är inklusive
   }
   // ?since=ms: bara måltider från och med den tiden. Ett utfall ändras inte efter 3 h, så sidan hämtar alla en gång
@@ -1322,12 +1458,15 @@ function route(req, res) {
   if (u.pathname === '/api/profile') return send(res, profile(Math.min(90, Math.max(1, +u.searchParams.get('days') || 14))));
   if (u.pathname === '/api/login' && req.method === 'POST') return body(req, res, async ({ email, password, remember }) => {
     if (DEMO) return send(res, { error: 'Not available in demo mode.' }, 400);
-    if (!email || !password) return send(res, { error: 'Enter both email and password.' }, 400);
-    const c = { email, password, remember: !!remember };
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) return send(res, { error: 'Enter both email and password.' }, 400);
+    loginTries = loginTries.filter(t => Date.now() - t < 15 * 6e4);
+    if (loginTries.length >= 5) return send(res, { error: 'Too many attempts. Wait a few minutes and try again.' }, 429);
+    loginTries.push(Date.now());
+    const c = { email: email.trim(), password, remember: !!remember };
     try {
       await running; // en hämtning som redan pågår hör till den gamla inloggningen
-      await login(c);
-      gen++; creds = c; loginErr = ''; status = 'starting';
+      await login(c); // misslyckas den är den gamla inloggningen orörd och hämtningen fortsätter
+      gen++; creds = c; loginErr = ''; status = 'starting'; loginTries = [];
       await poll(); send(res, { ok: 1 });
     } catch (e) { console.error(e.message); send(res, { error: why(e) }, 401); }
   });
@@ -1342,14 +1481,15 @@ function route(req, res) {
     }
     if (lines.length) { fs.appendFileSync(RF, lines.join('\n') + '\n'); S = [...R].sort((x, y) => x[0] - y[0]); } // en sortering för hela importen
     send(res, { added: R.size - before, skipped: rows.length - (R.size - before) });
-  });
+  }, MAX_BODY);
   if (u.pathname === '/api/db') {
+    // Versionsnumret (rev) krävs: en sparning utan det kunde förut skriva över allt utan kontroll
     if (req.method === 'PUT') return body(req, res, o => {
-      if (!validDb(o)) return send(res, { error: 'bad data' }, 400);
+      const bad = dbProblem(o); if (bad) return send(res, { error: bad }, 400);
       const cur = readDb();
-      if (o.rev !== undefined && o.rev !== cur.rev) return send(res, { error: 'conflict', db: cur }, 409);
+      if (o.rev !== cur.rev) return send(res, { error: 'conflict', db: cur }, 409);
       const rev = cur.rev + 1; writeDb({ ...o, rev }); send(res, { ok: 1, rev });
-    });
+    }, MAX_BODY);
     return send(res, readDb());
   }
   // Textfältet på dashboarden: "pizza 7,5 enheter" -> sparas direkt (dosen saknas: sidan frågar efter den)
@@ -1370,9 +1510,14 @@ function route(req, res) {
     let me; try { me = await tgApi('getMe', {}, AbortSignal.timeout(10e3), t.trim()); } catch (e) { return send(res, { error: e.code === 401 || e.code === 404 ? 'Telegram did not accept that token.' : 'No contact with Telegram.' }, 400); }
     await tgApi('deleteWebhook', {}, undefined, t.trim()).catch(() => {}); // en webhook skulle stoppa hämtningen
     tgApi('setMyCommands', { commands: COMMANDS }, undefined, t.trim()).catch(() => {});
-    tg = { ...TG0, token: t.trim(), bot: me.username, code: String(crypto.randomInt(100000, 1000000)) }; tgErr = ''; tgPending = null; saveTg();
+    tg = { ...TG0, token: t.trim(), bot: me.username, ...newCode() }; tgErr = ''; tgPending = null; saveTg();
     if (tgAbort) tgAbort.abort();
     send(res, { ok: 1 });
+  });
+  // En ny parkopplingskod (den förra har gått ut eller gissats på för många gånger)
+  if (u.pathname === '/api/telegram/code') return body(req, res, () => {
+    if (!tg.token || tg.chat) return send(res, { error: tg.chat ? 'The bot is already linked.' : 'Connect the bot first.' }, 400);
+    Object.assign(tg, newCode()); saveTg(); send(res, { ok: 1 });
   });
   if (u.pathname === '/api/telegram/off' && req.method === 'POST') return body(req, res, () => {
     tg = { ...TG0 }; tgErr = ''; tgPending = null; fs.rmSync(TF, { force: true }); if (tgAbort) tgAbort.abort(); send(res, { ok: 1 });
@@ -1399,7 +1544,7 @@ function route(req, res) {
     if (!tg.token) return send(res, { error: 'Connect the bot first.' }, 400);
     tg.report = !!on; if (on) { tg.sentW = ymd(Date.now()); tg.sentM = mkey(mstart(mkey(Date.now())) - 1); } saveTg(); send(res, { ok: 1, report: tg.report });
   });
-  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: tg.chat ? '' : tg.code, error: tgErr, report: !!tg.report, stale: tg.stale !== false, piw: tg.piw !== false });
+  if (u.pathname === '/api/telegram') return send(res, { on: !!tg.token, bot: tg.bot, chat: !!tg.chat, who: tg.who, code: !tg.chat && codeOk() ? tg.code : '', codeEnds: !tg.chat && codeOk() ? tg.codeAt + CODE_MS : 0, error: tgErr, report: !!tg.report, stale: tg.stale !== false, piw: tg.piw !== false });
   if (u.pathname === '/api/weekly') {
     const w = weekly(), n = Date.now(), W = 7 * 864e5;
     return send(res, { ...w, q: w.days.length ? quarters(w.days[0][0], n) : [], prof: profileRange(n - W, n), parts: { cur: dayParts(n - W, n), prev: dayParts(n - 2 * W, n - W) } });
@@ -1418,37 +1563,60 @@ function route(req, res) {
     return send(res, { months: list, demo: !!DEMO, ...x, ...(x && { q: quarters(x.from, x.to), parts: { cur: dayParts(x.from, x.to), prev: dayParts(mstart(mkey(x.from - 1)), x.from) } }) });
   }
   // Exakt det som skickas till AI:n, så att man kan se vad den svarar utifrån
-  if (u.pathname === '/api/ai/context') { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(ASK + aiContext()); }
-  // Är den lokala AI:n igång? Med ?warm=1 laddas modellen in i förväg, så att första svaret inte tar 20 s.
-  if (u.pathname === '/api/ai') return aiModel().then(model => {
-    if (u.searchParams.get('warm')) fetch(OLLAMA_URL + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, keep_alive: '15m', options: { num_ctx: NUM_CTX } }) }).catch(() => {});
+  if (u.pathname === '/api/ai/context') { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...SEC }); return res.end(ASK + aiContext()); }
+  // Är den lokala AI:n igång?
+  if (u.pathname === '/api/ai') return aiModel().then(model => send(res, { ok: true, model }), e => send(res, { ok: false, error: aiErr(e) }));
+  // Ladda modellen i förväg medan frågan skrivs, så att första svaret inte tar 20 s (POST: det gör något, se ROUTES)
+  if (u.pathname === '/api/ai/warm') return body(req, res, () => aiModel().then(model => {
+    fetch(OLLAMA_URL + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(6e4), body: JSON.stringify({ model, keep_alive: '15m', options: { num_ctx: NUM_CTX } }) }).catch(() => {});
     send(res, { ok: true, model });
-  }, e => send(res, { ok: false, error: aiErr(e) }));
+  }, e => send(res, { ok: false, error: aiErr(e) })));
   if (u.pathname === '/api/ask' && req.method === 'POST') return body(req, res, async ({ messages } = {}) => {
     const msgs = (isArr(messages) ? messages : []).slice(-8).filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
       .map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
     if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return send(res, { error: 'bad data' }, 400);
-    const q = msgs[msgs.length - 1].content;
-    if (doseQ(q)) { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); return res.end(DOSE_NO(SWEDISH.test(q))); }
+    const q = msgs[msgs.length - 1].content, lang = SWEDISH.test(q) ? 'sv' : 'en';
+    // Svarets språk i content-language, så att sidan kan sätta lang på svaret (skärmläsare läser svenska med svensk röst)
+    const head = { 'content-type': 'text/plain; charset=utf-8', 'content-language': lang, 'cache-control': 'no-store', ...SEC };
+    if (doseQ(q)) { res.writeHead(200, head); return res.end(DOSE_NO(lang === 'sv')); }
     msgs[msgs.length - 1] = { role: 'user', content: q + REMIND };
-    const ac = new AbortController(); res.on('close', () => { if (!res.writableFinished) ac.abort(); }); // sidan stängd: sluta generera
+    // Sidan stängd: sluta generera. Högst 3 minuter per svar, så att en Ollama som hänger inte håller anslutningen öppen.
+    const ac = new AbortController(); res.on('close', () => { if (!res.writableFinished) ac.abort(); });
+    const signal = AbortSignal.any([ac.signal, AbortSignal.timeout(18e4)]);
     let r;
-    try { r = await ollama({ stream: true, options: { temperature: 0.5 }, messages: [{ role: 'system', content: ASK + aiContext() }, ...msgs] }, ac.signal); }
+    try { r = await ollama({ stream: true, options: { temperature: 0.5 }, messages: [{ role: 'system', content: ASK + aiContext() }, ...msgs] }, signal); }
     catch (e) { return send(res, { error: aiErr(e) }, 503); }
-    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+    res.writeHead(200, head);
+    // Texten skickas mening för mening, och varje mening kontrolleras först (adviceOut): ser den ut som ett dosförslag
+    // stoppas svaret där, med en förklaring. Förut skyddade bara instruktionen till modellen, som inte alltid följs.
+    let held = '', stopped = false;
+    const flush = all => {
+      const k = all ? held.length : Math.max(...['\n', '. ', '! ', '? '].map(x => held.lastIndexOf(x) + 1));
+      if (k <= 0) return;
+      const out = held.slice(0, k);
+      if (out.split(/(?<=[.!?\n])/).some(adviceOut)) {
+        stopped = true; ac.abort();
+        res.write('\n\n' + (lang === 'sv' ? '(Resten av svaret visas inte, eftersom det såg ut som ett dosråd. Appen ger aldrig dosråd; prata med ditt diabetesteam.)' : '(The rest of the answer is not shown because it looked like dose advice. The app never gives dosing advice; talk to your diabetes team.)'));
+        return;
+      }
+      res.write(out); held = held.slice(k);
+    };
     try { // Ollama skickar en JSON-rad per bit text
       const dec = new TextDecoder(); let buf = '';
       for await (const chunk of r.body) {
         buf += dec.decode(chunk, { stream: true }); let i;
-        while ((i = buf.indexOf('\n')) >= 0) {
+        while ((i = buf.indexOf('\n')) >= 0 && !stopped) {
           const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (!line) continue;
-          const j = JSON.parse(line); if (j.message && j.message.content) res.write(j.message.content); if (j.error) res.write('\n\n(' + j.error + ')'); if (j.done) logTokens('ask', j);
+          const j = JSON.parse(line); if (j.message && j.message.content) { held += j.message.content; flush(false); }
+          if (j.error) { flush(true); res.write('\n\n(' + j.error + ')'); } if (j.done) logTokens('ask', j);
         }
+        if (stopped) break;
       }
-    } catch (e) { if (!ac.signal.aborted) { console.error(e.message); res.write('\n\n(The answer was cut off.)'); } }
+      if (!stopped) flush(true);
+    } catch (e) { if (!stopped && !ac.signal.aborted) { console.error(e.message); res.write('\n\n(' + (e.name === 'TimeoutError' ? 'The answer took too long and was stopped.' : 'The answer was cut off.') + ')'); } }
     res.end();
   });
-  fs.readFile(path.join(__dirname, 'index.html'), (e, d) => { res.writeHead(e ? 500 : 200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' }); res.end(e ? 'index.html missing' : d); });
+  file(req, res, 'index.html', 'text/html; charset=utf-8');
 }
 
 const tick = DEMO ? demo : poll;

@@ -4,8 +4,9 @@
 #   HOST=0.0.0.0 sudo -E bash pi/install.sh   reachable from the home network (http://<pi-name>.local:3000)
 #   add OLLAMA_URL=http://<pc-name>.local:11434 to use the AI on another computer
 #   add LAN_IFACE=eth0 to answer only devices on that network (when the Pi is also a WiFi access point, for example)
-# It: sets the time zone (the dashboard counts days and clock times in local time), installs Node.js if it is missing
-# or older than 18, and adds a systemd service that starts at boot and restarts if it ever stops.
+# It: installs Node.js from the distribution if it is missing (18.17 or newer is needed), and adds a systemd service that
+# starts at boot and restarts if it ever stops. The service gets its own time zone (TZ_NAME, the dashboard counts days
+# and clock times in local time); the time zone of the whole Pi is left as it is.
 # Safe to run again (e.g. after copying a newer index.html / server.js).
 set -euo pipefail
 [ "$(id -u)" = 0 ] || { echo "Run it with sudo: sudo bash pi/install.sh"; exit 1; }
@@ -29,16 +30,16 @@ SITE_NAME=""; [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ] && SITE_NAME=
 
 [ -f "$DIR/server.js" ] || { echo "server.js not found in $DIR"; exit 1; }
 
-echo "== Time zone: $TZ_NAME"
-timedatectl set-timezone "$TZ_NAME"
-
-node_ok() { command -v node >/dev/null 2>&1 && [ "$(node -p 'process.versions.node.split(".")[0]')" -ge 18 ]; }
+# 18.17 or newer (AbortSignal.any). Only from the distribution's signed packages: no script from the internet is run as root.
+node_ok() { command -v node >/dev/null 2>&1 && node -e 'const [a, b] = process.versions.node.split(".").map(Number); process.exit(a > 18 || (a === 18 && b >= 17) ? 0 : 1)'; }
 if ! node_ok; then
   echo "== Installing Node.js"
   apt-get update -qq && apt-get install -y -qq nodejs
-  if ! node_ok; then # the distribution's version is too old: Node 22 from NodeSource
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y -qq nodejs
-  fi
+fi
+if ! node_ok; then
+  echo "Node.js 18.17 or newer is needed, and this system has $(node -v 2>/dev/null || echo none). Install a newer one, for example from NodeSource"
+  echo "(https://github.com/nodesource/distributions, with their signed apt repository), then run this script again."
+  exit 1
 fi
 echo "== Node $(node -v)"
 
@@ -60,6 +61,16 @@ ExecStart=$(command -v node) server.js
 Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}${SITE_NAME:+ SITE_NAME=$SITE_NAME}${LAN_IFACE:+ LAN_IFACE=$LAN_IFACE}
 Restart=always
 RestartSec=10
+# Sandboxing: the system files are read-only for the service, it gets its own /tmp, and new files are private (0600).
+# Not NoNewPrivileges/ProtectHome: the dashboard lives in the home folder and runs pistatus, which may use sudo.
+UMask=0077
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
 
 [Install]
 WantedBy=multi-user.target
@@ -75,7 +86,7 @@ if [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ]; then
   echo "== Name bg.local"
   apt-get install -y -qq avahi-utils >/dev/null
   install -m 755 "$DIR/pi/bg-alias.sh" /usr/local/sbin/bg-alias
-  cat > /etc/systemd/system/bg-alias.service <<'EOF'
+  cat > /etc/systemd/system/bg-alias.service <<EOF
 [Unit]
 Description=bg.local name for the glucose dashboard
 After=network-online.target avahi-daemon.service
@@ -83,6 +94,7 @@ Wants=network-online.target
 Requires=avahi-daemon.service
 
 [Service]
+Environment=IFACE=${LAN_IFACE%%,*}
 ExecStart=/usr/local/sbin/bg-alias
 Restart=on-failure
 RestartSec=10

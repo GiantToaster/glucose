@@ -6,7 +6,7 @@ const fs = require('fs'), path = require('path');
 const url = process.argv[2] || 'http://localhost:3999', out = path.join(__dirname, 'ai-answers.json');
 const qs = [...fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').matchAll(/<button data-q="([^"]+)">/g)].map(m => m[1]);
 (async () => {
-  const ai = await (await fetch(url + '/api/ai?warm=1')).json();
+  const ai = await (await fetch(url + '/api/ai/warm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json();
   if (!ai.ok) throw new Error('The local AI is not running: ' + ai.error);
   const res = { model: ai.model, at: new Date().toISOString(), answers: {} };
   for (const q of qs) {
