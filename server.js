@@ -36,6 +36,8 @@ const DIR = path.join(__dirname, DEMO ? 'data-demo' : 'data'), RF = path.join(DI
 fs.mkdirSync(DIR, { recursive: true, mode: 0o700 });
 try { fs.chmodSync(DIR, 0o700); } catch {}
 const writePrivate = (f, data) => { fs.writeFileSync(f, data, { mode: 0o600 }); try { fs.chmodSync(f, 0o600); } catch {} };
+// Filer som skapades innan detta (med 644) görs privata vid start
+for (const f of ['session.json', 'telegram.json']) try { fs.chmodSync(path.join(DIR, f), 0o600); } catch {}
 const R = new Map(); // tid (ms, hel minut) -> mg/dL
 // LLU_API: en annan adress till LibreLinkUp, bara för testerna (test/), som kör mot en låtsasserver
 const BASE = process.env.LLU_API || 'https://api.libreview.io';
