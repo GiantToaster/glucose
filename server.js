@@ -37,7 +37,7 @@ fs.mkdirSync(DIR, { recursive: true, mode: 0o700 });
 try { fs.chmodSync(DIR, 0o700); } catch {}
 const writePrivate = (f, data) => { fs.writeFileSync(f, data, { mode: 0o600 }); try { fs.chmodSync(f, 0o600); } catch {} };
 // Filer som skapades innan detta (med 644) görs privata vid start
-for (const f of ['session.json', 'telegram.json']) try { fs.chmodSync(path.join(DIR, f), 0o600); } catch {}
+for (const f of ['session.json', 'telegram.json', 'auth.json']) try { fs.chmodSync(path.join(DIR, f), 0o600); } catch {}
 const R = new Map(); // tid (ms, hel minut) -> mg/dL
 // LLU_API: en annan adress till LibreLinkUp, bara för testerna (test/), som kör mot en låtsasserver
 const BASE = process.env.LLU_API || 'https://api.libreview.io';
@@ -1304,6 +1304,30 @@ function fromLan(addr) {
   const a = ipInt(ip);
   return nets.some(i => ((a & ipInt(i.netmask)) >>> 0) === ((ipInt(i.address) & ipInt(i.netmask)) >>> 0));
 }
+// ---------- Lösenord för dashboarden (frivilligt) ----------
+// Settings → Passcode. Av från början: då kan alla i hemnätet öppna dashboarden, som förut. På: varje enhet anger koden en
+// gång och får en kaka (HttpOnly, SameSite=Strict) som gäller i ett år; utan den svarar /api/* bara 401. Koden sparas
+// aldrig, bara en scrypt-hash med salt, i data/auth.json (600), tillsammans med hashar av enheternas nycklar. Datorn själv
+// (127.0.0.1, t.ex. kontrollen i pi/deploy.ps1) behöver ingen kod; AUTH_LOCAL_FREE=0 tar bort det undantaget (testerna).
+// Det här är inte LibreLinkUp-lösenordet, som fortfarande aldrig sparas.
+const AF = path.join(DIR, 'auth.json'), SESSION_MS = 365 * 864e5;
+let auth = null; try { const a = JSON.parse(fs.readFileSync(AF, 'utf8')); if (a && a.hash && a.salt) auth = { sessions: [], ...a }; } catch {}
+const saveAuth = () => { if (auth) writePrivate(AF, JSON.stringify(auth)); else fs.rmSync(AF, { force: true }); };
+const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
+const scrypt = (code, salt) => new Promise((ok, fail) => crypto.scrypt(String(code), salt, 32, (e, k) => e ? fail(e) : ok(k.toString('hex'))));
+const cookieOf = req => { const m = String(req.headers.cookie || '').match(/(?:^|;\s*)gsid=([a-f0-9]{64})/); return m ? m[1] : null; };
+const isLocal = req => process.env.AUTH_LOCAL_FREE !== '0' && /^(::1|127\.|::ffff:127\.)/.test(String(req.socket.remoteAddress || ''));
+const hasSession = req => { const c = cookieOf(req); if (!c || !auth) return false; const h = sha(c); return auth.sessions.some(s => s.h === h && Date.now() - s.t < SESSION_MS); };
+const authOk = req => !auth || isLocal(req) || hasSession(req);
+// En ny nyckel för den här enheten, som kaka
+function newSession(res) {
+  const tok = crypto.randomBytes(32).toString('hex');
+  auth.sessions = [...auth.sessions.filter(s => Date.now() - s.t < SESSION_MS), { h: sha(tok), t: Date.now() }].slice(-50); saveAuth();
+  return { 'set-cookie': `gsid=${tok}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_MS / 1e3}` };
+}
+const OPEN = new Set(['/api/auth', '/api/auth/login']); // går att nå utan kod (läget och själva inloggningen)
+let authTries = [];
+
 const server = http.createServer((req, res) => {
   if (!fromLan(req.socket.remoteAddress)) { res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', ...SEC }); return res.end('The glucose dashboard only answers on the home network.'); }
   if (!okHost(req.headers.host)) return send(res, { error: 'forbidden host' }, 403);
@@ -1312,6 +1336,9 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET') { res.writeHead(302, { location: to, 'cache-control': 'no-store' }); return res.end(); }
     return send(res, { error: `Open the dashboard at ${to}` }, 421);
   }
+  // Sidan och ikonerna kan alltid hämtas (de innehåller inga värden); allt under /api kräver koden när den är på
+  const p = String(req.url).split('?')[0];
+  if (p.startsWith('/api/') && !OPEN.has(p) && !authOk(req)) { req.resume(); return send(res, { error: 'Enter the passcode.', auth: true }, 401); }
   try { route(req, res); } catch (e) { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); }
 });
 // Körs dashboarden redan (t.ex. startad vid inloggningen)? Då avslutas den här, i stället för att båda läser Telegram.
@@ -1323,7 +1350,7 @@ server.listen(PORT, HOST, () => {
   // Den verkliga porten (PORT=0 ger en ledig port, som testerna använder)
   const port = (server.address && server.address() && server.address().port) || PORT;
   console.log(`Dashboard: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${port}${DEMO ? ' (demo mode)' : creds ? '' : token ? ` (saved login: ${user})` : ' (open it and log in)'}`);
-  if (!LOCAL) console.log(LAN.length ? 'Answers only clients on ' + LAN.join(', ') + ' (LAN_IFACE). Anyone on that network can open the dashboard and see your data.' : 'Warning: HOST is not 127.0.0.1, so anyone on your network can open the dashboard and see your data.');
+  if (!LOCAL) console.log(LAN.length ? 'Answers only clients on ' + LAN.join(', ') + ' (LAN_IFACE).' + (auth ? ' Other devices need the passcode.' : ' Anyone on that network can open the dashboard and see your data (Settings → Passcode turns on a passcode).') : 'Warning: HOST is not 127.0.0.1, so anyone on your network can open the dashboard and see your data.');
   if (tg.token) console.log(`Telegram: @${tg.bot}${tg.chat ? '' : ' (not linked yet, see Settings)'}`);
   // Hämtningar startar först när porten är vår
   tick(); setInterval(tick, 6e4); tgLoop(); startOllama();
@@ -1402,7 +1429,8 @@ const ROUTES = { '/api/bye': 'POST', '/api/now': 'GET', '/api/llu': 'POST', '/ap
   '/api/readings': 'GET', '/api/outcomes': 'GET', '/api/profile': 'GET', '/api/login': 'POST', '/api/logout': 'POST', '/api/import': 'POST', '/api/db': 'GET,PUT',
   '/api/quicklog': 'POST', '/api/telegram': 'GET,POST', '/api/telegram/off': 'POST', '/api/telegram/code': 'POST', '/api/autostart': 'GET,POST', '/api/telegram/pi': 'POST',
   '/api/telegram/stale': 'POST', '/api/telegram/report': 'POST', '/api/weekly': 'GET', '/api/year': 'GET', '/api/curves': 'GET', '/api/month': 'GET',
-  '/api/ai/context': 'GET', '/api/ai': 'GET', '/api/ai/warm': 'POST', '/api/ask': 'POST' };
+  '/api/ai/context': 'GET', '/api/ai': 'GET', '/api/ai/warm': 'POST', '/api/ask': 'POST',
+  '/api/auth': 'GET', '/api/auth/login': 'POST', '/api/auth/set': 'POST', '/api/auth/off': 'POST', '/api/auth/logout': 'POST' };
 const STATIC = { '/icon.svg': 'image/svg+xml', '/apple-touch-icon.png': 'image/png', '/icon-512.png': 'image/png', '/icon-192.png': 'image/png', '/icon-maskable-512.png': 'image/png', '/manifest.webmanifest': 'application/manifest+json' };
 // Inloggning: högst 5 försök per kvart, så att formuläret inte kan användas för att gissa lösenord (och låsa kontot)
 let loginTries = [];
@@ -1419,6 +1447,29 @@ function route(req, res) {
   if (u.pathname === '/api/bye') { req.resume(); pageGone(u.searchParams.get('c')); res.writeHead(204, SEC); return res.end(); }
   if (u.pathname === '/api/now') pageSeen(u.searchParams.get('c'));
   if (u.pathname === '/api/now') return send(res, { last, status, demo: !!DEMO, user, loginErr, rev: currentRev(), sensor: { starts: sens.starts.slice(-40), warm: sens.warm, life: SENSOR_DAYS }, llu: { version: lluVer, std: LLU_VERSION } });
+  // Lösenordet: läget, inloggning med koden (högst 5 försök per kvart), ny kod, av, och logga ut den här enheten
+  if (u.pathname === '/api/auth') return send(res, { on: !!auth, ok: authOk(req), local: isLocal(req), demo: !!DEMO });
+  if (u.pathname === '/api/auth/login') return body(req, res, async ({ code }) => {
+    if (!auth) return send(res, { ok: 1 });
+    authTries = authTries.filter(t => Date.now() - t < 15 * 6e4);
+    if (authTries.length >= 5) return send(res, { error: 'Too many tries. Wait a few minutes and try again.' }, 429);
+    authTries.push(Date.now());
+    const h = await scrypt(String(code || '').slice(0, 200), auth.salt);
+    if (!crypto.timingSafeEqual(Buffer.from(h, 'hex'), Buffer.from(auth.hash, 'hex'))) return send(res, { error: 'That is not the passcode.' }, 401);
+    authTries = []; send(res, { ok: 1 }, 200, newSession(res));
+  });
+  if (u.pathname === '/api/auth/set') return body(req, res, async ({ code }) => {
+    if (DEMO) return send(res, { error: 'Not available in demo mode.' }, 400);
+    if (typeof code !== 'string' || code.length < 6 || code.length > 200) return send(res, { error: 'Use at least 6 characters.' }, 400);
+    const salt = crypto.randomBytes(16).toString('hex');
+    auth = { hash: await scrypt(code, salt), salt, sessions: [] }; saveAuth(); // en ny kod loggar ut alla andra enheter
+    send(res, { ok: 1, on: true }, 200, isLocal(req) ? undefined : newSession(res));
+  });
+  if (u.pathname === '/api/auth/off') return body(req, res, () => { auth = null; saveAuth(); send(res, { ok: 1, on: false }); });
+  if (u.pathname === '/api/auth/logout') return body(req, res, () => {
+    const c = cookieOf(req); if (auth && c) { auth.sessions = auth.sessions.filter(s => s.h !== sha(c)); saveAuth(); }
+    send(res, { ok: 1 }, 200, { 'set-cookie': 'gsid=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0' });
+  });
   // Settings → LibreLinkUp: appversionen som skickas. Tom = standard (LLU_VERSION).
   if (u.pathname === '/api/llu' && req.method === 'POST') return body(req, res, ({ version }) => {
     const v = String(version || '').trim();

@@ -12,9 +12,12 @@ Från datorn eller mobilen i hemnätet (eller i Pi:ns eget Wi-Fi):
   (raspberrypi.local:3000) skickas vidare hit (`SITE_NAME=bg.local` i tjänsten), så att dashboarden bara har en adress.
 - eller Pi:ns IP-adress med `:3000` efter, om namnet inte fungerar (t.ex. på vissa Android-telefoner)
 
-Lägg gärna till den på mobilens hemskärm. Dashboarden har inget eget lösenord: alla enheter i ditt nätverk kan
-öppna den, men den nås inte från internet (den lyssnar bara på IPv4 bakom routern). Ge Pi:n en fast adress i
-routern (DHCP-reservation), så att adressen inte ändras.
+Lägg gärna till den på mobilens hemskärm. Från början har dashboarden inget eget lösenord: alla enheter i ditt nätverk
+kan öppna den, men den nås inte från internet (den lyssnar bara på IPv4 bakom routern). Vill du att andra enheter i
+nätverket (gäster, smarta prylar) inte ska komma åt värdena slår du på **Settings → Passcode**: varje enhet anger koden
+en gång och kommer ihåg den i ett år. Koden sparas bara som en hash i `data/auth.json`; Pi:n själv behöver den aldrig.
+Glömt koden? Ta bort `data/auth.json` på Pi:n och starta om tjänsten. Ge Pi:n en fast adress i routern
+(DHCP-reservation), så att adressen inte ändras.
 
 ## Kör bara en server
 

@@ -378,7 +378,7 @@ code{font:var(--fs-xs) ui-monospace,Consolas,monospace;padding:1px 4px;border-ra
   .tirbar i,.obar i,.yrlg i,.lgd i,svg rect,svg path,svg circle{forced-color-adjust:none}
 }
 /* Flikarnas nav-landmärke påverkar inte layouten; enheten i grafens hörn läses mot kurvan; vald ruta i Insights (tangentbordet) */
-.tnav{display:contents}svg text.axu{font-weight:600;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}svg .tipon{stroke:var(--fg);stroke-width:2;paint-order:stroke}
+html.locked main>:not(#authf),html.locked .tabbar,html.locked aside,html.locked #pibtn,html.locked #gear{display:none!important}.tnav{display:contents}svg text.axu{font-weight:600;paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}svg .tipon{stroke:var(--fg);stroke-width:2;paint-order:stroke}
 .tipnav:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:4px}
 .lqw{display:flex;align-items:center;gap:8px;min-width:0}.tgf{align-items:center}.tgf .lab{flex-basis:100%}.qlst{flex-basis:100%;margin:0;font-size:var(--fs-sm)}.qlst:empty{display:none}
 .hzlg{gap:4px 12px}
@@ -415,6 +415,15 @@ code{font:var(--fs-xs) ui-monospace,Consolas,monospace;padding:1px 4px;border-ra
 </div>
 
 <main>
+<form class="card login" id="authf" hidden>
+  <div class="dl">
+    <h2>Enter the passcode</h2>
+    <p class="mut m0">This dashboard asks for a passcode. You only need to enter it once on this device.</p>
+    <div class="fld"><label for="apc">Passcode</label><input id="apc" type="password" autocomplete="current-password" required aria-describedby="amsg"></div>
+    <button class="p">Unlock</button>
+    <p class="mut" id="amsg" role="status"></p>
+  </div>
+</form>
 <form class="card login" id="login" hidden>
   <div class="dl">
     <h2>Log in to LibreLinkUp</h2>
@@ -450,7 +459,7 @@ code{font:var(--fs-xs) ui-monospace,Consolas,monospace;padding:1px 4px;border-ra
     <div class="seg" id="rng" role="radiogroup" aria-label="Time shown in the chart"><button data-h="3" title="Last 3 hours (key 1)" aria-keyshortcuts="1" role="radio" aria-checked="false">3 h</button><button data-h="6" title="Last 6 hours (key 2)" class="on" aria-keyshortcuts="2" role="radio" aria-checked="true">6 h</button><button data-h="12" title="Last 12 hours (key 3)" aria-keyshortcuts="3" role="radio" aria-checked="false">12 h</button><button data-h="24" title="Last 24 hours (key 4)" aria-keyshortcuts="4" role="radio" aria-checked="false">24 h</button></div>
     <div class="nav"><button id="dlive" aria-label="Back to now" hidden><span class="nlg">Back to now</span><span class="nsm">Now</span></button><button id="dprev" aria-label="Previous day" title="Previous day ([)" aria-keyshortcuts="[">‹</button><input id="dpick" type="date" aria-label="Show a day"><button id="dnext" aria-label="Next day" title="Next day (])" aria-keyshortcuts="]" disabled>›</button></div>
   </div>
-  <div id="chart"></div><div id="hvsr" class="sr" aria-live="polite"></div>
+  <div id="chart"></div><div id="chtab" class="sr"></div><div id="hvsr" class="sr" aria-live="polite"></div>
   <p class="mut fine hvhint" id="hvhint"><span class="ptr-fine">Hover over the curve, or focus it and use the arrow keys,</span><span class="ptr-coarse">Drag a finger across the curve</span> to read the exact value.</p>
   <div id="dethome"><div id="mdet"></div></div>
 </section>
@@ -615,6 +624,11 @@ code{font:var(--fs-xs) ui-monospace,Consolas,monospace;padding:1px 4px;border-ra
     <section class="sgw" id="llusec" aria-labelledby="sg9" hidden><h3 class="slab" id="sg9">LibreLinkUp</h3><div class="sg">
       <div class="srow"><label class="sname" for="lluv">App version<span class="sd" id="llumsg" aria-live="polite">Raised by itself when LibreLinkUp asks for a newer one</span></label><div class="sbtn"><input id="lluv" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="llumsg"><button id="llus" aria-label="Save the LibreLinkUp app version">Save</button></div></div>
     </div></section>
+    <section class="sgw" id="authsec" aria-labelledby="sg10" hidden><h3 class="slab" id="sg10">Passcode</h3><div class="sg">
+      <div class="srow"><span class="sname">Ask for a passcode<span class="sd" id="authst"></span></span><button id="aoff" aria-describedby="aoffq" hidden>Turn off</button></div>
+      <form class="srow wide" id="aset"><label class="sname" for="anew"><span id="anewl">Set a passcode</span><span class="sd">At least 6 characters. Each device asks for it once, then remembers it for a year.</span></label><div class="sbtn"><input id="anew" type="password" autocomplete="new-password" minlength="6" maxlength="200" aria-describedby="amsg2"><button id="asave">Save</button></div></form>
+      <div class="srow" id="alogw" hidden><span class="sname">This device<span class="sd">Forget the passcode here</span></span><button id="alog">Lock this device</button></div>
+    </div><span class="fine warnq" id="aoffq" aria-live="polite"></span><span class="fine warnq" id="amsg2" role="status"></span></section>
     <section class="sgw" id="acct" aria-labelledby="sg7" hidden><h3 class="slab" id="sg7">Account</h3><div class="sg">
       <div class="srow"><span class="sname" id="acctu"></span><button id="logout" aria-describedby="logoutq">Log out</button></div>
     </div><span class="fine warnq" id="logoutq" aria-live="polite"></span></section>
@@ -667,7 +681,15 @@ const readDose = el => {
   if (isNaN(v)) el.reportValidity();
   return v;
 };
-const api = (p, o = {}) => fetch(p, o.body ? { ...o, headers: { 'content-type': 'application/json' } } : o).then(r => r.status >= 500 ? Promise.reject(new Error('HTTP ' + r.status)) : r.json());
+const api = (p, o = {}) => fetch(p, o.body ? { ...o, headers: { 'content-type': 'application/json' } } : o).then(async r => {
+  if (r.status === 401) { const j = await r.clone().json().catch(() => ({})); if (j.auth) { lockPage(true); throw Object.assign(new Error('passcode'), { auth: true }); } }
+  return r.status >= 500 ? Promise.reject(new Error('HTTP ' + r.status)) : r.json();
+});
+// Låst: bara formuläret för koden syns (inga värden finns att visa ändå)
+function lockPage(on) {
+  const was = document.documentElement.classList.contains('locked'); document.documentElement.classList.toggle('locked', on); $('authf').hidden = !on;
+  if (on && !was) { setStatus('Locked: enter the passcode', false); $('status').title = ''; $('apc').focus(); }
+}
 // Ritar om en del av sidan bara när innehållet ändrats. Då behåller tangentbordet sitt fokus vid minutuppdateringen
 // (förut hamnade fokus på <body> varje minut), och skärmläsare läser inte upp samma sak igen. Ändras innehållet
 // läggs fokus tillbaka på samma knapp eller markering i den nya versionen.
@@ -822,7 +844,7 @@ async function refreshOnce() {
     const lastT = day === null && rd.length ? rd[rd.length - 1][0] : 0; inc = lastT > Date.now() - 24 * 36e5;
     u = inc ? '/api/readings?from=' + (lastT + 1) : rdUrl();
     [n, s, r, o] = await Promise.all([api('/api/now?c=' + PAGE), api('/api/stats'), api(u), api('/api/outcomes?since=' + (Date.now() - 4 * 36e5))]);
-  } catch (e) { console.error('refresh:', e); setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; return; }
+  } catch (e) { if (e.auth) return; console.error('refresh:', e); setStatus('No contact with the dashboard server. Trying again every minute.', false); $('status').title = ''; return; }
   // Ett fel när sidan ritas är inget avbrott i kontakten: det skrivs ut i konsolen och sägs som det är
   try {
     if (inc && day === null) { const end = rd.length ? rd[rd.length - 1][0] : 0; rd = [...rd.filter(p => p[0] >= Date.now() - 24 * 36e5), ...r.filter(p => p[0] > end)]; }
@@ -1074,6 +1096,11 @@ function drawChart() {
   cg = { X, Y, z, l, r, w, h, T, B, t0, t1, pts, pb };
   setHTML($('chart'), `<svg id="chsvg" viewBox="0 0 ${w} ${h}" role="group" tabindex="0" aria-label="Glucose chart with meals and notes. Use the left and right arrow keys to read values.">${s}</svg>`);
   if (hvT !== null) hover(hvT); // en pågående avläsning följer med när grafen ritas om (varje minut)
+  // Samma kurva som tabell för skärmläsare: en rad per timme med medel, lägsta och högsta (grafen går annars bara att läsa
+  // av ett värde i taget med piltangenterna)
+  const byH = new Map(); for (const [t, v] of pts) { const k = Math.floor(t / 36e5) * 36e5, a = byH.get(k) || []; a.push(v); byH.set(k, a); }
+  setHTML($('chtab'), byH.size ? `<table><caption>Glucose per hour, mmol/L, ${day === null ? `last ${hrs} hours` : dshort(day)}</caption><thead><tr><th scope="col">Hour</th><th scope="col">Average</th><th scope="col">Lowest</th><th scope="col">Highest</th></tr></thead><tbody>`
+    + [...byH].map(([k, a]) => `<tr><th scope="row">${hhmm(k)}</th><td>${f1(mm(a.reduce((x, y) => x + y, 0) / a.length))}</td><td>${f1(mm(Math.min(...a)))}</td><td>${f1(mm(Math.max(...a)))}</td></tr>`).join('') + '</tbody></table>' : '');
 }
 // Läsa av kurvan som en aktiegraf: musen eller fingret över grafen visar värdet vid närmaste minut med mätvärde.
 // Tangentbord: fokusera grafen och använd vänster/höger (5 min, med Shift 30 min), Home/End och Esc.
@@ -1839,6 +1866,34 @@ twoStep($('logout'), 'logoutq', 'New readings stop coming in until you log in ag
   $('dset').close();
   await api('/api/logout', { method: 'POST', body: '{}' }).catch(() => {}); refresh();
 });
+// Koden för dashboarden: lås upp den här enheten, och Settings → Passcode (sätt, byt, stäng av, glöm på den här enheten)
+$('authf').onsubmit = async e => {
+  e.preventDefault(); const b = $('authf').querySelector('button'); b.disabled = true;
+  try {
+    const r = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ code: $('apc').value }) });
+    if (r.error) { $('amsg').textContent = r.error; $('amsg').className = 'err'; $('apc').setAttribute('aria-invalid', 'true'); $('apc').select(); return; }
+    location.reload(); // allt hämtas på nytt med den nya nyckeln
+  } catch (err) { console.error('auth:', err); $('amsg').textContent = 'No contact with the dashboard server.'; $('amsg').className = 'err'; }
+  finally { b.disabled = false; }
+};
+async function loadAuth() {
+  let s; try { s = await api('/api/auth'); } catch { return; }
+  $('authsec').hidden = !!s.demo;
+  $('authst').textContent = s.on ? 'On. Devices on your network need the passcode once.' : 'Off. Anyone on your home network can open the dashboard.';
+  $('anewl').textContent = s.on ? 'Change the passcode' : 'Set a passcode'; $('aoff').hidden = !s.on; $('alogw').hidden = !s.on || s.local;
+}
+$('aset').onsubmit = async e => {
+  e.preventDefault(); const v = $('anew').value;
+  if (v.length < 6) { $('anew').setCustomValidity('Use at least 6 characters.'); $('anew').reportValidity(); return; }
+  const r = await api('/api/auth/set', { method: 'POST', body: JSON.stringify({ code: v }) }).catch(() => ({ error: 'No contact with the server.' }));
+  if (r.error) { $('amsg2').textContent = r.error; return; }
+  $('anew').value = ''; $('amsg2').textContent = 'Saved. Other devices ask for the new passcode the next time they open the dashboard.'; loadAuth();
+};
+$('anew').oninput = () => $('anew').setCustomValidity('');
+twoStep($('aoff'), 'aoffq', 'Anyone on your home network can then open the dashboard without a passcode.', 'Yes, turn off', async () => {
+  await api('/api/auth/off', { method: 'POST', body: '{}' }).catch(() => {}); $('amsg2').textContent = 'The passcode is off.'; await loadAuth(); $('anew').focus();
+});
+$('alog').onclick = async () => { await api('/api/auth/logout', { method: 'POST', body: '{}' }).catch(() => {}); location.reload(); };
 // −/+ på alla dosfält, även redigeringsrader som skapas senare
 document.addEventListener('click', e => {
   const b = e.target.closest('.step button'); if (!b) return;
@@ -2588,7 +2643,7 @@ $('pibtn').onclick = () => { $('dpi').showModal(); $('dpih').focus(); if (piLast
 $('pirf').onclick = () => loadPi(true);
 $('dpi').addEventListener('click', e => { const b = e.target.closest('.ipm'); if (b) b.replaceWith(document.createTextNode(b.dataset.ip)); });
 setTimeout(() => loadPi(false), 4000); setInterval(() => loadPi(false), 10 * 6e4); // pricken på knappen och statusfältet, var tionde minut
-$('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { renderTarget(); $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); };
+$('openMeal').onclick = () => openMeal(); $('openNote').onclick = () => openNote(); $('openLow').onclick = () => openLow(); $('gear').onclick = () => { renderTarget(); $('dset').showModal(); $('dseth').focus(); loadTg(); loadAuto(); loadAuth(); };
 document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) c.closest('dialog').close(); });
 // Klick utanför dialogen stänger den, men inte när något redan är ifyllt (då går det inte förlorat av misstag; Cancel
 // och Esc stänger), och bara när både tryck och släpp var utanför (en markering som drogs ut ur rutan stängde den förut).
