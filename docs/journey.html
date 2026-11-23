@@ -129,10 +129,10 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
   <p>Den hämtar mina värden varje minut, dygnet runt, på en Raspberry Pi 4. Måltider loggar jag genom att skriva till en egen Telegram-bot var jag än är, till exempel <q>pizza 7,5 enheter</q>. En lokal AI på mitt grafikkort svarar på frågor om mina värden, så frågorna lämnar aldrig hemmet.</p>
   <p>Du kan prova den själv i <a href="https://gianttoaster.github.io/glucose/">webbdemon</a>, med en påhittad person. Koden ligger på <a href="https://github.com/GiantToaster/glucose">GitHub</a>.</p>
   <div class="facts" aria-label="Projektet i siffror">
-    <div><b>16</b><span>dagars arbete</span></div>
+    <div><b>19</b><span>dagars arbete</span></div>
     <div><b>2</b><span>filer: server och sida</span></div>
     <div><b>0</b><span>npm-paket</span></div>
-    <div><b>4 094</b><span>rader kod, från 870</span></div>
+    <div><b>4 535</b><span>rader kod, från 870</span></div>
     <div><b>36 av 40</b><span>designbetyg, från 27</span></div>
   </div>
 </section>
@@ -176,6 +176,9 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <li><time datetime="2026-11-14">14 nov</time><div class="ev"><h3>Insikter om dygnet</h3><p>Dygnets delar, en värmekarta dag för dag och året med en ruta per dag. Sensorns ålder står under värdet, och en ny sensors första dag syns i kurvan.</p></div></li>
     <li><time datetime="2026-11-16">15–16 nov</time><div class="ev"><h3>Färre flikar</h3><p>Ett eget målområde, långtidsverkande insulin och varningar från Pi:n i Telegram. Fliken Patterns togs bort och delades upp mellan Insights och Meals, och månadsbilden försvann.</p></div></li>
     <li><time datetime="2026-11-17">17 nov</time><div class="ev"><h3>Säkerhet, webbdemo och tester</h3><p>Flikarna överst med en Log-knapp som alltid finns. En genomgång inför tävlingen hittade tre fel (se misstagen). Koden och en webbdemo kom ut på GitHub, med inspelade svar från den lokala AI:n, och elva tester körs nu efter varje ändring.</p></div></li>
+    <li><time datetime="2026-11-18">18 nov</time><div class="ev"><h3>Historiken</h3><p>En sida där åtta versioner från 25 oktober till i dag körs med samma påhittade person, var och en startad ur git.</p></div></li>
+    <li><time datetime="2026-11-22">22 nov</time><div class="ev"><h3>Två stränga kodgranskningar</h3><p>Runt 90 fynd i säkerhet, sparande, inloggning, tillgänglighet och uppladdningen till Pi:n (se misstagen). Sedan tillkom en frivillig kod för andra enheter i hemnätet, en tabell under kurvan för skärmläsare och en uppladdning som testar först och backar om något går fel.</p></div></li>
+    <li><time datetime="2026-11-23">23 nov</time><div class="ev"><h3>Ett eget namn</h3><p>Dashboarden heter nu <code>glucose.local</code> i hemnätet, och skärmbilderna till tävlingen togs om.</p></div></li>
   </ol>
 </section>
 
@@ -204,6 +207,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <li><h3><span>data</span>Excel visade #####</h3><p>Exporten var först en CSV-fil. Excel gjorde tiden till datum men kolumnen var för smal, och svensk Excel kan läsa decimalpunkt och komma fel. <span class="fix">Exporten är nu en riktig Excel-fil med två blad, byggd utan paket.</span></p></li>
     <li><h3><span class="me">beslut</span>Fler flikar var inte bättre</h3><p>Patterns, Insights och Meals visade delvis samma sak, och månadsbilden användes aldrig. <span class="fix">Patterns delades upp och månadsbilden togs bort. Appen blev enklare.</span></p></li>
     <li><h3><span class="me">Claude</span>Rättningar som gav nya fel</h3><p>Två gånger orsakade Claudes egna ändringar en ny bugg. Ett klassnamn som redan fanns förstörde aktivitetslistan. En färgvariabel som hamnat i en kommentar fick toppen att gå sönder mellan 701 och 880 px bredd, och nästa granskning hittade det. <span class="fix">Sedan dess körs de gamla kontrollerna om efter varje omgång.</span></p></li>
+    <li><h3><span class="me">Claude</span>Nittio fynd efter ”klart”</h3><p>22 november fick två granskare gå igenom hela koden med stränga ögon. Spärren släppte igenom <q>how many units for pizza</q>, ett misslyckat inloggningsförsök raderade den sparade inloggningen, och en känning räknades som över så fort ett enda värde låg över 3,9. <span class="fix">Allt med ett konkret fel rättades. AI:ns svar kontrolleras nu också mening för mening, en känning slutar först efter 15 minuter över 3,9, och testerna blev 17.</span></p></li>
   </ul>
 </section>
 
@@ -226,10 +230,10 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <div class="key"><span><i style="background:var(--ok)"></i>Cache läst</span><span><i style="background:var(--acc)"></i>Ny text in (input + cache skriv)</span><span><i style="background:var(--high-fill)"></i>Text ut</span></div>
   </figure>
   <div class="tw"><table>
-    <thead><tr><th>Totalt, 25 okt – 17 nov</th><th>Svar</th><th>Ny text in</th><th>Text ut</th><th>Cache läst</th><th>Summa</th></tr></thead>
-    <tbody><tr><td>Claude Code</td><td>3 544</td><td>20 298 782</td><td>4 146 405</td><td>1 021 142 240</td><td>1 045 587 427</td></tr></tbody>
+    <thead><tr><th>Totalt, 25 okt – 23 nov</th><th>Svar</th><th>Ny text in</th><th>Text ut</th><th>Cache läst</th><th>Summa</th></tr></thead>
+    <tbody><tr><td>Claude Code</td><td>3 874</td><td>23 071 828</td><td>4 633 028</td><td>1 138 137 119</td><td>1 165 841 975</td></tr></tbody>
   </table></div>
-  <p class="col small mut">Räknat 17 november. Skriptet som räknar ligger i <code>contest/tokens-claude.js</code>. Den lokala AI:n kör på mitt eget grafikkort och kostar inga moln-tokens: 48 965 tokens i 26 anrop sedan dashboarden började logga det 6 november.</p>
+  <p class="col small mut">Räknat 23 november. Skriptet som räknar ligger i <code>contest/tokens-claude.js</code>. Den lokala AI:n kör på mitt eget grafikkort och kostar inga moln-tokens: 56 206 tokens i 33 anrop sedan dashboarden började logga det 6 november.</p>
 </section>
 
 <section class="col">
@@ -252,6 +256,9 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
   <h2>Historiken</h2>
   <p>Projektet fick versionshantering först 6 november. De tidigaste stegen byggdes av de ögonblicksbilder som fanns: originalet från före QA-rundan och kopian som körde på Pi:n. Sedan dess har varje ändring en egen commit, och hela historiken finns <a href="https://github.com/GiantToaster/glucose/commits/main">på GitHub</a>.</p>
   <div class="log" role="list" aria-label="Git-historik, ett urval">
+    <div role="listitem"><b>99f4915</b> <span>23 nov</span> Dashboard name glucose.local instead of bg.local</div>
+    <div role="listitem"><b>bcc49e5</b> <span>22 nov</span> Optional passcode for the dashboard, and a table under the chart</div>
+    <div role="listitem"><b>0984858</b> <span>22 nov</span> Review fixes: dose guard, saving, login, accessibility and deploy</div>
     <div role="listitem"><b>a80d7cc</b> <span>17 nov</span> Web demo with recorded AI answers and the journey, tests, CSV export, LibreLinkUp version and a home screen icon</div>
     <div role="listitem"><b>8ffb5a0</b> <span>17 nov</span> Web demo, a tighter dose guard, a host check on the Pi, and anonymised files</div>
     <div role="listitem"><b>29a1ae6</b> <span>16 nov</span> Patterns tab removed: time of day and when lows start move to Insights</div>
@@ -293,7 +300,7 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
 
 // Tokens per dag: en stapel per dag, uppdelad i cache läst, ny text in och text ut, i skala mot den största dagen
 (function () {
-  const D = [['25 okt', 7764258, 153445, 81700], ['26 okt', 10498975, 216372, 133520], ['3 nov', 42742661, 576535, 275808], ['4 nov', 141060734, 1123194, 320855], ['5 nov', 282174219, 5360602, 1260686], ['6 nov', 35288756, 1039157, 190582], ['7 nov', 33657665, 471279, 83178], ['8 nov', 13778020, 568117, 46081], ['9 nov', 89909142, 2205531, 187995], ['10 nov', 59100555, 888492, 295838], ['12 nov', 50429248, 1688628, 187001], ['13 nov', 28364872, 1172976, 142550], ['14 nov', 26419692, 598171, 197218], ['15 nov', 35398906, 1709650, 71118], ['16 nov', 97032849, 1887346, 410657], ['17 nov', 67521688, 639287, 261618]];
+  const D = [['25 okt', 7764258, 153445, 81700], ['26 okt', 10498975, 216372, 133520], ['3 nov', 42742661, 576535, 275808], ['4 nov', 141060734, 1123194, 320855], ['5 nov', 282174219, 5360602, 1260686], ['6 nov', 35288756, 1039157, 190582], ['7 nov', 33657665, 471279, 83178], ['8 nov', 13778020, 568117, 46081], ['9 nov', 89909142, 2205531, 187995], ['10 nov', 59100555, 888492, 295838], ['12 nov', 50429248, 1688628, 187001], ['13 nov', 28364872, 1172976, 142550], ['14 nov', 26419692, 598171, 197218], ['15 nov', 35398906, 1709650, 71118], ['16 nov', 97032849, 1887346, 410657], ['17 nov', 97773364, 747223, 316565], ['21 nov', 1185387, 303377, 39236], ['22 nov', 84003380, 2284330, 375148], ['23 nov', 1554436, 77403, 17292]];
   const max = Math.max(...D.map(([, a, b, c]) => a + b + c)), M = n => (n / 1e6).toLocaleString('sv-SE', { maximumFractionDigits: n < 1e7 ? 1 : 0 }) + ' M';
   document.getElementById('tok').innerHTML = D.map(([d, cr, inp, out]) => {
     const tot = cr + inp + out, w = n => (n / max * 100).toFixed(2) + '%';
