@@ -1287,6 +1287,10 @@ const okHost = h => {
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(n) || /^\[[0-9a-f:.]+\]$/.test(n) || n.endsWith('.local') || ALLOWED.has(n);
 };
 const otherName = h => { const n = String(h || '').toLowerCase().replace(/:\d+$/, ''); return SITE && n.endsWith('.local') && n !== SITE; };
+// EXTRA_PORT=3000: en andra port för gamla bokmärken när dashboarden flyttat till PORT=80. Ett .local-namn där skickas
+// vidare till http://SITE_NAME/, så att adressen blir en. localhost och IP-adresser svarar som vanligt även där.
+const EXTRA = +process.env.EXTRA_PORT || 0;
+const oldPort = req => !!(SITE && EXTRA && req.socket.localPort === EXTRA && String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '').endsWith('.local'));
 // LAN_IFACE=eth0 (flera med komma): bara klienter på det nätets adresser, och datorn själv via 127.0.0.1, får svar.
 // På en Pi som också är WiFi-accesspunkt (wlan0) nådde enheter på det nätet annars dashboarden utan inloggning.
 // Att bara lyssna på eth0-adressen räcker inte: Linux tar emot paket till den adressen även när de kommer in via wlan0.
@@ -1328,10 +1332,10 @@ function newSession(res) {
 const OPEN = new Set(['/api/auth', '/api/auth/login']); // går att nå utan kod (läget och själva inloggningen)
 let authTries = [];
 
-const server = http.createServer((req, res) => {
+const handler = (req, res) => {
   if (!fromLan(req.socket.remoteAddress)) { res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8', ...SEC }); return res.end('The glucose dashboard only answers on the home network.'); }
   if (!okHost(req.headers.host)) return send(res, { error: 'forbidden host' }, 403);
-  if (otherName(req.headers.host)) {
+  if (otherName(req.headers.host) || oldPort(req)) {
     const to = `http://${SITE}${PORT == 80 ? '' : ':' + PORT}${req.method === 'GET' ? req.url : '/'}`;
     if (req.method === 'GET') { res.writeHead(302, { location: to, 'cache-control': 'no-store' }); return res.end(); }
     return send(res, { error: `Open the dashboard at ${to}` }, 421);
@@ -1340,7 +1344,14 @@ const server = http.createServer((req, res) => {
   const p = String(req.url).split('?')[0];
   if (p.startsWith('/api/') && !OPEN.has(p) && !authOk(req)) { req.resume(); return send(res, { error: 'Enter the passcode.', auth: true }, 401); }
   try { route(req, res); } catch (e) { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); }
-});
+};
+const server = http.createServer(handler);
+if (EXTRA && EXTRA !== +PORT) {
+  const extra = http.createServer(handler);
+  // Den andra porten är bara en bekvämlighet: är den upptagen fortsätter dashboarden på PORT ändå
+  extra.on('error', e => console.log(`EXTRA_PORT ${EXTRA}: ${e.code || e.message}, only port ${PORT} is used.`));
+  extra.listen(EXTRA, HOST, () => console.log(`Also on port ${EXTRA} (.local names there are sent on to port ${PORT}).`));
+}
 // Körs dashboarden redan (t.ex. startad vid inloggningen)? Då avslutas den här, i stället för att båda läser Telegram.
 server.on('error', e => {
   if (e.code === 'EADDRINUSE') { console.log(`Port ${PORT} is already in use, so the dashboard is probably running already: http://localhost:${PORT}`); process.exit(1); }

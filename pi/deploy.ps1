@@ -43,7 +43,8 @@ try {
   $healthy = {
     Start-Sleep -Seconds 4
     $active = ssh -o BatchMode=yes $pi "systemctl is-active $svc"
-    $http = ssh -o BatchMode=yes $pi "curl -s -o /dev/null -w '%{http_code}' localhost:3000/"
+    # Porten ur tjanstens PORT= (80 i hemnatet, annars 3000)
+    $http = ssh -o BatchMode=yes $pi "p=`$(grep -oE '[ =]PORT=[0-9]+' /etc/systemd/system/$svc.service | head -1 | grep -oE '[0-9]+'); curl -s -o /dev/null -w '%{http_code}' localhost:`${p:-3000}/"
     return @($active, $http)
   }
 

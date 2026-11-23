@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs the glucose dashboard as a service on a Raspberry Pi (Raspberry Pi OS / Debian).
 # Run from the dashboard folder on the Pi:   sudo bash pi/install.sh
-#   HOST=0.0.0.0 sudo -E bash pi/install.sh   reachable from the home network (http://<pi-name>.local:3000)
+#   HOST=0.0.0.0 sudo -E bash pi/install.sh   reachable from the home network: http://glucose.local (port 80)
 #   add OLLAMA_URL=http://<pc-name>.local:11434 to use the AI on another computer
 #   add LAN_IFACE=eth0 to answer only devices on that network (when the Pi is also a WiFi access point, for example)
 # It: installs Node.js from the distribution if it is missing (18.17 or newer is needed), and adds a systemd service that
@@ -13,10 +13,15 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN_AS="${SUDO_USER:-$(stat -c %U "$DIR")}" # the service runs as the normal user, not as root
-PORT="${PORT:-3000}"
 # 127.0.0.1 = only reachable on the Pi itself. 0.0.0.0 = every device on the home network can open it. The dashboard
 # has no password of its own, so only use 0.0.0.0 on a network where you trust the devices.
 HOST="${HOST:-127.0.0.1}"
+# In the home network the dashboard answers on port 80, so the address is just http://glucose.local. The service gets
+# only the right to use a low port (CAP_NET_BIND_SERVICE), not root. EXTRA_PORT (3000) keeps old bookmarks working:
+# .local names there are sent on to port 80. PORT=3000 keeps the old address; EXTRA_PORT= (empty) turns the extra port off.
+if [ "$HOST" = 127.0.0.1 ]; then PORT="${PORT:-3000}"; EXTRA_PORT=""; else PORT="${PORT:-80}"; EXTRA_PORT="${EXTRA_PORT-3000}"; fi
+[ "$EXTRA_PORT" = "$PORT" ] && EXTRA_PORT=""
+CAPS=""; [ "$PORT" -lt 1024 ] && CAPS="AmbientCapabilities=CAP_NET_BIND_SERVICE"
 TZ_NAME="${TZ_NAME:-Europe/Stockholm}"
 # The local AI on another computer, e.g. OLLAMA_URL=http://MY-PC.local:11434 (that computer runs Ollama with
 # OLLAMA_HOST=0.0.0.0). Empty = no AI; free text then uses the simple reader.
@@ -59,7 +64,8 @@ After=network-online.target
 User=$RUN_AS
 WorkingDirectory=$DIR
 ExecStart=$(command -v node) server.js
-Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}${SITE_NAME:+ SITE_NAME=$SITE_NAME}${LAN_IFACE:+ LAN_IFACE=$LAN_IFACE}
+Environment=PORT=$PORT HOST=$HOST TZ=$TZ_NAME OLLAMA_AUTOSTART=0${OLLAMA_URL:+ OLLAMA_URL=$OLLAMA_URL}${SITE_NAME:+ SITE_NAME=$SITE_NAME}${LAN_IFACE:+ LAN_IFACE=$LAN_IFACE}${EXTRA_PORT:+ EXTRA_PORT=$EXTRA_PORT}
+$CAPS
 Restart=always
 RestartSec=10
 # Sandboxing: the system files are read-only for the service, it gets its own /tmp, and new files are private (0600).
@@ -90,7 +96,7 @@ if [ -f /etc/systemd/system/bg-alias.service ]; then
   systemctl daemon-reload
 fi
 
-# Ett eget namn i hemnätverket: http://glucose.local:3000 (Pi:ns eget namn fungerar också). SITE_NAME= hoppar över det.
+# Ett eget namn i hemnätverket: http://glucose.local (Pi:ns eget namn fungerar också). SITE_NAME= hoppar över det.
 if [ -n "$SITE_NAME" ]; then
   echo "== Name $SITE_NAME"
   apt-get install -y -qq avahi-utils >/dev/null
@@ -119,3 +125,4 @@ elif [ -f /etc/systemd/system/glucose-name.service ]; then
 fi
 echo
 echo "Done. Log:  journalctl -u glucose-dashboard -f"
+[ -n "$SITE_NAME" ] && echo "Open: http://$SITE_NAME$([ "$PORT" = 80 ] || echo ":$PORT")"

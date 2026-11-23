@@ -1,5 +1,5 @@
 #!/bin/sh
-# Ger dashboarden ett eget namn i hemnätverket: http://glucose.local:3000 (utöver Pi:ns eget namn, t.ex. raspberrypi.local).
+# Ger dashboarden ett eget namn i hemnätverket: http://glucose.local (utöver Pi:ns eget namn, t.ex. raspberrypi.local).
 # avahi-publish (paketet avahi-utils) publicerar namnet så länge det körs; -R hoppar över den omvända posten, som
 # annars krockar med Pi:ns eget namn på samma adress. Körs av tjänsten glucose-name (se install.sh).
 #
