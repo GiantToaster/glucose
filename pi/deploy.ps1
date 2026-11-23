@@ -16,7 +16,7 @@ $pi = 'pi'                       # namnet i C:\Users\<du>\.ssh\config
 $dir = 'glucose'                 # mappen pa Pi:n
 $svc = 'glucose-dashboard'
 $files = 'index.html', 'server.js', 'icon.svg', 'apple-touch-icon.png', 'icon-512.png', 'icon-192.png', 'icon-maskable-512.png', 'manifest.webmanifest'
-$pifiles = 'pi/README.md', 'pi/allow-restart.sh', 'pi/install.sh', 'pi/bg-alias.sh'
+$pifiles = 'pi/README.md', 'pi/allow-restart.sh', 'pi/install.sh', 'pi/site-name.sh'
 
 Push-Location (Split-Path $PSScriptRoot -Parent)
 try {

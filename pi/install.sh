@@ -21,12 +21,13 @@ TZ_NAME="${TZ_NAME:-Europe/Stockholm}"
 # The local AI on another computer, e.g. OLLAMA_URL=http://MY-PC.local:11434 (that computer runs Ollama with
 # OLLAMA_HOST=0.0.0.0). Empty = no AI; free text then uses the simple reader.
 OLLAMA_URL="${OLLAMA_URL:-}"
-# The dashboard's own name on the home network (published by the bg-alias service below). Other .local names of this
-# Pi (e.g. its hostname) are sent on to it, so the dashboard has one address. BG_NAME=0 turns both off.
+# The dashboard's own name on the home network, glucose.local (published by the glucose-name service below). Other .local
+# names of this Pi (e.g. its hostname) are sent on to it, so the dashboard has one address. SITE_NAME=other.local picks
+# another name; SITE_NAME= (empty) turns both off.
 # Only answer clients on this network card's network, e.g. LAN_IFACE=eth0. Use it when the Pi has more than one network
 # (a WiFi access point, a guest network): the devices there then get no answer. Empty = every network.
 LAN_IFACE="${LAN_IFACE:-}"
-SITE_NAME=""; [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ] && SITE_NAME=bg.local
+SITE_NAME="${SITE_NAME-glucose.local}"; [ "$HOST" = 127.0.0.1 ] && SITE_NAME=""
 
 [ -f "$DIR/server.js" ] || { echo "server.js not found in $DIR"; exit 1; }
 
@@ -81,28 +82,40 @@ systemctl restart glucose-dashboard
 sleep 3
 systemctl --no-pager --lines=8 status glucose-dashboard || true
 
-# Ett eget namn i hemnätverket: http://bg.local:3000 (Pi:ns eget namn fungerar också). BG_NAME=0 hoppar över det.
-if [ "${BG_NAME:-1}" != 0 ] && [ "$HOST" != 127.0.0.1 ]; then
-  echo "== Name bg.local"
+# Det gamla namnet bg.local (tjänsten bg-alias, före 23 november 2026) tas bort; namnet heter nu glucose.local
+if [ -f /etc/systemd/system/bg-alias.service ]; then
+  echo "== Removing the old name bg.local"
+  systemctl disable --now bg-alias >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/bg-alias.service /usr/local/sbin/bg-alias
+  systemctl daemon-reload
+fi
+
+# Ett eget namn i hemnätverket: http://glucose.local:3000 (Pi:ns eget namn fungerar också). SITE_NAME= hoppar över det.
+if [ -n "$SITE_NAME" ]; then
+  echo "== Name $SITE_NAME"
   apt-get install -y -qq avahi-utils >/dev/null
-  install -m 755 "$DIR/pi/bg-alias.sh" /usr/local/sbin/bg-alias
-  cat > /etc/systemd/system/bg-alias.service <<EOF
+  install -m 755 "$DIR/pi/site-name.sh" /usr/local/sbin/glucose-name
+  cat > /etc/systemd/system/glucose-name.service <<EOF
 [Unit]
-Description=bg.local name for the glucose dashboard
+Description=$SITE_NAME name for the glucose dashboard
 After=network-online.target avahi-daemon.service
 Wants=network-online.target
 Requires=avahi-daemon.service
 
 [Service]
-Environment=IFACE=${LAN_IFACE%%,*}
-ExecStart=/usr/local/sbin/bg-alias
+Environment=SITE_NAME=$SITE_NAME IFACE=${LAN_IFACE%%,*}
+ExecStart=/usr/local/sbin/glucose-name
 Restart=on-failure
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 EOF
-  systemctl daemon-reload && systemctl enable --now bg-alias >/dev/null && systemctl restart bg-alias
+  systemctl daemon-reload && systemctl enable --now glucose-name >/dev/null && systemctl restart glucose-name
+elif [ -f /etc/systemd/system/glucose-name.service ]; then
+  systemctl disable --now glucose-name >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/glucose-name.service /usr/local/sbin/glucose-name
+  systemctl daemon-reload
 fi
 echo
 echo "Done. Log:  journalctl -u glucose-dashboard -f"

@@ -1271,7 +1271,7 @@ const body = (req, res, fn, max = MAX_SMALL) => {
     Promise.resolve().then(() => fn(o === null ? {} : o)).catch(e => { console.error(e); if (!res.headersSent) send(res, { error: 'server error' }, 500); else res.end(); });
   });
 };
-// SITE_NAME=bg.local: dashboarden har ett eget namn. Andra .local-namn på samma dator (t.ex. Pi:ns eget, raspberrypi.local)
+// SITE_NAME=glucose.local: dashboarden har ett eget namn. Andra .local-namn på samma dator (t.ex. Pi:ns eget, raspberrypi.local)
 // skickas vidare dit, så att den bara nås på ett namn. IP-adressen och localhost fungerar som förut.
 const SITE = (process.env.SITE_NAME || '').toLowerCase();
 // Stoppar "DNS rebinding": en främmande webbsida får sitt eget domännamn att peka på dashboardens adress och kan

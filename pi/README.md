@@ -8,8 +8,10 @@ Telegram fungerar var du än är, eftersom servern själv frågar Telegram efter
 
 Från datorn eller mobilen i hemnätet (eller i Pi:ns eget Wi-Fi):
 
-- **http://bg.local:3000** (dashboardens eget namn, från tjänsten `bg-alias`). Pi:ns eget namn
-  (raspberrypi.local:3000) skickas vidare hit (`SITE_NAME=bg.local` i tjänsten), så att dashboarden bara har en adress.
+- **http://glucose.local:3000** (dashboardens eget namn, från tjänsten `glucose-name`). Pi:ns eget namn
+  (raspberrypi.local:3000) skickas vidare hit (`SITE_NAME=glucose.local` i tjänsten), så att dashboarden bara har en adress.
+  Ett annat namn: `SITE_NAME=annat.local` när install.sh körs. Före 23 november 2026 hette den bg.local; install.sh tar
+  bort det gamla namnet, så byt bokmärket och hemskärmsikonen på mobilen.
 - eller Pi:ns IP-adress med `:3000` efter, om namnet inte fungerar (t.ex. på vissa Android-telefoner)
 
 Lägg gärna till den på mobilens hemskärm. Från början har dashboarden inget eget lösenord: alla enheter i ditt nätverk
