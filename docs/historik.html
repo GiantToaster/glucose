@@ -140,8 +140,8 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
 <main>
 <section class="col hero">
   <h1>Så har den <em>förändrats</em></h1>
-  <p class="lede">Åtta versioner av samma sida, från den första kvällen 25 oktober till i dag. Välj ett datum för att se hur den såg ut då.</p>
-  <p class="small mut">Bilderna togs 18 november. Varje version startades ur git-historiken i demoläget, med samma påhittade person, så det är den gamla koden som körs och inte gamla skärmbilder. Den första versionen fanns innan git och kommer från en sparad kopia.</p>
+  <p class="lede">Nio versioner av samma sida, från den första kvällen 25 oktober till i dag. Välj ett datum för att se hur den såg ut då.</p>
+  <p class="small mut">Bilderna togs 18 november, och den sista 23 november. Varje version startades ur git-historiken i demoläget, med samma påhittade person, så det är den gamla koden som körs och inte gamla skärmbilder. Den första versionen fanns innan git och kommer från en sparad kopia.</p>
 </section>
 
 <section class="wide">
@@ -153,7 +153,8 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <button role="tab" id="t4" aria-controls="v4" aria-selected="false" tabindex="-1">10 nov</button>
     <button role="tab" id="t5" aria-controls="v5" aria-selected="false" tabindex="-1">14 nov</button>
     <button role="tab" id="t6" aria-controls="v6" aria-selected="false" tabindex="-1">16 nov</button>
-    <button role="tab" id="t7" aria-controls="v7" aria-selected="true">17 nov</button>
+    <button role="tab" id="t7" aria-controls="v7" aria-selected="false" tabindex="-1">17 nov</button>
+    <button role="tab" id="t8" aria-controls="v8" aria-selected="true">23 nov</button>
   </div>
   <div class="vpanel" id="v0" role="tabpanel" aria-labelledby="t0" tabindex="0">
     <div class="vshots">
@@ -211,12 +212,19 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     </div>
     <div class="vtext"><h3><time datetime="2026-11-17">17 nov</time>Flikarna överst</h3><p>Flikarna flyttade upp, med en Log-knapp som alltid finns. Knapparna för måltid och anteckning i rutan med värdet behövdes inte längre.</p></div>
   </div>
+  <div class="vpanel" id="v8" role="tabpanel" aria-labelledby="t8" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-23-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 23 nov på en dator, i demoläget, strax efter en pizza: värdet 14,4 och kurvan gul över 10.">
+      <img class="vp" src="img/historik/2026-11-23-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 23 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-23">23 nov</time>Efter två kodgranskningar</h3><p>Samma layout som 17 november, men runt 90 fynd rättade: enheten på kurvans axel, fasta steg på axeln och en tabell för skärmläsare. Bilden togs strax efter en pizza, så kurvan visar hur den byter färg över 10.</p></div>
+  </div>
   <div class="vnav"><button id="vprev">← Äldre</button><button id="vnext">Nyare →</button></div>
 </section>
 
 <section class="wide">
   <h2 class="col">Mobilen, version för version</h2>
-  <div class="strip" aria-label="Mobilen i alla åtta versioner">
+  <div class="strip" aria-label="Mobilen i alla nio versioner">
     <figure><img src="img/historik/2026-10-25-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 25 okt"><figcaption>25 okt</figcaption></figure>
     <figure><img src="img/historik/2026-11-03-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 3 nov"><figcaption>3 nov</figcaption></figure>
     <figure><img src="img/historik/2026-11-06-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 6 nov"><figcaption>6 nov</figcaption></figure>
@@ -225,6 +233,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <figure><img src="img/historik/2026-11-14-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 14 nov"><figcaption>14 nov</figcaption></figure>
     <figure><img src="img/historik/2026-11-16-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 16 nov"><figcaption>16 nov</figcaption></figure>
     <figure><img src="img/historik/2026-11-17-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 17 nov"><figcaption>17 nov</figcaption></figure>
+    <figure><img src="img/historik/2026-11-23-phone.webp" width="780" height="1688" loading="lazy" alt="Mobilen 23 nov"><figcaption>23 nov</figcaption></figure>
   </div>
 </section>
 </main>

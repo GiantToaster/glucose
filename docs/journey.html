@@ -144,7 +144,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
       <div class="shot"><img src="img/after.png" width="1280" height="800" alt="Dashboarden den 6 november: värdet med läget i ord, en kurva som byter färg över 10 och under 3,9, och markeringar för promenad, behandlad känning och måltid."><figcaption><b>6 november.</b> Kurvan byter färg utanför målområdet, och promenaden, känningen och maten syns där de hände.</figcaption></div>
     </div>
   </figure>
-  <p class="col small mut">Alla skärmbilder visar demoläget: en påhittad person med 90 dagars värden. Mina egna hälsodata syns aldrig här. <a href="historik.html">Alla åtta versioner, från 25 oktober till i dag</a>.</p>
+  <p class="col small mut">Alla skärmbilder visar demoläget: en påhittad person med 90 dagars värden. Mina egna hälsodata syns aldrig här. <a href="historik.html">Alla nio versioner, från 25 oktober till i dag</a>.</p>
 </section>
 
 <section class="col">
@@ -176,7 +176,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <li><time datetime="2026-11-14">14 nov</time><div class="ev"><h3>Insikter om dygnet</h3><p>Dygnets delar, en värmekarta dag för dag och året med en ruta per dag. Sensorns ålder står under värdet, och en ny sensors första dag syns i kurvan.</p></div></li>
     <li><time datetime="2026-11-16">15–16 nov</time><div class="ev"><h3>Färre flikar</h3><p>Ett eget målområde, långtidsverkande insulin och varningar från Pi:n i Telegram. Fliken Patterns togs bort och delades upp mellan Insights och Meals, och månadsbilden försvann.</p></div></li>
     <li><time datetime="2026-11-17">17 nov</time><div class="ev"><h3>Säkerhet, webbdemo och tester</h3><p>Flikarna överst med en Log-knapp som alltid finns. En genomgång inför tävlingen hittade tre fel (se misstagen). Koden och en webbdemo kom ut på GitHub, med inspelade svar från den lokala AI:n, och elva tester körs nu efter varje ändring.</p></div></li>
-    <li><time datetime="2026-11-18">18 nov</time><div class="ev"><h3>Historiken</h3><p>En sida där åtta versioner från 25 oktober till i dag körs med samma påhittade person, var och en startad ur git.</p></div></li>
+    <li><time datetime="2026-11-18">18 nov</time><div class="ev"><h3>Historiken</h3><p>En sida där varje version från 25 oktober och framåt körs med samma påhittade person, var och en startad ur git.</p></div></li>
     <li><time datetime="2026-11-22">22 nov</time><div class="ev"><h3>Två stränga kodgranskningar</h3><p>Runt 90 fynd i säkerhet, sparande, inloggning, tillgänglighet och uppladdningen till Pi:n (se misstagen). Sedan tillkom en frivillig kod för andra enheter i hemnätet, en tabell under kurvan för skärmläsare och en uppladdning som testar först och backar om något går fel.</p></div></li>
     <li><time datetime="2026-11-23">23 nov</time><div class="ev"><h3>Ett eget namn</h3><p>Dashboarden heter nu <code>glucose.local</code> i hemnätet, och skärmbilderna till tävlingen togs om.</p></div></li>
   </ol>
@@ -200,7 +200,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <li><h3><span>tolkning</span>”okänd rätt” lästes som ”ok”</h3><p>Hittades 6 november av ett gammalt test. Mönstret som känner igen hälsningar använde <code>\b</code>, och den räknar å, ä och ö som ordgräns. <span class="fix">Rättat med en Unicode-medveten gräns.</span></p></li>
     <li><h3><span class="me">beslut</span>Mobilappen som aldrig blev av</h3><p>En app som loggar utan nät kräver https i hemnätet, och utanför hemmet nådde den inte servern alls. <span class="fix">Telegram löste båda: servern hämtar meddelandena själv, och de väntar hos Telegram om den är av.</span></p></li>
     <li><h3><span class="me">beslut</span>Två servrar, en bot</h3><p>När Pi:n tog över fick datorns server inte köra samtidigt, annars tar de meddelanden från varandra. <span class="fix">Nu körs bara en server, och den varnar om någon annan läser samma bot.</span></p></li>
-    <li><h3><span>säkerhet</span>En fråga slank förbi spärren</h3><p><q>Which meal needs more insulin than I usually take?</q> nådde AI:n, eftersom spärren inte kände igen <q>needs</q> och <q>more insulin</q>. Svaret var inget dosråd i ord, men nära. <span class="fix">Spärren känner igen fler formuleringar, och tio dosfrågor på svenska och engelska testas nu efter varje ändring.</span></p></li>
+    <li><h3><span>säkerhet</span>En fråga slank förbi spärren</h3><p><q>Which meal needs more insulin than I usually take?</q> nådde AI:n, eftersom spärren inte kände igen <q>needs</q> och <q>more insulin</q>. Svaret var inget dosråd i ord, men nära. <span class="fix">Spärren känner igen fler formuleringar, och ett tjugotal dosfrågor på svenska och engelska testas nu efter varje ändring.</span></p></li>
     <li><h3><span>säkerhet</span>Pi:n svarade på vilket namn som helst</h3><p>Skyddet mot att en främmande webbsida läser värdena gällde bara när servern körde på datorn. På Pi:n hade en sida jag besökte i princip kunnat läsa mina värden och skriva över måltidsloggen. <span class="fix">Pi:n svarar nu bara på sina egna namn och adresser.</span></p></li>
     <li><h3><span>data</span>Demon som stannade 6 november</h3><p>Demopersonens värden skapades bara första gången. Veckor senare var kurvan tom, och skärmbilderna till tävlingen hade blivit fel. <span class="fix">Demon fyller nu på fram till i dag varje gång den startar.</span></p></li>
     <li><h3><span>AI</span>AI:n gissade hur länge</h3><p>På frågan hur länge jag ligger över 10 efter en måltid svarade den <q>tillbaka i mål inom 3 timmar</q> om en pizza som låg på 13,1 efter tre timmar. Den fick bara toppen och det lägsta värdet, inte tiden. <span class="fix">Nu får den minuterna över 10 för varje måltid.</span></p></li>
@@ -256,6 +256,7 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
   <h2>Historiken</h2>
   <p>Projektet fick versionshantering först 6 november. De tidigaste stegen byggdes av de ögonblicksbilder som fanns: originalet från före QA-rundan och kopian som körde på Pi:n. Sedan dess har varje ändring en egen commit, och hela historiken finns <a href="https://github.com/GiantToaster/glucose/commits/main">på GitHub</a>.</p>
   <div class="log" role="list" aria-label="Git-historik, ett urval">
+    <div role="listitem"><b>6a0b127</b> <span>23 nov</span> Dashboard on port 80: http://glucose.local without a port</div>
     <div role="listitem"><b>99f4915</b> <span>23 nov</span> Dashboard name glucose.local instead of bg.local</div>
     <div role="listitem"><b>bcc49e5</b> <span>22 nov</span> Optional passcode for the dashboard, and a table under the chart</div>
     <div role="listitem"><b>0984858</b> <span>22 nov</span> Review fixes: dose guard, saving, login, accessibility and deploy</div>
