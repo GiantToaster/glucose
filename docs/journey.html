@@ -3,12 +3,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Så byggdes blodsockerdashboarden</title>
+<meta name="description" content="En egen blodsockerdashboard för typ 1-diabetes, byggd med Claude Code: nio versioner från första kvällen till i dag.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,700;1,400&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: en läskolumn (~68 tecken) där bilder och diagram bryter ut till full bredd (1040 px); tidslinjen har datumet i en egen kolumn.
+/* Layout: en läskolumn (~68 tecken) där bilderna bryter ut till full bredd (1040 px); tidslinjen har datumet i en egen kolumn.
    Färgerna är dashboardens egna: grönt målområde, ockra över 10, rött under 3.9, lila för det man gör. */
 :root{
   --bg:#f5f6f7;--surface:#ffffff;--sub:#eceff1;--fg:#101418;--mut:#56616a;--line:#dde1e5;
@@ -49,12 +50,11 @@ p{margin:.9rem 0;text-wrap:pretty}
 
 /* Bilder */
 figure{margin:2rem 0}
-.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
 .shot img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--line)}
 figcaption{font-size:.875rem;color:var(--mut);margin-top:.6rem}figcaption b{color:var(--fg)}
 .pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:1rem;align-items:start}
 .phone img{max-width:300px}
-@media (max-width:720px){.shots,.pair{grid-template-columns:minmax(0,1fr)}.phone img{max-width:260px}}
+@media (max-width:720px){.pair{grid-template-columns:minmax(0,1fr)}.phone img{max-width:260px}}
 
 /* Så hänger det ihop */
 .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1.5rem 0;counter-reset:none}
@@ -77,17 +77,7 @@ figcaption{font-size:.875rem;color:var(--mut);margin-top:.6rem}figcaption b{colo
 q{font-style:italic;quotes:"”" "”"}
 @media (max-width:520px){.tl li{grid-template-columns:minmax(0,1fr)}.tl li::before{left:.35rem;top:1.9rem}.tl .ev::before{left:-.05rem;top:-1.45rem}.tl time{padding-left:1.25rem}}
 
-/* Diagram */
-.chart{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1rem .75rem}
-.chart svg{display:block;width:100%;height:auto}
-.chart text{font-family:var(--mono);font-size:12px;fill:var(--mut)}
-.chart text.v{fill:var(--fg);font-weight:600}
-.bars{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.5rem .9rem;align-items:center;font-size:.875rem}
-.bars .d{font-family:var(--mono);color:var(--mut);white-space:nowrap}
-.track{height:14px;border-radius:4px;background:var(--sub);overflow:hidden;display:flex}
-.track i{display:block;height:100%}
-.bars .t{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-.key{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;font-size:.8125rem;color:var(--mut);margin-top:.85rem}.key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.4rem;vertical-align:-1px}
+
 
 /* Telegram-svaret som det ser ut i appen */
 .chat{background:var(--sub);border-radius:16px;padding:1rem;max-width:30rem}
@@ -98,15 +88,26 @@ q{font-style:italic;quotes:"”" "”"}
 .rule{margin:2rem 0;padding:1.25rem 1.35rem;border-radius:12px;background:var(--tile);color:var(--tile-fg)}
 .rule h3{color:var(--tile-fg)}.rule p{margin:.5rem 0 0;color:color-mix(in srgb,var(--tile-fg) 80%,transparent)}
 
-table{border-collapse:collapse;width:100%;font-size:.875rem}th,td{padding:.45rem .6rem;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{font-weight:600;color:var(--mut)}td{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.tw{overflow-x:auto}
 footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font-size:.875rem;color:var(--mut)}
 @media (prefers-reduced-motion:no-preference){.curve path.draw{stroke-dasharray:var(--len);stroke-dashoffset:0;animation:draw 2.2s cubic-bezier(.16,1,.3,1) both}@keyframes draw{from{stroke-dashoffset:var(--len)}}}
+
+/* Versionerna: en flik per version med datorn och mobilen bredvid varandra */
+.vtabs{display:flex;flex-wrap:wrap;gap:6px;margin:1.5rem 0 1.25rem}
+.vtabs button{font:600 .875rem var(--mono);color:var(--mut);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.35rem .8rem;cursor:pointer}
+.vtabs button[aria-selected="true"]{color:var(--bg);background:var(--fg);border-color:var(--fg)}
+.vpanel[hidden]{display:none}
+.vshots{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,15.5rem);gap:1rem;align-items:start}
+.vshots img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.vtext{max-width:var(--col);margin:1.25rem auto 0}.vtext h3 time{font-family:var(--mono);color:var(--mut);font-weight:400;font-size:.95rem;margin-right:.6rem}
+.vnav{display:flex;justify-content:space-between;gap:1rem;max-width:var(--col);margin:1.25rem auto 0}
+.vnav button{font:600 .9375rem var(--body);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.5rem 1rem;cursor:pointer}
+.vnav button:disabled{opacity:.4;cursor:default}
+@media (max-width:700px){.vshots{grid-template-columns:1fr}.vshots .vp{max-width:15.5rem;margin-inline:auto}}
 </style>
 
 <header class="wide top">
   <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#101418"/><rect x="40" y="200" width="432" height="120" rx="22" fill="#2bb39a" opacity=".32"/><path d="M60 232c76 0 82 152 158 152s88-286 176-286 86 134 116 134" fill="none" stroke="#fff" stroke-width="36" stroke-linecap="round"/></svg>Glucose dashboard</div>
-  <span class="small"><a href="./">Prova demon</a> · <a href="historik.html">Historik</a> · <a href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">Bidrag till SweClockers × ASUS ProArt</a></span>
+  <span class="small"><a href="./">Prova demon</a> · <a href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">Bidrag till SweClockers × ASUS ProArt</a></span>
 </header>
 
 <main>
@@ -123,14 +124,87 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
   </div>
 </section>
 
-<section class="wide">
-  <figure>
-    <div class="shots">
-      <div class="shot"><img src="img/historik/2026-10-25-desk.webp" width="1600" height="1000" alt="Dashboarden den 25 oktober: ett stort värde, en vit kurva i ett grönt band och en tabell med tid i målområdet."><figcaption><b>25 oktober.</b> Den första versionen: värdet, en vit linje och en tabell med tid i målområdet. Fungerade, men berättade inte mycket.</figcaption></div>
-      <div class="shot"><img src="img/after.png" width="1280" height="800" alt="Dashboarden den 6 november: värdet med läget i ord, en kurva som byter färg över 10 och under 3,9, och markeringar för promenad, behandlad känning och måltid."><figcaption><b>6 november.</b> Kurvan byter färg utanför målområdet, och promenaden, känningen och maten syns där de hände.</figcaption></div>
+<section class="wide" id="versioner">
+  <div class="col">
+    <h2>Nio versioner</h2>
+    <p>Från den första kvällen till i dag. Välj ett datum för att se hur den såg ut då, med datorn och mobilen bredvid varandra.</p>
+  </div>
+  <div class="vtabs" role="tablist" aria-label="Versioner">
+    <button role="tab" id="t0" aria-controls="v0" aria-selected="false" tabindex="-1">25 okt</button>
+    <button role="tab" id="t1" aria-controls="v1" aria-selected="false" tabindex="-1">3 nov</button>
+    <button role="tab" id="t2" aria-controls="v2" aria-selected="false" tabindex="-1">6 nov</button>
+    <button role="tab" id="t3" aria-controls="v3" aria-selected="false" tabindex="-1">9 nov</button>
+    <button role="tab" id="t4" aria-controls="v4" aria-selected="false" tabindex="-1">10 nov</button>
+    <button role="tab" id="t5" aria-controls="v5" aria-selected="false" tabindex="-1">14 nov</button>
+    <button role="tab" id="t6" aria-controls="v6" aria-selected="false" tabindex="-1">16 nov</button>
+    <button role="tab" id="t7" aria-controls="v7" aria-selected="false" tabindex="-1">17 nov</button>
+    <button role="tab" id="t8" aria-controls="v8" aria-selected="true">23 nov</button>
+  </div>
+  <div class="vpanel" id="v0" role="tabpanel" aria-labelledby="t0" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-10-25-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 25 okt på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-10-25-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 25 okt i en mobil, i demoläget.">
     </div>
-  </figure>
-  <p class="col small mut">Alla skärmbilder visar demoläget: en påhittad person med 90 dagars värden. Mina egna hälsodata syns aldrig här. <a href="historik.html">Alla nio versioner, från 25 oktober till i dag</a>.</p>
+    <div class="vtext"><h3><time datetime="2026-10-25">25 okt</time>Första versionen</h3><p>Gjord samma dag, innan Claude Code tog över på kvällen. Värdet, en kurva och en tabell med tid i målområdet för 24 timmar till 90 dagar, och import av historik från LibreView. Ingen logg för måltider syns i demoläget än.</p></div>
+  </div>
+  <div class="vpanel" id="v1" role="tabpanel" aria-labelledby="t1" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-03-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 3 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-03-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 3 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-03">3 nov</time>Före QA-rundan</h3><p>Knappar för måltid och anteckning med tangentbordsgenvägar, och flikarna Activity, Patterns och Meals under kurvan. Kurvan är fortfarande en vit linje i ett grönt band.</p></div>
+  </div>
+  <div class="vpanel" id="v2" role="tabpanel" aria-labelledby="t2" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-06-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 6 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-06-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 6 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-06">6 nov</time>Efter QA, lokal AI och Telegram</h3><p>Läget i ord (<q>In range · steady</q>), den senaste måltiden, en knapp för behandlad känning och en ruta för att logga med egna ord. Måltiden markeras i kurvan, och flikarna Insights och Ask AI har tillkommit.</p></div>
+  </div>
+  <div class="vpanel" id="v3" role="tabpanel" aria-labelledby="t3" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-09-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 9 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-09-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 9 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-09">9 nov</time>Symboler i kurvan</h3><p>Mat och dos visas som en liten symbol i kurvan i stället för en lång etikett.</p></div>
+  </div>
+  <div class="vpanel" id="v4" role="tabpanel" aria-labelledby="t4" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-10-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 10 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-10-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 10 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-10">10 nov</time>Neutral färg och en statussida</h3><p>Knapparna blev gråa i stället för lila, så att färg bara betyder något om blodsockret. En ikon öppnar statussidan för Raspberry Pi:n, och måltiden står under kurvan.</p></div>
+  </div>
+  <div class="vpanel" id="v5" role="tabpanel" aria-labelledby="t5" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-14-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 14 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-14-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 14 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-14">14 nov</time>Sensorns ålder</h3><p><q>Sensor day 9 of 15</q> under värdet, och den senaste måltiden har samma symbol som i kurvan.</p></div>
+  </div>
+  <div class="vpanel" id="v6" role="tabpanel" aria-labelledby="t6" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-16-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 16 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-16-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 16 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-16">16 nov</time>Färre flikar</h3><p>En rad överst om att appen inte ger dosråd, Favorites bredvid textfältet, och fliken Patterns borta: innehållet delades upp mellan Insights och Meals.</p></div>
+  </div>
+  <div class="vpanel" id="v7" role="tabpanel" aria-labelledby="t7" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-17-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 17 nov på en dator, i demoläget.">
+      <img class="vp" src="img/historik/2026-11-17-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 17 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-17">17 nov</time>Flikarna överst</h3><p>Flikarna flyttade upp, med en Log-knapp som alltid finns. Knapparna för måltid och anteckning i rutan med värdet behövdes inte längre.</p></div>
+  </div>
+  <div class="vpanel" id="v8" role="tabpanel" aria-labelledby="t8" tabindex="0">
+    <div class="vshots">
+      <img class="vd" src="img/historik/2026-11-23-desk.webp" width="1600" height="1000" loading="lazy" alt="Dashboarden 23 nov på en dator, i demoläget, strax efter en pizza: värdet 14,4 och kurvan gul över 10.">
+      <img class="vp" src="img/historik/2026-11-23-phone.webp" width="780" height="1688" loading="lazy" alt="Dashboarden 23 nov i en mobil, i demoläget.">
+    </div>
+    <div class="vtext"><h3><time datetime="2026-11-23">23 nov</time>Efter två kodgranskningar</h3><p>Samma layout som 17 november, men runt 90 fynd rättade: enheten på kurvans axel, fasta steg på axeln och en tabell för skärmläsare. Bilden togs strax efter en pizza, så kurvan visar hur den byter färg över 10.</p></div>
+  </div>
+  <div class="vnav"><button id="vprev">← Äldre</button><button id="vnext">Nyare →</button></div>
+  <p class="col small mut">Alla bilder visar demoläget: en påhittad person med 90 dagars värden, så mina egna hälsodata syns aldrig här. Varje version startades ur git, så det är den gamla koden som körs.</p>
 </section>
 
 <section class="col">
@@ -150,54 +224,21 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
   <h2>Från första kvällen till i dag</h2>
   <ol class="tl">
     <li><time datetime="2026-10-25">25 okt</time><div class="ev"><h3>Första versionen</h3><p>Inloggning mot LibreLinkUp, en kurva och en logg för måltider med insulindos. Resten av kvällen gick till detaljer.</p></div></li>
-    <li><time datetime="2026-10-26">26 okt</time><div class="ev"><h3>Insulintyper och en omdesign</h3><p>Listor över vanliga insulin, en dygnsprofil och en hel omdesign. Stegen från mobilen hoppade jag över.</p></div></li>
-    <li><time datetime="2026-11-03">3 nov</time><div class="ev"><h3>Djup QA, lokal AI och Telegram</h3><p>En genomgång av hela koden: inloggning som gick ut, tidszoner, två enheter som skrev över varandras ändringar, skydd mot att andra webbsidor läser värdena. Sedan veckosammanfattning, lokal AI via Ollama och fritextloggning. En mobilapp prövades och lades ner till förmån för en Telegram-bot.</p></div></li>
-    <li><time datetime="2026-11-04">4 nov</time><div class="ev"><h3>Finputs och den första designgranskningen</h3><p>Ollama startar och stängs med dashboarden. <q>Fläskfärs ris</q> blir <q>Fläskfärs och ris</q>, och <q>promenad 5 minuter</q> blir 17:05–17:10 Kort promenad. Den första granskningen gav 27 av 40. Sidan hämtar nu bara det som är nytt varje minut: från 307 kB till 0,5 kB per minut.</p></div></li>
-    <li><time datetime="2026-11-05">5 nov</time><div class="ev"><h3>Tio granskningar och flytten till Pi:n</h3><p>En egen dialog för känningar med mina vanliga mängder som snabbknappar, tydligare lågt läge, tangentbordsgenvägar och ljust eller mörkt tema att välja. Varje runda åtgärdades i steg och mättes om. På kvällen flyttade servern till Raspberry Pi:n.</p></div></li>
-    <li><time datetime="2026-11-06">6 nov</time><div class="ev"><h3>Månaden i siffror, rapporter och git</h3><p>En sammanfattning per månad med en bild att dela, <code>/week</code> och <code>/month</code> i Telegram, tokenräkning för tävlingen och versionshistorik.</p></div></li>
-    <li><time datetime="2026-11-07">7 nov</time><div class="ev"><h3>Favoriter i Telegram</h3><p>Det jag äter oftast blir knappar under textfältet i boten, och den frågar med knappar hur många enheter. En egen app inuti Telegram byggdes och togs bort samma kväll: den var inte snabbare än att skriva.</p></div></li>
-    <li><time datetime="2026-11-09">9 nov</time><div class="ev"><h3>Måltiderna jämförda</h3><p>En tabell över hur det brukar gå efter varje rätt: hur många gånger, snittdos, stigning, topp och hur ofta det gick högt eller lågt. Sortera på vilken kolumn som helst, och öppna en rätt för att se varje gång.</p></div></li>
-    <li><time datetime="2026-11-10">10 nov</time><div class="ev"><h3>Symboler i kurvan och en statussida</h3><p>Mat, dos och promenad som små symboler i kurvan. En måltids kurva bredvid tidigare gånger med samma mat, en årsvy och en sida som visar hur Raspberry Pi:n mår.</p></div></li>
-    <li><time datetime="2026-11-12">12 nov</time><div class="ev"><h3>Ny granskning</h3><p>Ärligare täckning när värden saknas, rättningar för smala mobiler, och dashboarden svarar bara i hemnätet, inte i Pi:ns andra nät.</p></div></li>
-    <li><time datetime="2026-11-14">14 nov</time><div class="ev"><h3>Insikter om dygnet</h3><p>Dygnets delar, en värmekarta dag för dag och året med en ruta per dag. Sensorns ålder står under värdet, och en ny sensors första dag syns i kurvan.</p></div></li>
-    <li><time datetime="2026-11-16">15–16 nov</time><div class="ev"><h3>Färre flikar</h3><p>Ett eget målområde, långtidsverkande insulin och varningar från Pi:n i Telegram. Fliken Patterns togs bort och delades upp mellan Insights och Meals, och månadsbilden försvann.</p></div></li>
-    <li><time datetime="2026-11-17">17 nov</time><div class="ev"><h3>Säkerhet, webbdemo och tester</h3><p>Flikarna överst med en Log-knapp som alltid finns. En genomgång inför tävlingen hittade tre fel. Koden och en webbdemo kom ut på GitHub, med inspelade svar från den lokala AI:n, och elva tester körs nu efter varje ändring.</p></div></li>
-    <li><time datetime="2026-11-18">18 nov</time><div class="ev"><h3>Historiken</h3><p>En sida där varje version från 25 oktober och framåt körs med samma påhittade person, var och en startad ur git.</p></div></li>
-    <li><time datetime="2026-11-22">22 nov</time><div class="ev"><h3>Två stränga kodgranskningar</h3><p>Runt 90 fynd i säkerhet, sparande, inloggning, tillgänglighet och uppladdningen till Pi:n. Sedan tillkom en frivillig kod för andra enheter i hemnätet, en tabell under kurvan för skärmläsare och en uppladdning som testar först och backar om något går fel.</p></div></li>
-    <li><time datetime="2026-11-23">23 nov</time><div class="ev"><h3>Ett eget namn</h3><p>Dashboarden heter nu <code>glucose.local</code> i hemnätet, och skärmbilderna till tävlingen togs om.</p></div></li>
+    <li><time datetime="2026-10-26">26 okt</time><div class="ev"><h3>Insulintyper och en omdesign</h3><p>Listor över vanliga insulin, en dygnsprofil och en hel omdesign.</p></div></li>
+    <li><time datetime="2026-11-03">3 nov</time><div class="ev"><h3>Djup QA, lokal AI och Telegram</h3><p>En genomgång av hela koden: inloggning som gick ut, tidszoner, två enheter som skrev över varandras ändringar, skydd mot att andra webbsidor läser värdena. Sedan veckosammanfattning, lokal AI via Ollama och loggning med egna ord. En mobilapp prövades och lades ner till förmån för en Telegram-bot.</p></div></li>
+    <li><time datetime="2026-11-05">4–5 nov</time><div class="ev"><h3>Elva designgranskningar och flytten till Pi:n</h3><p>En egen dialog för känningar, tydligare lågt läge, tangentbordsgenvägar och ljust eller mörkt tema. Sidan hämtar bara det som är nytt varje minut: från 307 kB till 0,5 kB. På kvällen 5 november flyttade servern till Raspberry Pi:n.</p></div></li>
+    <li><time datetime="2026-11-10">6–10 nov</time><div class="ev"><h3>Rapporter, favoriter och måltiderna jämförda</h3><p><code>/week</code> och <code>/month</code> i Telegram, favoritknappar i boten och versionshantering i git. En tabell över hur det brukar gå efter varje rätt, mat och dos som symboler i kurvan, och en statussida för Pi:n.</p></div></li>
+    <li><time datetime="2026-11-16">12–16 nov</time><div class="ev"><h3>Insikter och färre flikar</h3><p>Dygnets delar, en värmekarta dag för dag och året med en ruta per dag. Sensorns ålder, eget målområde, långtidsverkande insulin och varningar från Pi:n i Telegram. Fliken Patterns och månadsbilden togs bort.</p></div></li>
+    <li><time datetime="2026-11-18">17–18 nov</time><div class="ev"><h3>Webbdemo på GitHub</h3><p>Flikarna överst med en Log-knapp som alltid finns. Koden och en webbdemo kom ut på GitHub, och varje version från 25 oktober startades om ur git för bilderna här ovan.</p></div></li>
+    <li><time datetime="2026-11-23">22–23 nov</time><div class="ev"><h3>Två stränga kodgranskningar</h3><p>Runt 90 fynd i säkerhet, sparande, inloggning och tillgänglighet rättades. Sedan tillkom en frivillig kod för andra enheter i hemnätet, och dashboarden fick ett eget namn där: <code>glucose.local</code>.</p></div></li>
   </ol>
 </section>
 
 <section class="wide">
   <div class="pair">
     <figure class="phone"><div class="shot"><img src="img/phone-nov17.png" width="390" height="844" alt="Aktiviteten i en mobil: måltider med startvärde, pil och topp, en behandlad känning och en promenad."></div><figcaption><b>I mobilen, 17 november.</b> Varje måltid med startvärde och topp, och en känning med hur lång tid det tog att komma upp.</figcaption></figure>
-    <figure><div class="shot"><img src="img/insights.gif" width="1280" height="800" alt="Insights växlar mellan veckan, månaden och året: nyckeltal, en typisk dag, när känningarna börjar och en ruta per dag."></div><figcaption><b>Insights.</b> Veckan, månaden och året. Månadsbilden som fanns här förut togs bort 16 november.</figcaption></figure>
+    <figure><div class="shot"><img src="img/insights.gif" width="1280" height="800" alt="Insights växlar mellan veckan, månaden och året: nyckeltal, en typisk dag, när känningarna börjar och en ruta per dag."></div><figcaption><b>Insights.</b> Veckan, månaden och året.</figcaption></figure>
   </div>
-</section>
-
-<section class="col">
-  <h2>Elva granskningar</h2>
-  <p>Designen granskades med verktyget Impeccable: två agenter går igenom sidan mot tio tumregler för användbarhet och ger 0–4 poäng per regel. Efter varje granskning åtgärdades fynden ett steg i taget, och sedan mättes det om. Den tekniska granskningen (tillgänglighet, prestanda, mobil) gick från 16 till 19 av 20.</p>
-</section>
-<section class="wide">
-  <figure class="chart"><svg id="crit" viewBox="0 0 720 230" role="img" aria-label="Poäng i designgranskningen, 11 mätningar: 27, 29, 30, 31, 31, 32, 36, 34, 35, 35 och 33 av 40."></svg>
-  <figcaption>Poäng av 40 per granskning, 4–5 november. Efter den sjunde låg den mellan 33 och 36: varje ny granskare hittade nya saker, så Claude föreslog att sluta jaga 40.</figcaption></figure>
-</section>
-
-<section class="col">
-  <h2>Tokens</h2>
-  <p>De tre bästa bidragen ska redovisa sin tokenanvändning. Siffrorna kommer ur Claude Codes egna sessionsloggar, och varje svar räknas en gång. Den absolut största posten är cache: hela samtalet hittills läses om vid varje svar, vilket är billigt men blir många tokens på en lång dag.</p>
-</section>
-<section class="wide">
-  <figure class="chart">
-    <div class="bars" id="tok" role="table" aria-label="Tokens per dag"></div>
-    <div class="key"><span><i style="background:var(--ok)"></i>Cache läst</span><span><i style="background:var(--acc)"></i>Ny text in (input + cache skriv)</span><span><i style="background:var(--high-fill)"></i>Text ut</span></div>
-  </figure>
-  <div class="tw"><table>
-    <thead><tr><th>Totalt, 25 okt – 24 nov</th><th>Svar</th><th>Ny text in</th><th>Text ut</th><th>Cache läst</th><th>Summa</th></tr></thead>
-    <tbody><tr><td>Claude Code</td><td>3 994</td><td>23 349 839</td><td>4 736 940</td><td>1 160 569 084</td><td>1 188 655 863</td></tr></tbody>
-  </table></div>
-  <p class="col small mut">Räknat 24 november med ett eget skript som läser Claude Codes loggar. Den lokala AI:n kör på mitt eget grafikkort och kostar inga moln-tokens: 56 206 tokens i 33 anrop sedan dashboarden började logga det 6 november.</p>
 </section>
 
 <section class="col">
@@ -217,7 +258,10 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
 
   <div class="rule"><h3>Den ger aldrig dosråd</h3><p>Dashboarden och dess AI beskriver vad som hände, aldrig vad jag borde göra. Frågor om doser får ett fast svar från servern, och varje fråga till AI:n slutar med samma påminnelse. Den ersätter inte heller Libre-appens larm.</p></div>
 
-  <footer><p>Byggt med Claude Code (Claude Opus 5.5). Bidrag till <a href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">SweClockers × ASUS ProArt</a>, november 2026. Skärmbilderna visar demoläget med en påhittad person.</p></footer>
+  <h2>Tokens</h2>
+  <p>Claude Code använde 1&nbsp;188&nbsp;655&nbsp;863 tokens i molnet från 25 oktober till 24 november, räknat ur dess egna loggar. Nästan allt, 1&nbsp;161 miljoner, är samtalet som lästes om ur cache vid varje svar. Ny text var 28 miljoner. Den lokala AI:n på mitt grafikkort har använt 56&nbsp;206 tokens sedan 6 november och kostar inga moln-tokens.</p>
+
+  <footer><p>Byggt med Claude Code (Claude Opus 5.5). Bidrag till <a href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">SweClockers × ASUS ProArt</a>, november 2026. Skärmbilderna visar demoläget med en påhittad person.</p><p><a href="./">Prova demon</a> · <a href="https://github.com/GiantToaster/glucose">Koden på GitHub</a></p></footer>
 </section>
 </main>
 
@@ -233,26 +277,22 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
   const p = svg.querySelector('path'); p.style.setProperty('--len', Math.ceil(p.getTotalLength()));
 })();
 
-// Granskningarna: 11 mätningar, skala 24–40 med linjer var 4:e poäng. Punkterna har sina värden ovanför.
+// Flikarna: en version i taget, piltangenter och Äldre/Nyare. Utan JavaScript syns alla versioner efter varandra.
 (function () {
-  const S = [27, 29, 30, 31, 31, 32, 36, 34, 35, 35, 33], svg = document.getElementById('crit');
-  const W = 720, H = 230, l = 34, r = 16, t = 26, b = 44, lo = 24, hi = 40;
-  const X = i => l + i / (S.length - 1) * (W - l - r), Y = v => t + (hi - v) / (hi - lo) * (H - t - b);
-  let s = '';
-  for (let v = lo; v <= hi; v += 4) s += `<line x1="${l}" x2="${W - r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)"${v === hi ? ' stroke-dasharray="4 4"' : ''}/><text x="${l - 8}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
-  s += `<path d="M${S.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join('L')}" fill="none" style="stroke:var(--ok)" stroke-width="2.5" stroke-linejoin="round"/>`;
-  S.forEach((v, i) => { s += `<circle cx="${X(i)}" cy="${Y(v)}" r="4.5" style="fill:var(--surface);stroke:var(--ok)" stroke-width="2.5"/><text class="v" x="${X(i)}" y="${Y(v) - 11}" text-anchor="middle">${v}</text><text x="${X(i)}" y="${H - b + 20}" text-anchor="middle">${i + 1}</text>`; });
-  s += `<text x="${X(0)}" y="${H - 6}" text-anchor="start">4 nov</text><text x="${(X(1) + X(10)) / 2}" y="${H - 6}" text-anchor="middle">5 nov</text>`;
-  svg.innerHTML = s;
-})();
-
-// Tokens per dag: en stapel per dag, uppdelad i cache läst, ny text in och text ut, i skala mot den största dagen
-(function () {
-  const D = [['25 okt', 7764258, 153445, 81700], ['26 okt', 10498975, 216372, 133520], ['3 nov', 42742661, 576535, 275808], ['4 nov', 141060734, 1123194, 320855], ['5 nov', 282174219, 5360602, 1260686], ['6 nov', 35288756, 1039157, 190582], ['7 nov', 33657665, 471279, 83178], ['8 nov', 13778020, 568117, 46081], ['9 nov', 89909142, 2205531, 187995], ['10 nov', 59100555, 888492, 295838], ['12 nov', 50429248, 1688628, 187001], ['13 nov', 28364872, 1172976, 142550], ['14 nov', 26419692, 598171, 197218], ['15 nov', 35398906, 1709650, 71118], ['16 nov', 97032849, 1887346, 410657], ['17 nov', 97773364, 747223, 316565], ['21 nov', 1185387, 303377, 39236], ['22 nov', 84003380, 2284330, 375148], ['23 nov', 22772798, 283376, 108757], ['24 nov', 1213603, 72038, 12447]];
-  const max = Math.max(...D.map(([, a, b, c]) => a + b + c)), M = n => (n / 1e6).toLocaleString('sv-SE', { maximumFractionDigits: n < 1e7 ? 1 : 0 }) + ' M';
-  document.getElementById('tok').innerHTML = D.map(([d, cr, inp, out]) => {
-    const tot = cr + inp + out, w = n => (n / max * 100).toFixed(2) + '%';
-    return `<span class="d" role="rowheader">${d}</span><div class="track" role="cell" aria-label="Cache läst ${M(cr)}, ny text in ${M(inp)}, text ut ${M(out)}"><i style="width:${w(cr)};background:var(--ok)"></i><i style="width:${w(inp)};background:var(--acc)"></i><i style="width:${w(out)};background:var(--high-fill)"></i></div><span class="t" role="cell">${M(tot)}</span>`;
-  }).join('');
+  const tabs = [...document.querySelectorAll('[role=tab]')], panels = tabs.map(t => document.getElementById(t.getAttribute('aria-controls')));
+  const prev = document.getElementById('vprev'), next = document.getElementById('vnext');
+  let cur = tabs.length - 1;
+  const show = (i, focus) => {
+    cur = Math.max(0, Math.min(tabs.length - 1, i));
+    tabs.forEach((t, k) => { t.setAttribute('aria-selected', k === cur); t.tabIndex = k === cur ? 0 : -1; panels[k].hidden = k !== cur; });
+    prev.disabled = cur === 0; next.disabled = cur === tabs.length - 1;
+    if (focus) tabs[cur].focus();
+  };
+  tabs.forEach((t, k) => {
+    t.onclick = () => show(k);
+    t.onkeydown = e => { const d = { ArrowLeft: -1, ArrowRight: 1, Home: -99, End: 99 }[e.key]; if (d) { e.preventDefault(); show(d === -99 ? 0 : d === 99 ? tabs.length - 1 : cur + d, true); } };
+  });
+  prev.onclick = () => show(cur - 1); next.onclick = () => show(cur + 1);
+  show(cur);
 })();
 </script>

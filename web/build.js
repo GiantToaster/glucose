@@ -1,6 +1,7 @@
 // Bygger webbdemon i docs/ (GitHub Pages): index.html med server.js inbyggd, som körs i demoläget i webbläsaren,
-// och bredvid resan (contest/journey.html) och historiken (contest/historik.html). Kör efter varje ändring av appen:  node web/build.js
-// contest/ finns bara lokalt (den ligger inte på GitHub). Saknas den behålls resan, historiken och bilderna som redan ligger i docs/.
+// och bredvid sidan om hur den byggdes (contest/journey.html, med versionerna). Kör efter varje ändring av appen:  node web/build.js
+// contest/ finns bara lokalt (den ligger inte på GitHub). Saknas den behålls sidan och bilderna som redan ligger i docs/.
+// historik.html skickar vidare till journey.html#versioner, så att gamla länkar fungerar.
 // Länken till källkoden tas från git remote "origin" om den finns. AI-svaren kommer från web/ai-answers.json
 // (spelas in med web/record-ai.js).
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process');
@@ -36,17 +37,14 @@ const note = `<div style="margin:0 auto;max-width:1200px;padding:8px 16px;font-s
   + `Web demo: a made-up person, computed in your browser. Nothing is saved.<br>`
   + `Try <b style="color:var(--fg)">pizza 7 units</b> in the box, or ask the AI.<br>`
   // Länkarna på en egen rad i textfärgen, så att resan och historiken syns
-  + `<span style="color:var(--fg)"><a href="journey.html" ${a}>How it was built</a> · <a href="historik.html" ${a}>How it changed</a>` + (repo ? ` · <a href="${repo}" ${a}>Source code</a>` : '') + `</span></div>`;
+  + `<span style="color:var(--fg)"><a href="journey.html" ${a}>How it was built</a>` + (repo ? ` · <a href="${repo}" ${a}>Source code</a>` : '') + `</span></div>`;
 page = page.replace(/<body[^>]*>/, m => m + '\n' + note);
 
 fs.mkdirSync(path.join(out, 'img'), { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), page);
 if (fs.existsSync(path.join(root, 'contest', 'journey.html'))) {
-  // Resan: samma sida som contest/journey.html, med en länk till demon i sidhuvudet
-  const sweLink = '<a class="small" href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">Bidrag till SweClockers × ASUS ProArt</a>';
-  const journey = swap(read('contest/journey.html'), sweLink, `<span class="small"><a href="./">Prova demon</a> · <a href="historik.html">Historik</a> · ${sweLink.replace(' class="small"', '')}</span>`, 'tävlingslänken i journey.html');
-  fs.writeFileSync(path.join(out, 'journey.html'), journey);
-  // Bilderna till resan och historiken (contest/img med undermappar)
+  fs.copyFileSync(path.join(root, 'contest', 'journey.html'), path.join(out, 'journey.html'));
+  // Bilderna till sidan (contest/img med undermappar)
   fs.cpSync(path.join(root, 'contest', 'img'), path.join(out, 'img'), { recursive: true });
   fs.copyFileSync(path.join(root, 'contest', 'historik.html'), path.join(out, 'historik.html'));
 }
