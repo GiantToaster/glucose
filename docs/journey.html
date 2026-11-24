@@ -98,8 +98,6 @@ q{font-style:italic;quotes:"”" "”"}
 .rule{margin:2rem 0;padding:1.25rem 1.35rem;border-radius:12px;background:var(--tile);color:var(--tile-fg)}
 .rule h3{color:var(--tile-fg)}.rule p{margin:.5rem 0 0;color:color-mix(in srgb,var(--tile-fg) 80%,transparent)}
 
-.log{font-family:var(--mono);font-size:.875rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;overflow-x:auto}
-.log div{padding:.15rem 0 .15rem 9.5ch;text-indent:-9.5ch}.log b{color:var(--acc);font-weight:600}.log span{color:var(--mut)}
 table{border-collapse:collapse;width:100%;font-size:.875rem}th,td{padding:.45rem .6rem;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}th:first-child,td:first-child{text-align:left}th{font-weight:600;color:var(--mut)}td{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .tw{overflow-x:auto}
 footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font-size:.875rem;color:var(--mut)}
@@ -218,23 +216,6 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
   </div>
 
   <div class="rule"><h3>Den ger aldrig dosråd</h3><p>Dashboarden och dess AI beskriver vad som hände, aldrig vad jag borde göra. Frågor om doser får ett fast svar från servern, och varje fråga till AI:n slutar med samma påminnelse. Den ersätter inte heller Libre-appens larm.</p></div>
-
-  <h2>Historiken</h2>
-  <p>Projektet fick versionshantering först 6 november. De tidigaste stegen byggdes av de ögonblicksbilder som fanns: originalet från före QA-rundan och kopian som körde på Pi:n. Sedan dess har varje ändring en egen commit, och hela historiken finns <a href="https://github.com/GiantToaster/glucose/commits/main">på GitHub</a>.</p>
-  <div class="log" role="list" aria-label="Git-historik, ett urval">
-    <div role="listitem"><b>ff7725c</b> <span>23 nov</span> Dashboard on port 80: http://glucose.local without a port</div>
-    <div role="listitem"><b>6e6bb4d</b> <span>23 nov</span> Dashboard name glucose.local instead of bg.local</div>
-    <div role="listitem"><b>0e452b0</b> <span>22 nov</span> Optional passcode for the dashboard, and a table under the chart</div>
-    <div role="listitem"><b>567fed6</b> <span>22 nov</span> Review fixes: dose guard, saving, login, accessibility and deploy</div>
-    <div role="listitem"><b>e2df217</b> <span>17 nov</span> Web demo with recorded AI answers and the journey, tests, CSV export, LibreLinkUp version and a home screen icon</div>
-    <div role="listitem"><b>c107deb</b> <span>17 nov</span> Web demo, a tighter dose guard, a host check on the Pi, and anonymised files</div>
-    <div role="listitem"><b>13a53cf</b> <span>16 nov</span> Patterns tab removed: time of day and when lows start move to Insights</div>
-    <div role="listitem"><b>6702352</b> <span>10 nov</span> Raspberry Pi status page, a meal's curves compared with earlier times, and a year view in Insights</div>
-    <div role="listitem"><b>1b923cc</b> <span>9 nov</span> Meals compared sorts by any column; Ask AI last; fewer explanation lines</div>
-    <div role="listitem"><b>4e6d943</b> <span>6 nov</span> Month in review, weekly and monthly reports in Telegram</div>
-    <div role="listitem"><b>3d29047</b> <span>3 nov</span> Dashboard before the QA round</div>
-  </div>
-
 
   <footer><p>Byggt med Claude Code (Claude Opus 5.5). Bidrag till <a href="https://projekt.sweclockers.com/asus" target="_blank" rel="noopener">SweClockers × ASUS ProArt</a>, november 2026. Skärmbilderna visar demoläget med en påhittad person.</p></footer>
 </section>
