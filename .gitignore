@@ -10,7 +10,6 @@ raspberry.txt
 .impeccable/live/
 .vscode/
 *.code-workspace
-# Contest evidence: Claude Code session logs, token logs and copies of the contest pages. May hold private data. Never in git.
-contest/underlag/
-# Screenshots from the real Telegram chat show your own messages. Keep them outside git.
-contest/**/*telegram*
+# The contest folder: the entry draft, screenshots, token counts and evidence (session logs, copies of the contest pages).
+# Kept on this computer only. web/build.js still reads the journey, history and images from it when it is there.
+contest/

@@ -47,4 +47,3 @@ som aldrig följer med i git.
 | `pc/` | Starta Ollama dolt i Windows |
 | `test/` | Testerna: `node --test` |
 | `web/`, `docs/` | Webbdemon: `node web/build.js` bygger `docs/` (GitHub Pages). AI-svaren i demon spelas in med `web/record-ai.js` |
-| `contest/` | Tävlingsbidraget: resan, tokenräkningen och utkastet |
