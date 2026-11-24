@@ -75,7 +75,6 @@ figcaption{font-size:.875rem;color:var(--mut);margin-top:.6rem}figcaption b{colo
 .tl .ev::before{content:"";position:absolute;left:-.82rem;top:.42rem;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--ok)}
 .tl .ev p{margin:.35rem 0}
 q{font-style:italic;quotes:"”" "”"}
-.said{display:block;font-size:.9375rem;color:var(--mut);margin-top:.4rem}
 @media (max-width:520px){.tl li{grid-template-columns:minmax(0,1fr)}.tl li::before{left:.35rem;top:1.9rem}.tl .ev::before{left:-.05rem;top:-1.45rem}.tl time{padding-left:1.25rem}}
 
 /* Diagram */
@@ -89,15 +88,6 @@ q{font-style:italic;quotes:"”" "”"}
 .track i{display:block;height:100%}
 .bars .t{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .key{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;font-size:.8125rem;color:var(--mut);margin-top:.85rem}.key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.4rem;vertical-align:-1px}
-
-/* Misstagen: en lista där varje punkt har vad som hände och vad som gjordes */
-.oops{list-style:none;margin:1.5rem 0 0;padding:0;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.oops li{background:var(--surface);padding:1rem 1.15rem;min-width:0}
-.oops h3{display:flex;gap:.6rem;align-items:baseline}
-.oops h3 span{font-family:var(--mono);font-size:.75rem;font-weight:600;color:var(--low);flex:none;padding:.1rem .45rem;border-radius:999px;background:color-mix(in srgb,var(--low) 12%,transparent)}
-.oops h3 span.me{color:var(--high);background:color-mix(in srgb,var(--high-fill) 16%,transparent)}
-.oops p{margin:.4rem 0 0;font-size:.9688rem}
-.fix{color:var(--ok);font-weight:600}
 
 /* Telegram-svaret som det ser ut i appen */
 .chat{background:var(--sub);border-radius:16px;padding:1rem;max-width:30rem}
@@ -131,16 +121,14 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
   <div class="facts" aria-label="Projektet i siffror">
     <div><b>19</b><span>dagars arbete</span></div>
     <div><b>2</b><span>filer: server och sida</span></div>
-    <div><b>0</b><span>npm-paket</span></div>
-    <div><b>4 535</b><span>rader kod, från 870</span></div>
-    <div><b>36 av 40</b><span>designbetyg, från 27</span></div>
+    <div><b>4 535</b><span>rader kod</span></div>
   </div>
 </section>
 
 <section class="wide">
   <figure>
     <div class="shots">
-      <div class="shot"><img src="img/before.png" width="1280" height="800" alt="Dashboarden den 3 november: ett stort värde, en vit kurva i ett grönt band och en tom aktivitetslista."><figcaption><b>3 november.</b> Den första versionen: värdet, en vit linje och en logg. Fungerade, men berättade inte mycket.</figcaption></div>
+      <div class="shot"><img src="img/historik/2026-10-25-desk.webp" width="1600" height="1000" alt="Dashboarden den 25 oktober: ett stort värde, en vit kurva i ett grönt band och en tabell med tid i målområdet."><figcaption><b>25 oktober.</b> Den första versionen: värdet, en vit linje och en tabell med tid i målområdet. Fungerade, men berättade inte mycket.</figcaption></div>
       <div class="shot"><img src="img/after.png" width="1280" height="800" alt="Dashboarden den 6 november: värdet med läget i ord, en kurva som byter färg över 10 och under 3,9, och markeringar för promenad, behandlad känning och måltid."><figcaption><b>6 november.</b> Kurvan byter färg utanför målområdet, och promenaden, känningen och maten syns där de hände.</figcaption></div>
     </div>
   </figure>
@@ -163,9 +151,9 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
 <section class="col">
   <h2>Från första kvällen till i dag</h2>
   <ol class="tl">
-    <li><time datetime="2026-10-25">25 okt</time><div class="ev"><h3>Första versionen</h3><p>Inloggning mot LibreLinkUp, en kurva och en logg för måltider med insulindos. Resten av kvällen gick till detaljer.</p><span class="said"><q>Gör så man kan skippa inlogg varje gång.</q> <q>Man ska kunna välja 6,5 enheter också.</q></span></div></li>
-    <li><time datetime="2026-10-26">26 okt</time><div class="ev"><h3>Insulintyper och en omdesign</h3><p>Listor över vanliga insulin, en dygnsprofil och en hel omdesign. Stegen från mobilen hoppade jag över.</p><span class="said"><q>Går det att ge en varning nästa gång att blodsockret ofta blir högt med denna dos?</q> Den frågan kom tillbaka senare, se misstagen.</span></div></li>
-    <li><time datetime="2026-11-03">3 nov</time><div class="ev"><h3>Djup QA, lokal AI och Telegram</h3><p>En genomgång av hela koden: inloggning som gick ut, tidszoner, två enheter som skrev över varandras ändringar, skydd mot att andra webbsidor läser värdena. Sedan veckosammanfattning, lokal AI via Ollama och fritextloggning. En mobilapp prövades och lades ner till förmån för en Telegram-bot.</p><span class="said"><q>Om jag vill logga, skulle man kunna skriva till AI? Pizza 7,5 enheter och då loggar den åt en?</q></span></div></li>
+    <li><time datetime="2026-10-25">25 okt</time><div class="ev"><h3>Första versionen</h3><p>Inloggning mot LibreLinkUp, en kurva och en logg för måltider med insulindos. Resten av kvällen gick till detaljer.</p></div></li>
+    <li><time datetime="2026-10-26">26 okt</time><div class="ev"><h3>Insulintyper och en omdesign</h3><p>Listor över vanliga insulin, en dygnsprofil och en hel omdesign. Stegen från mobilen hoppade jag över.</p></div></li>
+    <li><time datetime="2026-11-03">3 nov</time><div class="ev"><h3>Djup QA, lokal AI och Telegram</h3><p>En genomgång av hela koden: inloggning som gick ut, tidszoner, två enheter som skrev över varandras ändringar, skydd mot att andra webbsidor läser värdena. Sedan veckosammanfattning, lokal AI via Ollama och fritextloggning. En mobilapp prövades och lades ner till förmån för en Telegram-bot.</p></div></li>
     <li><time datetime="2026-11-04">4 nov</time><div class="ev"><h3>Finputs och den första designgranskningen</h3><p>Ollama startar och stängs med dashboarden. <q>Fläskfärs ris</q> blir <q>Fläskfärs och ris</q>, och <q>promenad 5 minuter</q> blir 17:05–17:10 Kort promenad. Den första granskningen gav 27 av 40. Sidan hämtar nu bara det som är nytt varje minut: från 307 kB till 0,5 kB per minut.</p></div></li>
     <li><time datetime="2026-11-05">5 nov</time><div class="ev"><h3>Tio granskningar och flytten till Pi:n</h3><p>En egen dialog för känningar med mina vanliga mängder som snabbknappar, tydligare lågt läge, tangentbordsgenvägar och ljust eller mörkt tema att välja. Varje runda åtgärdades i steg och mättes om. På kvällen flyttade servern till Raspberry Pi:n.</p></div></li>
     <li><time datetime="2026-11-06">6 nov</time><div class="ev"><h3>Månaden i siffror, rapporter och git</h3><p>En sammanfattning per månad med en bild att dela, <code>/week</code> och <code>/month</code> i Telegram, tokenräkning för tävlingen och versionshistorik.</p></div></li>
@@ -175,9 +163,9 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <li><time datetime="2026-11-12">12 nov</time><div class="ev"><h3>Ny granskning</h3><p>Ärligare täckning när värden saknas, rättningar för smala mobiler, och dashboarden svarar bara i hemnätet, inte i Pi:ns andra nät.</p></div></li>
     <li><time datetime="2026-11-14">14 nov</time><div class="ev"><h3>Insikter om dygnet</h3><p>Dygnets delar, en värmekarta dag för dag och året med en ruta per dag. Sensorns ålder står under värdet, och en ny sensors första dag syns i kurvan.</p></div></li>
     <li><time datetime="2026-11-16">15–16 nov</time><div class="ev"><h3>Färre flikar</h3><p>Ett eget målområde, långtidsverkande insulin och varningar från Pi:n i Telegram. Fliken Patterns togs bort och delades upp mellan Insights och Meals, och månadsbilden försvann.</p></div></li>
-    <li><time datetime="2026-11-17">17 nov</time><div class="ev"><h3>Säkerhet, webbdemo och tester</h3><p>Flikarna överst med en Log-knapp som alltid finns. En genomgång inför tävlingen hittade tre fel (se misstagen). Koden och en webbdemo kom ut på GitHub, med inspelade svar från den lokala AI:n, och elva tester körs nu efter varje ändring.</p></div></li>
+    <li><time datetime="2026-11-17">17 nov</time><div class="ev"><h3>Säkerhet, webbdemo och tester</h3><p>Flikarna överst med en Log-knapp som alltid finns. En genomgång inför tävlingen hittade tre fel. Koden och en webbdemo kom ut på GitHub, med inspelade svar från den lokala AI:n, och elva tester körs nu efter varje ändring.</p></div></li>
     <li><time datetime="2026-11-18">18 nov</time><div class="ev"><h3>Historiken</h3><p>En sida där varje version från 25 oktober och framåt körs med samma påhittade person, var och en startad ur git.</p></div></li>
-    <li><time datetime="2026-11-22">22 nov</time><div class="ev"><h3>Två stränga kodgranskningar</h3><p>Runt 90 fynd i säkerhet, sparande, inloggning, tillgänglighet och uppladdningen till Pi:n (se misstagen). Sedan tillkom en frivillig kod för andra enheter i hemnätet, en tabell under kurvan för skärmläsare och en uppladdning som testar först och backar om något går fel.</p></div></li>
+    <li><time datetime="2026-11-22">22 nov</time><div class="ev"><h3>Två stränga kodgranskningar</h3><p>Runt 90 fynd i säkerhet, sparande, inloggning, tillgänglighet och uppladdningen till Pi:n. Sedan tillkom en frivillig kod för andra enheter i hemnätet, en tabell under kurvan för skärmläsare och en uppladdning som testar först och backar om något går fel.</p></div></li>
     <li><time datetime="2026-11-23">23 nov</time><div class="ev"><h3>Ett eget namn</h3><p>Dashboarden heter nu <code>glucose.local</code> i hemnätet, och skärmbilderna till tävlingen togs om.</p></div></li>
   </ol>
 </section>
@@ -187,28 +175,6 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <figure class="phone"><div class="shot"><img src="img/phone-nov17.png" width="390" height="844" alt="Aktiviteten i en mobil: måltider med startvärde, pil och topp, en behandlad känning och en promenad."></div><figcaption><b>I mobilen, 17 november.</b> Varje måltid med startvärde och topp, och en känning med hur lång tid det tog att komma upp.</figcaption></figure>
     <figure><div class="shot"><img src="img/insights.gif" width="1280" height="800" alt="Insights växlar mellan veckan, månaden och året: nyckeltal, en typisk dag, när känningarna börjar och en ruta per dag."></div><figcaption><b>Insights.</b> Veckan, månaden och året. Månadsbilden som fanns här förut togs bort 16 november.</figcaption></figure>
   </div>
-</section>
-
-<section class="col">
-  <h2>Misstagen</h2>
-  <p>Tävlingen vill se hela resan, så här är det som gick fel. En del var mina beslut, en del var Claudes kod, och några hittade vi först när något annat gick sönder.</p>
-  <ul class="oops">
-    <li><h3><span>säkerhet</span>Dosvarningen som blev en spärr</h3><p>Den 26 oktober bad jag om en varning när blodsockret ofta blivit högt med en viss dos, <q>att man kanske bör justera nästa gång man väljer Pizza</q>. Det är just det en app inte ska göra. Gränsen blev i stället att dashboarden aldrig ger dosråd, bara visar vad som hände. Men i test gav den lokala AI:n ändå ett dosförslag på en direkt fråga. <span class="fix">Nu besvaras frågor om doser av servern med ett fast svar innan de når modellen.</span></p></li>
-    <li><h3><span>AI</span>AI:n glömde början av frågan</h3><p>Ollama läser bara 4 096 tokens om man inte säger något annat. Underlaget var cirka 4 600, så dagens datum och sammanfattningen kapades bort utan varning, och svaren handlade om fel dagar. <span class="fix">Fönstret är nu 16 384 tokens i alla anrop.</span></p></li>
-    <li><h3><span>data</span>”100 % i målområdet” på nästan inga värden</h3><p>Med nästan inga värden, till exempel efter ett uppehåll, såg veckan perfekt ut. <span class="fix">Under 20 % täckning står det nu att det finns för få värden.</span></p></li>
-    <li><h3><span>tolkning</span>”2 skivor bröd” blev 2 enheter insulin</h3><p>Ett tal utan enhet lästes som en dos. <span class="fix">En gissad dos sparas aldrig nu. Dashboarden öppnar dialogen och boten frågar <q>Did you take 2 units?</q></span></p></li>
-    <li><h3><span>tolkning</span>”okänd rätt” lästes som ”ok”</h3><p>Hittades 6 november av ett gammalt test. Mönstret som känner igen hälsningar använde <code>\b</code>, och den räknar å, ä och ö som ordgräns. <span class="fix">Rättat med en Unicode-medveten gräns.</span></p></li>
-    <li><h3><span class="me">beslut</span>Mobilappen som aldrig blev av</h3><p>En app som loggar utan nät kräver https i hemnätet, och utanför hemmet nådde den inte servern alls. <span class="fix">Telegram löste båda: servern hämtar meddelandena själv, och de väntar hos Telegram om den är av.</span></p></li>
-    <li><h3><span class="me">beslut</span>Två servrar, en bot</h3><p>När Pi:n tog över fick datorns server inte köra samtidigt, annars tar de meddelanden från varandra. <span class="fix">Nu körs bara en server, och den varnar om någon annan läser samma bot.</span></p></li>
-    <li><h3><span>säkerhet</span>En fråga slank förbi spärren</h3><p><q>Which meal needs more insulin than I usually take?</q> nådde AI:n, eftersom spärren inte kände igen <q>needs</q> och <q>more insulin</q>. Svaret var inget dosråd i ord, men nära. <span class="fix">Spärren känner igen fler formuleringar, och ett tjugotal dosfrågor på svenska och engelska testas nu efter varje ändring.</span></p></li>
-    <li><h3><span>säkerhet</span>Pi:n svarade på vilket namn som helst</h3><p>Skyddet mot att en främmande webbsida läser värdena gällde bara när servern körde på datorn. På Pi:n hade en sida jag besökte i princip kunnat läsa mina värden och skriva över måltidsloggen. <span class="fix">Pi:n svarar nu bara på sina egna namn och adresser.</span></p></li>
-    <li><h3><span>data</span>Demon som stannade 6 november</h3><p>Demopersonens värden skapades bara första gången. Veckor senare var kurvan tom, och skärmbilderna till tävlingen hade blivit fel. <span class="fix">Demon fyller nu på fram till i dag varje gång den startar.</span></p></li>
-    <li><h3><span>AI</span>AI:n gissade hur länge</h3><p>På frågan hur länge jag ligger över 10 efter en måltid svarade den <q>tillbaka i mål inom 3 timmar</q> om en pizza som låg på 13,1 efter tre timmar. Den fick bara toppen och det lägsta värdet, inte tiden. <span class="fix">Nu får den minuterna över 10 för varje måltid.</span></p></li>
-    <li><h3><span>data</span>Excel visade #####</h3><p>Exporten var först en CSV-fil. Excel gjorde tiden till datum men kolumnen var för smal, och svensk Excel kan läsa decimalpunkt och komma fel. <span class="fix">Exporten är nu en riktig Excel-fil med två blad, byggd utan paket.</span></p></li>
-    <li><h3><span class="me">beslut</span>Fler flikar var inte bättre</h3><p>Patterns, Insights och Meals visade delvis samma sak, och månadsbilden användes aldrig. <span class="fix">Patterns delades upp och månadsbilden togs bort. Appen blev enklare.</span></p></li>
-    <li><h3><span class="me">Claude</span>Rättningar som gav nya fel</h3><p>Två gånger orsakade Claudes egna ändringar en ny bugg. Ett klassnamn som redan fanns förstörde aktivitetslistan. En färgvariabel som hamnat i en kommentar fick toppen att gå sönder mellan 701 och 880 px bredd, och nästa granskning hittade det. <span class="fix">Sedan dess körs de gamla kontrollerna om efter varje omgång.</span></p></li>
-    <li><h3><span class="me">Claude</span>Nittio fynd efter ”klart”</h3><p>22 november fick två granskare gå igenom hela koden med stränga ögon. Spärren släppte igenom <q>how many units for pizza</q>, ett misslyckat inloggningsförsök raderade den sparade inloggningen, och en känning räknades som över så fort ett enda värde låg över 3,9. <span class="fix">Allt med ett konkret fel rättades. AI:ns svar kontrolleras nu också mening för mening, en känning slutar först efter 15 minuter över 3,9, och testerna blev 17.</span></p></li>
-  </ul>
 </section>
 
 <section class="col">
@@ -230,10 +196,10 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--line);font
     <div class="key"><span><i style="background:var(--ok)"></i>Cache läst</span><span><i style="background:var(--acc)"></i>Ny text in (input + cache skriv)</span><span><i style="background:var(--high-fill)"></i>Text ut</span></div>
   </figure>
   <div class="tw"><table>
-    <thead><tr><th>Totalt, 25 okt – 23 nov</th><th>Svar</th><th>Ny text in</th><th>Text ut</th><th>Cache läst</th><th>Summa</th></tr></thead>
-    <tbody><tr><td>Claude Code</td><td>3 874</td><td>23 071 828</td><td>4 633 028</td><td>1 138 137 119</td><td>1 165 841 975</td></tr></tbody>
+    <thead><tr><th>Totalt, 25 okt – 24 nov</th><th>Svar</th><th>Ny text in</th><th>Text ut</th><th>Cache läst</th><th>Summa</th></tr></thead>
+    <tbody><tr><td>Claude Code</td><td>3 994</td><td>23 349 839</td><td>4 736 940</td><td>1 160 569 084</td><td>1 188 655 863</td></tr></tbody>
   </table></div>
-  <p class="col small mut">Räknat 23 november. Skriptet som räknar ligger i <code>contest/tokens-claude.js</code>. Den lokala AI:n kör på mitt eget grafikkort och kostar inga moln-tokens: 56 206 tokens i 33 anrop sedan dashboarden började logga det 6 november.</p>
+  <p class="col small mut">Räknat 24 november. Skriptet som räknar ligger i <code>contest/tokens-claude.js</code>. Den lokala AI:n kör på mitt eget grafikkort och kostar inga moln-tokens: 56 206 tokens i 33 anrop sedan dashboarden började logga det 6 november.</p>
 </section>
 
 <section class="col">
@@ -301,7 +267,7 @@ Fri ████████░░  84 %</pre>Meals: Lax med potatis ×4, Pizza 
 
 // Tokens per dag: en stapel per dag, uppdelad i cache läst, ny text in och text ut, i skala mot den största dagen
 (function () {
-  const D = [['25 okt', 7764258, 153445, 81700], ['26 okt', 10498975, 216372, 133520], ['3 nov', 42742661, 576535, 275808], ['4 nov', 141060734, 1123194, 320855], ['5 nov', 282174219, 5360602, 1260686], ['6 nov', 35288756, 1039157, 190582], ['7 nov', 33657665, 471279, 83178], ['8 nov', 13778020, 568117, 46081], ['9 nov', 89909142, 2205531, 187995], ['10 nov', 59100555, 888492, 295838], ['12 nov', 50429248, 1688628, 187001], ['13 nov', 28364872, 1172976, 142550], ['14 nov', 26419692, 598171, 197218], ['15 nov', 35398906, 1709650, 71118], ['16 nov', 97032849, 1887346, 410657], ['17 nov', 97773364, 747223, 316565], ['21 nov', 1185387, 303377, 39236], ['22 nov', 84003380, 2284330, 375148], ['23 nov', 1554436, 77403, 17292]];
+  const D = [['25 okt', 7764258, 153445, 81700], ['26 okt', 10498975, 216372, 133520], ['3 nov', 42742661, 576535, 275808], ['4 nov', 141060734, 1123194, 320855], ['5 nov', 282174219, 5360602, 1260686], ['6 nov', 35288756, 1039157, 190582], ['7 nov', 33657665, 471279, 83178], ['8 nov', 13778020, 568117, 46081], ['9 nov', 89909142, 2205531, 187995], ['10 nov', 59100555, 888492, 295838], ['12 nov', 50429248, 1688628, 187001], ['13 nov', 28364872, 1172976, 142550], ['14 nov', 26419692, 598171, 197218], ['15 nov', 35398906, 1709650, 71118], ['16 nov', 97032849, 1887346, 410657], ['17 nov', 97773364, 747223, 316565], ['21 nov', 1185387, 303377, 39236], ['22 nov', 84003380, 2284330, 375148], ['23 nov', 22772798, 283376, 108757], ['24 nov', 1213603, 72038, 12447]];
   const max = Math.max(...D.map(([, a, b, c]) => a + b + c)), M = n => (n / 1e6).toLocaleString('sv-SE', { maximumFractionDigits: n < 1e7 ? 1 : 0 }) + ' M';
   document.getElementById('tok').innerHTML = D.map(([d, cr, inp, out]) => {
     const tot = cr + inp + out, w = n => (n / max * 100).toFixed(2) + '%';

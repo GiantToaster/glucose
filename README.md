@@ -9,7 +9,7 @@ lämnar hemmet.
 **Prova demon:** https://gianttoaster.github.io/glucose/ (en påhittad person, körs helt i webbläsaren, inget sparas).
 
 Byggd med Claude Code som ett bidrag till SweClockers × ASUS ProArt (november 2026). Läs
-[hur den byggdes](https://gianttoaster.github.io/glucose/journey.html), med misstagen, och se
+[hur den byggdes](https://gianttoaster.github.io/glucose/journey.html) och se
 [hur den har förändrats](https://gianttoaster.github.io/glucose/historik.html) i nio versioner.
 
 ## Viktigt
