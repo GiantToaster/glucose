@@ -27,10 +27,6 @@ DEMO=1 node server.js     # påhittad person, ingen inloggning: http://localhost
 node server.js            # på riktigt: logga in med ett LibreLinkUp-konto
 ```
 
-Testerna (spärren mot dosfrågor och mot dosråd i svaren, loggningen, inloggningen, kontrollen av det som sparas, skydden,
-definitionen av en känning, Excel-exporten och LibreLinkUp-versionen) körs med `node --test` (eller `npm test`) från
-projektmappen, också utan paket.
-
 Under Settings finns export av värden, måltider och anteckningar som en Excel-fil, och LibreLinkUp-appens version. Den höjs av sig själv när
 LibreLinkUp säger vilken version som krävs. Lägg gärna dashboarden på mobilens hemskärm, då får den en egen ikon.
 
@@ -45,5 +41,4 @@ som aldrig följer med i git.
 | `server.js`, `index.html` | Hela appen |
 | `pi/` | Installation och uppdatering på en Raspberry Pi |
 | `pc/` | Starta Ollama dolt i Windows |
-| `test/` | Testerna: `node --test` |
 | `web/`, `docs/` | Webbdemon: `node web/build.js` bygger `docs/` (GitHub Pages). AI-svaren i demon spelas in med `web/record-ai.js` |

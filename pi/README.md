@@ -93,7 +93,7 @@ Ett kommando i PowerShell, från projektmappen:
 .\pi\deploy.ps1
 ```
 
-Det kör först `node --check` och testerna (`-SkipTests` hoppar över testerna), kopierar sedan filerna till en tillfällig
+Det kör först `node --check` och testerna om mappen `test` finns (`-SkipTests` hoppar över dem), kopierar sedan filerna till en tillfällig
 mapp på Pi:n och byter ut dem med ett namnbyte, så att en sidladdning aldrig får en halvt kopierad fil. De förra filerna
 sparas i `glucose/.previous`. Tjänsten startas om om `server.js` har ändrats (`index.html` läses vid varje sidladdning,
 så den behöver ingen omstart). Svarar dashboarden inte efteråt läggs de förra filerna tillbaka automatiskt.

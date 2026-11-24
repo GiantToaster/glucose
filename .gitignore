@@ -7,9 +7,12 @@ raspberry.txt
 # Backups, temporary files and editor settings
 *.bak*
 *.tmp
-.impeccable/live/
 .vscode/
 *.code-workspace
 # The contest folder: the entry draft, screenshots, token counts and evidence (session logs, copies of the contest pages).
 # Kept on this computer only. web/build.js still reads the journey, history and images from it when it is there.
 contest/
+# Kept on this computer only, not needed to run the dashboard: design reviews, tests and the icon's source file.
+.impeccable/
+test/
+icon-maskable.svg

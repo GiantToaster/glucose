@@ -5,7 +5,6 @@
   "engines": { "node": ">=18.17" },
   "scripts": {
     "start": "node server.js",
-    "test": "node --test",
     "build": "node web/build.js"
   }
 }

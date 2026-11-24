@@ -1,6 +1,6 @@
 # Lagger upp dashboarden pa Pi:n (kors i PowerShell fran projektmappen):  .\pi\deploy.ps1
 #
-# 1) Kontrollerar koden har forst: node --check och testerna (node --test). -SkipTests hoppar over testerna.
+# 1) Kontrollerar koden har forst: node --check och testerna (node --test), om mappen test finns. -SkipTests hoppar over testerna.
 # 2) Kopierar filerna till en tillfallig mapp pa Pi:n (glucose/.incoming), sparar de nuvarande i glucose/.previous och
 #    byter sedan ut varje fil med mv (ett namnbyte, sa att en sidladdning aldrig far en halvt kopierad fil).
 # 3) Startar om tjansten om server.js har andrats (index.html lases vid varje sidladdning) och kontrollerar att filerna
@@ -24,7 +24,7 @@ try {
   Write-Host 'Checking the code ...'
   node --check server.js
   if ($LASTEXITCODE) { throw 'server.js has a syntax error. Nothing was copied.' }
-  if (-not $SkipTests) {
+  if (-not $SkipTests -and (Test-Path 'test')) {
     node --test 2>&1 | Out-Null
     if ($LASTEXITCODE) { throw 'The tests failed (run: node --test). Nothing was copied.' }
   }
