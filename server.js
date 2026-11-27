@@ -797,8 +797,10 @@ function interpretLocal(text, ref, names) {
   const guess = ins === null && bare && !(known && words[words.length - 1] === bare);
   // Ett kort namn utan dos ("kebab") är troligen en måltid: dashboarden och Telegram frågar efter dosen. Förut gav det
   // ett fel, medan en sparad rätt ("pizza") öppnade dialogen. Längre text utan dos är troligen inte en måltid.
-  if (dose === null && !known) return raw.split(' ').length <= 4 ? { type: 'meal', name, ins: null, t } : { type: 'other' };
-  return { type: 'meal', name, ins: dose, t, ...(guess && { guess: true }) };
+  // typed: rätten som den skrevs, före matchningen mot kända rätter. Telegram frågar "Same as …?" när de skiljer sig.
+  const typed = raw.charAt(0).toUpperCase() + raw.slice(1);
+  if (dose === null && !known) return raw.split(' ').length <= 4 ? { type: 'meal', name, ins: null, t, typed } : { type: 'other' };
+  return { type: 'meal', name, ins: dose, t, typed, ...(guess && { guess: true }) };
 }
 async function interpret(text, ref) {
   const names = mealNames(readDb()), L = interpretLocal(text, ref, names);
@@ -823,7 +825,7 @@ async function interpret(text, ref) {
   const ins = Number.isFinite(o.units) && o.units >= 0 ? Math.round(o.units * 10) / 10 : L.type === 'meal' ? L.ins : null;
   const unitWord = /\d\s*(u|e|ie|iu|units?|enheter|enhet|enh)(?![a-zåäö])/i.test(text.replace(/(\d),(\d)/g, '$1.$2'));
   const sure = unitWord || (L.type === 'meal' && !L.guess && L.ins === ins);
-  return { type: 'meal', name: names.find(n => n.toLowerCase() === name.toLowerCase()) || name, ins, t, via: 'ai', ...(ins != null && !sure && { guess: true }) };
+  return { type: 'meal', name: names.find(n => n.toLowerCase() === name.toLowerCase()) || name, ins, t, via: 'ai', ...(L.typed && { typed: L.typed }), ...(ins != null && !sure && { guess: true }) };
 }
 // Sparar en tolkad måltid eller anteckning. Samma id två gånger (ett Telegram-meddelande som läses igen) sparas en gång.
 function addEntry(r, id) {
@@ -879,9 +881,11 @@ function removeEntry(id) {
 // sentW/sentM: när den senast skickades, så att en omstart samma kväll inte skickar den två gånger.
 // fav: favoritknapparna under skrivfältet (på från början, /nofav stänger av). favSent: en bot som kopplades in innan
 // knapparna fanns har fått dem en gång.
+// alias: namn man skrivit eller slagit ihop, och rätten de hör till ("Same as …?" och Count as one). merges: de 5 senaste
+// sammanslagningarna, så att Undo kan ändra tillbaka. mealsSent: en bot som kopplades in innan /all fanns har fått veta det.
 // code/codeAt/tries: parkopplingskoden gäller i 15 minuter och för högst 5 felaktiga försök, sedan behövs en ny från Settings
 // (förut gällde den tills någon kopplade in, och vem som helst som kände till boten kunde gissa obegränsat).
-const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', codeAt: 0, tries: 0, offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true, piw: true, piKey: '' };
+const TF = path.join(DIR, 'telegram.json'), TG0 = { token: '', bot: '', chat: null, who: '', code: '', codeAt: 0, tries: 0, offset: 0, last: [], report: false, sentW: '', sentM: '', fav: true, favSent: false, staleT: 0, stale: true, piw: true, piKey: '', alias: {}, merges: [], mealsSent: false };
 const CODE_MS = 15 * 6e4, CODE_TRIES = 5;
 const codeOk = () => !!tg.code && Date.now() - (tg.codeAt || 0) < CODE_MS && (tg.tries || 0) < CODE_TRIES;
 const newCode = () => ({ code: String(crypto.randomInt(10000000, 100000000)), codeAt: Date.now(), tries: 0 });
@@ -912,8 +916,8 @@ const tgSay = (text, extra = {}) => {
 };
 // Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
 const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
-const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/week and /month send a summary of your numbers.';
-const COMMANDS = [{ command: 'fav', description: 'Buttons for the meals you log most' }, { command: 'undo', description: 'Remove the last thing you logged' },{ command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
+const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/all lists everything you\'ve logged, tap one to log it again. <i>/all chicken</i> searches, and <b>Count as one</b> joins meals you wrote in different ways.\n/week and /month send a summary of your numbers.';
+const COMMANDS = [{ command: 'fav', description: 'Buttons for the meals you log most' }, { command: 'all', description: 'Everything you have logged, or search: /all chicken' }, { command: 'undo', description: 'Remove the last thing you logged' }, { command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
 
 // ---------- Rapporter i Telegram: veckan och månaden i text ----------
 // Bara siffror som redan visas på dashboarden. Staplarna är tecken (█░) i en <pre>, så att de står rakt i Telegram.
@@ -1047,11 +1051,254 @@ async function tgUnits(ins, id) {
   const p = { ...tgPending, ins }, chk = !tgPending.confirm && doseCheck(p.name, ins, readDb(), p.t);
   tgPending = null; return tgLogged(p, id, false, chk);
 }
+// Resten av vägen för en tolkad måltid eller anteckning: fråga efter dosen om den saknas, fråga om en gissad dos,
+// annars logga (med en varning för en ovanlig dos eller en möjlig dubblett).
+async function tgMeal(r, id, late) {
+  if (r.type === 'meal' && r.ins == null) return askUnits(r);
+  if (r.type === 'meal' && r.ins > 100) return tgSay('That dose seems too high. Send it again with the number of units.');
+  // En gissad dos (ett tal utan enhet, "2 skivor bröd") frågas fortfarande om, så att boten aldrig sparar en gissning.
+  // En ovanlig dos eller en möjlig dubblett loggas direkt med en varning och Undo.
+  if (r.type === 'meal' && r.guess) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`${he(`Did you take ${r.ins} ${r.ins === 1 ? 'unit' : 'units'} for ${r.name}?`)} Reply <b>yes</b> to log it, or send the right number of units.`); }
+  const chk = r.type === 'meal' && doseCheck(r.name, r.ins, readDb(), r.t);
+  tgPending = null; return tgLogged(r, id, late, chk);
+}
+
+// ---------- Rätterna: /all, sökning, "Same as …?" och "Count as one" ----------
+// Allt på dashboarden grupperar loggen på rättens namn, så två stavningar av samma rätt ("Chopchop crispy lime chicken
+// med ris" och "Chopchop kyckling ris") räknades som två rätter. Nu frågar boten "Same as …?" när det man skriver liknar
+// en rätt man loggat förut, /all visar och söker bland allt man loggat (ett tryck loggar rätten), och "Count as one"
+// slår ihop rätter: de gamla loggningarna får ett och samma namn (med Undo), och de gamla namnen kommer ihåg vart de hör
+// (tg.alias), så att de loggas som den rätten nästa gång utan fråga.
+// Jämförelsen: små bokstäver, utan accenter och fyllnadsord ("med", "och"), vanliga matord på svenska och engelska
+// räknas som samma ("kyckling" = "chicken"), början av ett ord räcker ("kycklingen" = "kyckling"), "chop chop" =
+// "chopchop", och ett skrivfel i ett långt ord ("chiken") godtas.
+const SYN = new Map(Object.entries({
+  chicken: 'kyckling chicken', rice: 'ris rice', beef: 'notkott not beef', pork: 'flask flaskkott pork', salmon: 'lax salmon', fish: 'fisk fish',
+  cod: 'torsk cod', shrimp: 'rakor raka shrimp shrimps prawn prawns', potato: 'potatis potato potatoes', fries: 'pommes pommesfrites fries',
+  bread: 'brod bread', sandwich: 'macka mackor smorgas smorgasar sandwich sandwiches', egg: 'agg egg eggs', cheese: 'ost cheese',
+  noodles: 'nudlar noodle noodles', sausage: 'korv sausage sausages', meatballs: 'kottbullar meatball meatballs', porridge: 'grot porridge oatmeal',
+  milk: 'mjolk milk', salad: 'sallad salad', soup: 'soppa soup', burger: 'hamburgare burgare hamburger burger burgers', cake: 'tarta cake',
+  bun: 'bulle bullar bun buns', pancake: 'pannkaka pannkakor pancake pancakes', waffle: 'vaffla vafflor waffle waffles', yogurt: 'yoghurt yogurt',
+  chocolate: 'choklad chocolate', breakfast: 'frukost breakfast', dinner: 'middag dinner', meat: 'kott meat', mince: 'kottfars fars mince minced',
+  apple: 'apple apples', banana: 'banan bananer banana bananas', beans: 'bonor beans', vegetables: 'gronsaker veggies vegetables', sauce: 'sas sauce',
+  icecream: 'glass icecream',
+}).flatMap(([c, ws]) => ws.split(' ').map(w => [w, c])));
+// Bestämd form och plural på svenska ("kycklingen", "riset", "pannkakorna") slås upp utan ändelsen
+const canon = w => SYN.get(w) || (w.length > 4 && ['na', 'arna', 'orna', 'erna', 'en', 'et', 'n', 't'].map(s => w.endsWith(s) && SYN.get(w.slice(0, -s.length))).find(Boolean)) || w;
+const STOP = new Set([...EDGE, 'samt', 'plus', 'from', 'fran', 'hos'].map(norm));
+const tok = w => ({ w, c: canon(w) });
+const dishToks = s => norm(String(s)).split(' ').filter(w => w && !STOP.has(w) && !/^\d+$/.test(w)).map(tok);
+function lev(a, b) { // antal bokstäver som skiljer (Levenshtein)
+  let p = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; }
+  return p[b.length];
+}
+const typo = (a, b) => { const n = Math.min(a.length, b.length), k = n >= 8 ? 2 : 1; return n >= 5 && Math.abs(a.length - b.length) <= k && lev(a, b) <= k; };
+const pre = (a, b) => { const [s, l] = a.length <= b.length ? [a, b] : [b, a]; return s.length >= 4 && l.startsWith(s); };
+// Samma ord med en annan ändelse ("pizzan", "pannkakorna", "eggs")
+const INFL = new Set(['', 's', 'es', 'n', 'en', 'et', 't', 'na', 'ar', 'er', 'or', 'arna', 'orna', 'erna']);
+const infl = (a, b) => { const [s, l] = a.length <= b.length ? [a, b] : [b, a]; return s.length >= 3 && l.startsWith(s) && INFL.has(l.slice(s.length)); };
+// strict: bara samma ord (andra ändelser, svenska/engelska, ett skrivfel i ett ord på minst 6 bokstäver). Annars räcker
+// också början av ett sammansatt ord ("kebab" i "kebabpizza"), vilket bara ger en fråga, aldrig en tyst sammanslagning.
+const tokSame = (x, y, strict) => x.c === y.c || infl(x.w, y.w) || infl(x.c, y.c) || (strict ? Math.min(x.w.length, y.w.length) >= 6 && typo(x.w, y.w) : pre(x.w, y.w) || pre(x.c, y.c) || typo(x.w, y.w));
+// "chop chop" mot "chopchop": två ord i rad som tillsammans är ett ord på andra sidan räknas som ett
+const joinPairs = (a, b) => { const o = []; for (let i = 0; i < a.length; i++) { const j = a[i + 1] && tok(a[i].w + a[i + 1].w); if (j && b.some(y => y.w === j.w || y.c === j.c)) { o.push(j); i++; } else o.push(a[i]); } return o; };
+const dishPair = (a, b) => { const ta = dishToks(a), tb = dishToks(b); return [joinPairs(ta, tb), joinPairs(tb, ta)]; };
+const cover = (ta, tb, strict) => ta.length ? ta.filter(x => tb.some(y => tokSame(x, y, strict))).length / ta.length : 0;
+// Samma rätt med andra ord ("Kyckling ris" = "Kyckling med ris", "Chicken and rice" = "Kyckling med ris", "Pizzan" = "Pizza")
+function sameDish(a, b) {
+  const [ta, tb] = dishPair(a, b);
+  return ta.length && tb.length ? cover(ta, tb, true) === 1 && cover(tb, ta, true) === 1 : norm(String(a)) === norm(String(b));
+}
+// Hur lika en ny rätt a är en känd rätt b, 0 om de inte liknar varandra: allt i a finns i b ("Chopchop" i "Chopchop
+// crispy lime chicken med ris"), allt i b finns i a och täcker minst halva a ("Pad ka pao med ris" och "Pad Ka Pao"),
+// eller minst två tredjedelar åt båda håll. Så frågar inte "Två rostbröd och mjölk" om "Mjölk" (som man dricker till allt).
+function dishScore(a, b) {
+  const [ta, tb] = dishPair(a, b), ra = cover(ta, tb), rb = cover(tb, ta);
+  return ra && (ra === 1 || (rb === 1 && ra >= .5) || (ra >= .67 && rb >= .67)) ? (ra + rb) / 2 : 0;
+}
+// Varje rätt en gång: antal gånger, senast, och om den finns bland de sparade måltiderna (vars stavning gäller).
+// Nyast först; sparade som aldrig loggats sist i bokstavsordning. Korrigeringsdoser är ingen rätt.
+function dishes(db) {
+  const c = new Map();
+  for (const m of db.log) {
+    const name = cleanName(m.name), k = name.toLowerCase(); if (!k || isCorr(name)) continue;
+    const x = c.get(k); if (!x) c.set(k, { name, n: 1, last: m.t }); else { x.n++; if (m.t > x.last) { x.last = m.t; x.name = x.saved ? x.name : name; } }
+  }
+  for (const m of db.meals) { const name = cleanName(m.name), k = name.toLowerCase(); if (!k || isCorr(name)) continue; const x = c.get(k); if (x) Object.assign(x, { name, saved: true }); else c.set(k, { name, n: 0, last: 0, saved: true }); }
+  return [...c.values()].sort((a, b) => b.last - a.last || a.name.localeCompare(b.name));
+}
+// Sökning: varje ord ska finnas i rätten (början av ett ord, samma ord på svenska/engelska, ett skrivfel, eller inuti
+// ett hopskrivet ord). Kommatecken ger flera sökningar på en gång: "chopchop, wok".
+function findDishes(q, list) {
+  const parts = String(q).split(/[,;/]+/).map(p => norm(p).split(' ').filter(w => w && !STOP.has(w)).map(tok)).filter(p => p.length);
+  if (!parts.length) return list;
+  return list.filter(d => {
+    const dt = dishToks(d.name), flat = norm(d.name).replace(/ /g, '');
+    return parts.some(qt => qt.every(x => dt.some(y => y.w.startsWith(x.w) || y.c === x.c || (x.c.length >= 3 && y.c.startsWith(x.c)) || typo(x.w, y.w)) || (x.w.length >= 4 && flat.includes(x.w))));
+  });
+}
+// "Same as …?": null när ingen fråga behövs (r.name kan då bytas till den kända stavningen), annars kandidaterna
+// (högst tre, mest lika först) och det nya namnet om man svarar att det är en ny rätt.
+function sameAs(r) {
+  if (r.type !== 'meal' || r.corr || isCorr(r.name)) return null;
+  const list = dishes(readDb()).map(d => d.name), find = n => n ? list.find(x => norm(x) === norm(String(n))) : undefined;
+  const alias = n => { const v = n && tg.alias && tg.alias[norm(String(n))]; return v ? find(v) : undefined; };
+  const known = alias(r.typed) || alias(r.name) || find(r.typed); if (known) { r.name = known; return null; }
+  const hit = find(r.name);
+  if (hit && (!r.typed || sameDish(r.typed, hit))) { r.name = hit; return null; }
+  if (!hit) { const same = list.find(x => sameDish(r.name, x) || (r.typed && sameDish(r.typed, x))); if (same) { r.name = same; return null; } }
+  const from = hit ? r.typed : r.name, score = list.map(x => [x, Math.max(dishScore(from, x), r.typed ? dishScore(r.typed, x) : 0)]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]);
+  const cands = [...new Set([...(hit ? [hit] : []), ...score.map(([x]) => x)])].slice(0, 3);
+  return cands.length ? { cands, fresh: hit ? r.typed : r.name } : null;
+}
+// Kommer ihåg att ett namn hör till en rätt. Högst 500 namn; det äldsta försvinner först.
+function setAlias(from, to) {
+  const k = norm(String(from)); if (!k || k === norm(to)) return;
+  tg.alias = { ...(tg.alias || {}) }; delete tg.alias[k]; tg.alias[k] = to;
+  const ks = Object.keys(tg.alias); for (const x of ks.slice(0, Math.max(0, ks.length - 500))) delete tg.alias[x];
+}
+async function askSame(r, late) {
+  const { cands, fresh } = r.same, nonce = crypto.randomBytes(3).toString('hex'), one = cands.length === 1;
+  tgPending = { ...r, at: Date.now(), nonce, late };
+  const dose = r.ins != null ? `\n<i>${r.ins} ${r.ins === 1 ? 'unit' : 'units'}, logged when you answer.</i>` : '';
+  const text = one ? `Same as <b>${he(cands[0])}</b>?\nYou wrote <i>${he(fresh)}</i>. Tap <b>Same</b> to count it as that meal, or <b>New meal</b> to keep your name.${dose}`
+    : `<i>${he(fresh)}</i> looks like meals you've logged before. Which one is it?${dose}`;
+  const kb = one ? [[{ text: '✓ Same', callback_data: `a:${nonce}:0` }, { text: '➕ New meal', callback_data: `a:${nonce}:n` }]]
+    : [...cands.map((c, i) => [{ text: '✓ ' + c.slice(0, 60), callback_data: `a:${nonce}:${i}` }]), [{ text: '➕ New: ' + String(fresh).slice(0, 55), callback_data: `a:${nonce}:n` }]];
+  return tgSay(text, { reply_markup: { inline_keyboard: kb } });
+}
+// Svaret på "Same as …?": en kandidat (0, 1, 2) eller "n" för en ny rätt. "Same" kommer ihåg det man skrev.
+async function sameAnswer(pick, id) {
+  const p = tgPending; tgPending = null;
+  const { cands, fresh } = p.same, r = { ...p }; delete r.same; delete r.nonce; delete r.at; delete r.late;
+  if (pick === 'n') r.name = fresh;
+  else {
+    // Bara namn som inte själva är en loggad rätt (annars skulle "Pasta bolognese" kunna peka på "Pasta carbonara")
+    r.name = cands[+pick] || cands[0]; const known = new Set(dishes(readDb()).map(d => norm(d.name)));
+    for (const n of [r.typed, p.name, fresh]) if (n && !known.has(norm(n))) setAlias(n, r.name);
+    saveTg();
+  }
+  return tgMeal(r, id, p.late);
+}
+
+// /all och sökningen: en lista med en knapp per rätt (ett tryck loggar den), 8 åt gången. Listan ligger kvar i minnet
+// (de 10 senaste) så att knapparna vet vilken rätt de gäller; efter en omstart får man skicka /all igen.
+const PAGE = 8, tgLists = new Map();
+const dayTxt = t => { const k = daysAgo(t), d = new Date(t); return k === 0 ? 'today' : k === 1 ? 'yesterday' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }) }); };
+const timesTxt = d => d.n ? `${d.n}× · last ${dayTxt(d.last)}` : 'saved, not logged yet';
+const canMerge = L => L.q && L.items.length >= 2 && L.items.length <= 10;
+function newList(q, items) {
+  const id = crypto.randomBytes(3).toString('hex'), L = { id, q, items, page: 0, sel: null };
+  tgLists.set(id, L); for (const k of [...tgLists.keys()].slice(0, Math.max(0, tgLists.size - 10))) tgLists.delete(k);
+  return L;
+}
+function listView(L) {
+  const all = L.items, pages = Math.max(1, Math.ceil(all.length / PAGE)), page = L.page = Math.min(Math.max(0, L.page), pages - 1), from = page * PAGE;
+  const items = all.slice(from, from + PAGE), many = n => `${n} ${n === 1 ? 'meal' : 'meals'}`;
+  const text = [L.q ? `🔎 <b>${many(all.length)} matching “${he(L.q)}”</b>` : `🍽 <b>Everything you've logged</b> · ${many(all.length)}`, '',
+    ...items.map((d, i) => `${from + i + 1}. <b>${he(d.name)}</b> · ${timesTxt(d)}`), '',
+    `<i>Tap one to log it.${pages > 1 ? ` Page ${page + 1} of ${pages}.` : ''}${canMerge(L) ? ' Same meal under different names? Tap Count as one.' : L.q && all.length > 10 ? ' Add a word to the search to count meals as one.' : !L.q && all.length > PAGE ? ' Search with a word: /all chicken' : ''}</i>`].join('\n');
+  const kb = items.map((d, i) => [{ text: `${from + i + 1}. ${d.name}`.slice(0, 64), callback_data: `p:${L.id}:${from + i}` }]);
+  const nav = [...(page > 0 ? [{ text: '‹ Back', callback_data: `l:${L.id}:${page - 1}` }] : []), ...(page < pages - 1 ? [{ text: 'More ›', callback_data: `l:${L.id}:${page + 1}` }] : [])];
+  if (nav.length) kb.push(nav);
+  if (canMerge(L)) kb.push([{ text: '🔗 Count as one', callback_data: `j:${L.id}` }]);
+  return { text, reply_markup: { inline_keyboard: kb } };
+}
+const pickView = L => ({ text: '🔗 <b>Which of these are the same meal?</b>\nTap to select them, then Next.',
+  reply_markup: { inline_keyboard: [...L.items.map((d, i) => [{ text: `${L.sel.has(i) ? '☑' : '☐'} ${d.name}`.slice(0, 58) + ` (${d.n}×)`, callback_data: `t:${L.id}:${i}` }]),
+    [{ text: 'Cancel', callback_data: `c:${L.id}` }, { text: 'Next ›', callback_data: `n:${L.id}` }]] } });
+const keepView = L => ({ text: '🔗 <b>Which name should they all have?</b>\nThe older logs get that name, and everything counts them as one meal.',
+  reply_markup: { inline_keyboard: [...[...L.sel].sort((a, b) => a - b).map(i => [{ text: L.items[i].name.slice(0, 64), callback_data: `k:${L.id}:${i}` }]),
+    [{ text: '‹ Back', callback_data: `j:${L.id}` }, { text: 'Cancel', callback_data: `c:${L.id}` }]] } });
+async function tgMeals(q) {
+  const all = dishes(readDb()), items = q ? findDishes(q, all) : all;
+  if (!all.length) return tgSay('Nothing logged yet. Write what you ate, for example <i>pizza 7,5 enheter</i>.');
+  if (!items.length) return tgSay(`No logged meals match “${he(q)}”. Try another word, or /all for everything.`);
+  const v = listView(newList(q, items)); return tgSay(v.text, { reply_markup: v.reply_markup });
+}
+// "Count as one": alla loggningar med de andra namnen (och andra stavningar av namnet man behåller) får namnet man valt.
+// En sparad måltid med ett av de andra namnen byter namn, eller tas bort om den man behåller redan är sparad. Allt som
+// ändrades sparas (tg.merges, de 5 senaste), så att Undo kan ändra tillbaka.
+function mergeDishes(keep, others) {
+  const db = readDb(), K = keep.toLowerCase(), O = new Set(others.map(n => cleanName(n).toLowerCase()).filter(k => k && k !== K));
+  if (!O.size) return null;
+  const log = [], ren = [], rem = [], key = m => cleanName(m.name).toLowerCase();
+  db.log = db.log.map(m => (O.has(key(m)) || key(m) === K) && m.name !== keep ? (log.push([m.id, m.name]), { ...m, name: keep }) : m);
+  let kept = db.meals.find(m => key(m) === K);
+  db.meals = db.meals.flatMap(m => { if (!O.has(key(m))) return [m]; if (kept) { rem.push(m); return []; } kept = m; ren.push([m.id, m.name]); return [{ ...m, name: keep }]; });
+  const n = log.filter(([, old]) => O.has(cleanName(old).toLowerCase())).length;
+  if (!n && !ren.length && !rem.length) return null;
+  db.rev++; writeDb(db);
+  // De gamla namnen loggas som den här rätten nästa gång, och namn som pekade på dem pekar hit. prevAlias: det som
+  // ändrades, med det gamla värdet (null = fanns inte), så att Undo kan återställa det.
+  const before = { ...(tg.alias || {}) }, prevAlias = {};
+  tg.alias = Object.fromEntries(Object.entries(before).map(([k, v]) => [k, O.has(String(v).toLowerCase()) ? keep : v]));
+  for (const o of O) setAlias(o, keep);
+  for (const k of new Set([...Object.keys(before), ...Object.keys(tg.alias)])) if (before[k] !== tg.alias[k]) prevAlias[k] = k in before ? before[k] : null;
+  const rec = { id: crypto.randomBytes(4).toString('hex'), keep, log, ren, rem, prevAlias };
+  tg.merges = [...(tg.merges || []), rec].slice(-5); saveTg();
+  return { rec, n, names: [...new Set(log.map(([, o]) => cleanName(o)).filter(o => O.has(o.toLowerCase())))] };
+}
+function unmerge(id) {
+  const i = (tg.merges || []).findIndex(r => r.id === id); if (i < 0) return null;
+  const r = tg.merges[i], db = readDb(), L = new Map(r.log), R = new Map(r.ren);
+  db.log = db.log.map(m => L.has(m.id) && m.name === r.keep ? { ...m, name: L.get(m.id) } : m);
+  db.meals = db.meals.map(m => R.has(m.id) && m.name === r.keep ? { ...m, name: R.get(m.id) } : m);
+  for (const m of r.rem) if (!db.meals.some(x => x.id === m.id)) db.meals.push(m);
+  db.rev++; writeDb(db);
+  tg.alias = { ...(tg.alias || {}) };
+  for (const [k, v] of Object.entries(r.prevAlias || {})) if (v == null) delete tg.alias[k]; else tg.alias[k] = v;
+  tg.merges = tg.merges.filter(x => x.id !== id); saveTg();
+  return r;
+}
+// Knapparna i listan: l = sida, p = logga rätten, j = välj rätter att slå ihop, t = välj/avmarkera, n = vidare till
+// namnet, k = behåll det namnet, c = avbryt
+async function tgListTap(q, act, arg, answer) {
+  const [lid, x] = arg.split(':'), L = tgLists.get(lid), msg = { chat_id: tg.chat, message_id: q.message.message_id };
+  const show = v => tgApi('editMessageText', { ...msg, parse_mode: 'HTML', text: v.text, reply_markup: v.reply_markup }).catch(() => {});
+  if (!L) return answer('That list has expired. Send /all again.');
+  if (act === 'l') { L.page = +x || 0; await answer(''); return show(listView(L)); }
+  if (act === 'p') {
+    const d = L.items[+x], now = d && dishes(readDb()).find(y => y.name.toLowerCase() === d.name.toLowerCase());
+    if (!now) return answer('That meal is no longer in the log. Send /all again.');
+    await answer(''); return askUnits({ type: 'meal', name: now.name, t: Date.now(), via: 'list' });
+  }
+  if (act === 'j') { if (!canMerge(L)) return answer(''); L.sel = L.sel || new Set(); await answer(''); return show(pickView(L)); }
+  if (act === 'c') { L.sel = null; await answer(''); return show(listView(L)); }
+  if (!L.sel) return answer('');
+  if (act === 't') { const i = +x; if (L.items[i]) L.sel.has(i) ? L.sel.delete(i) : L.sel.add(i); await answer(''); return show(pickView(L)); }
+  if (act === 'n') { if (L.sel.size < 2) return answer('Pick at least two.'); await answer(''); return show(keepView(L)); }
+  if (act === 'k') {
+    const i = +x; if (!L.sel.has(i)) return answer('');
+    const keep = L.items[i].name, m = mergeDishes(keep, [...L.sel].map(j => L.items[j].name));
+    tgLists.delete(lid);
+    if (!m) { await answer('Nothing to change'); return show({ text: 'Nothing changed: those meals are no longer in the log.', reply_markup: { inline_keyboard: [] } }); }
+    await answer('Done');
+    return show({ text: `🔗 <b>${he(keep)}</b> now counts as one meal.\n${m.n} logged ${m.n === 1 ? 'meal' : 'meals'} renamed${m.names.length ? ` from ${m.names.map(n => `<i>${he(n)}</i>`).join(', ')}` : ''}. Next time you write one of the old names, it is logged as ${he(keep)}.`,
+      reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'x:' + m.rec.id }]] } });
+  }
+  return answer('');
+}
 async function tgHandle(u) {
   const q = u.callback_query;
-  if (q) { // knapparna Undo (u:) och Save to Meals (s:)
+  if (q) { // knapparna Undo (u:), Save to Meals (s:), dosen (d:), "Same as …?" (a:), listan (l p j t n k c) och Undo för Count as one (x:)
     if (!tg.chat || !q.message || q.message.chat.id !== tg.chat) return;
-    const [, act, id] = String(q.data || '').match(/^([usd]):(.+)$/) || [], answer = text => tgApi('answerCallbackQuery', { callback_query_id: q.id, text }).catch(() => {});
+    const [, act, id] = String(q.data || '').match(/^([a-z]):(.+)$/) || [], answer = text => tgApi('answerCallbackQuery', { callback_query_id: q.id, text }).catch(() => {});
+    if ('lpjtnkc'.includes(act || '-')) return tgListTap(q, act, id, answer);
+    if (act === 'a') { // "Same as …?": gäller bara den senaste frågan, och knapparna tas bort när man tryckt
+      const [nonce, pick] = id.split(':'), ok = tgPending && tgPending.same && tgPending.nonce === nonce && Date.now() - tgPending.at < 30 * 6e4;
+      await answer(ok ? '' : 'That question has expired. Send the meal again.');
+      await tgApi('editMessageReplyMarkup', { chat_id: tg.chat, message_id: q.message.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {});
+      if (ok) await sameAnswer(pick, 'tg' + u.update_id);
+      return;
+    }
+    if (act === 'x') {
+      const r = unmerge(id);
+      await answer(r ? 'Undone' : 'Already undone');
+      if (r) await tgApi('editMessageText', { chat_id: tg.chat, message_id: q.message.message_id, parse_mode: 'HTML', text: `<s>${he(q.message.text || '')}</s>\n↩️ Undone. The meals have their old names again.` }).catch(() => {});
+      return;
+    }
     if (act === 'd') { // en dosknapp under "How many units?": gäller bara den senaste frågan, och knapparna tas bort när man tryckt
       const [nonce, v] = id.split(':'), ok = tgPending && tgPending.nonce === nonce && !tgPending.confirm && Date.now() - tgPending.at < 30 * 6e4;
       await answer(ok ? '' : 'That question has expired. Send the meal again.');
@@ -1078,7 +1325,7 @@ async function tgHandle(u) {
     if (!codeOk()) return;
     const a = Buffer.from(c[1]), b = Buffer.from(tg.code);
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) { tg.tries = (tg.tries || 0) + 1; saveTg(); return; }
-    tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; tg.favSent = true; saveTg();
+    tg.chat = m.chat.id; tg.who = [m.from && m.from.first_name, m.from && m.from.username && '@' + m.from.username].filter(Boolean).join(' '); tg.code = ''; tg.favSent = true; tg.mealsSent = true; saveTg();
     await tgSay('Connected to your glucose dashboard. 👋\n\n' + HELP);
     return;
   }
@@ -1091,6 +1338,8 @@ async function tgHandle(u) {
     const want = text.slice(FAV.length).trim().toLowerCase(), name = mealNames(readDb()).map(cleanName).find(n => n.toLowerCase().slice(0, 60) === want);
     if (name) return askUnits({ name, t: m.date * 1000, via: 'fav' });
   }
+  const ml = text.match(/^\/(all|allt|meals|list|search)(?:@\w+)?(?:\s+([\s\S]*))?$/i);
+  if (ml) return tgMeals((ml[2] || '').trim().slice(0, 100));
   if (/^\/week\b/.test(text)) return tgSay(weekText());
   if (/^\/month\b/.test(text)) { const list = monthList(), k = mkey(Date.now()); return tgSay(monthText(list.includes(k) && monthCov(k) >= 20 ? k : defaultMonth(list) || k)); }
   if (/^\/undo\b/.test(text)) {
@@ -1098,22 +1347,34 @@ async function tgHandle(u) {
     if (!e) return tgSay('Nothing to undo.');
     removeEntry(id); return tgSay('↩️ Removed ' + describe(e));
   }
-  // Svar på "How many units?" eller på en dos som behövde bekräftas (gäller i 30 min)
+  // Svar på "How many units?", på en dos som behövde bekräftas eller på "Same as …?" (gäller i 30 min)
   if (tgPending && Date.now() - tgPending.at < 30 * 6e4) {
-    if (tgPending.confirm && /^(yes|ja|j|y|ok)$/i.test(text)) { const p = tgPending; tgPending = null; return tgLogged(p, 'tg' + u.update_id); }
-    // Ett tal, gärna med enhet eller insulinnamn ("5,5 enheter", "5.5e", "6 units", "4 enheter fiasp"). Förut godtogs bara
-    // ett ensamt tal, så "5,5 enheter" efter en favorit gick vidare som ett nytt meddelande och blev en korrigeringsdos.
-    const n = unitsReply(text); if (n !== null) return tgUnits(n, 'tg' + u.update_id);
+    if (tgPending.same) {
+      if (/^(yes|ja|j|y|ok|same|samma|japp|jepp)$/i.test(text)) return sameAnswer(0, 'tg' + u.update_id);
+      if (/^(no|nej|n|new|ny|nytt|new meal|ny rätt|nope)$/i.test(text)) return sameAnswer('n', 'tg' + u.update_id);
+      if (unitsReply(text) !== null) return tgSay('First tap <b>Same</b> or <b>New meal</b> above (or reply <i>yes</i> or <i>no</i>).');
+    } else {
+      if (tgPending.confirm && /^(yes|ja|j|y|ok)$/i.test(text)) { const p = tgPending; tgPending = null; return tgLogged(p, 'tg' + u.update_id); }
+      // Ett tal, gärna med enhet eller insulinnamn ("5,5 enheter", "5.5e", "6 units", "4 enheter fiasp"). Förut godtogs bara
+      // ett ensamt tal, så "5,5 enheter" efter en favorit gick vidare som ett nytt meddelande och blev en korrigeringsdos.
+      const n = unitsReply(text); if (n !== null) return tgUnits(n, 'tg' + u.update_id);
+    }
   }
+  // Ett ensamt ja/nej utan öppen fråga (t.ex. efter att frågan gått ut) är ingen rätt. Förut blev "ja" en måltid "Ja".
+  if (/^(ja|nej|yes|no|j|n|y|nope|japp|jepp|same|samma)[.!]?$/i.test(text)) return tgSay('There is no open question right now. Send the meal again, for example <i>pizza 7,5 enheter</i>.');
   const r = await interpret((text.startsWith(FAV) ? text.slice(FAV.length) : text).slice(0, 300), m.date * 1000);
-  if (r.type === 'other') return tgSay("I didn't catch a meal or a note there. Try: <i>pizza 7,5 enheter</i>");
-  if (r.type === 'meal' && r.ins == null) return askUnits(r);
-  if (r.type === 'meal' && r.ins > 100) return tgSay('That dose seems too high. Send it again with the number of units.');
-  // En gissad dos (ett tal utan enhet, "2 skivor bröd") frågas fortfarande om, så att boten aldrig sparar en gissning.
-  // En ovanlig dos eller en möjlig dubblett loggas direkt med en varning och Undo.
-  if (r.type === 'meal' && r.guess) { tgPending = { ...r, confirm: true, at: Date.now() }; return tgSay(`${he(`Did you take ${r.ins} ${r.ins === 1 ? 'unit' : 'units'} for ${r.name}?`)} Reply <b>yes</b> to log it, or send the right number of units.`); }
-  const chk = r.type === 'meal' && doseCheck(r.name, r.ins, readDb(), r.t);
-  tgPending = null; return tgLogged(r, 'tg' + u.update_id, Date.now() - m.date * 1000 > 10 * 6e4, chk); // >10 min gammalt: datorn var av
+  if (r.type === 'other') {
+    // "chopchop?" eller "kyckling" som inte blev en måltid: visa de rätter man loggat som passar, så är det ett tryck att logga
+    // Inte för frågor, hälsningar och ja/nej ("vad åt jag?", "hej", ett sent "ja" på en fråga som gått ut)
+    const plain = text.replace(/[?!.]/g, ' ').replace(/\s+/g, ' ').trim();
+    const hits = plain.length <= 40 && !plain.startsWith('/') && !NOT_MEAL.test(plain) && !/^(ja|nej|yes|no|j|n|y|nope|japp|jepp|same|samma)$/i.test(plain) && dishToks(plain).length && findDishes(plain, dishes(readDb()));
+    if (hits && hits.length && hits.length <= 20) { const v = listView(newList(plain, hits)); return tgSay(v.text, { reply_markup: v.reply_markup }); }
+    return tgSay("I didn't catch a meal or a note there. Try: <i>pizza 7,5 enheter</i>\n/all shows everything you've logged.");
+  }
+  const late = Date.now() - m.date * 1000 > 10 * 6e4; // >10 min gammalt: datorn var av
+  // Liknar det en rätt man loggat förut med ett annat namn: fråga först (dosen följer med och frågas efter sedan om den saknas)
+  const same = sameAs(r); if (same) return askSame({ ...r, same }, late);
+  return tgMeal(r, 'tg' + u.update_id, late);
 }
 async function tgLoop() {
   for (;;) {
@@ -1370,6 +1631,8 @@ server.listen(PORT, HOST, () => {
   if (tg.token) tgApi('setMyCommands', { commands: COMMANDS }).catch(() => {});
   // En bot som kopplades in innan favoritknapparna fanns får dem en gång, utan att man behöver skriva /fav
   if (tg.token && tg.chat && !tg.favSent && tg.fav !== false && favKeyboard()) { tg.favSent = true; saveTg(); tgSay('New: your most logged meals are now buttons under the text field. Tap one to log it. /nofav hides them.'); }
+  // Samma sak för /all och "Same as …?": ett meddelande en gång
+  if (tg.token && tg.chat && !tg.mealsSent) { tg.mealsSent = true; saveTg(); tgSay("New: /all lists everything you've logged, and <i>/all chicken</i> searches. Tap a meal to log it again. Meals you wrote in different ways can be counted as one, and when something you write looks like a meal you've logged before, I ask <i>Same as …?</i>"); }
 });
 
 // "Start with Windows": en liten .cmd i Autostart-mappen som startar servern minimerad i aktivitetsfältet vid inloggning.
