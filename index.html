@@ -59,6 +59,14 @@ kbd{font-family:inherit;font-size:var(--fs-xs);font-weight:600;line-height:1;pad
 .favl button{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:8px;font-weight:600}.favl button:hover,.favl button:focus-visible{background:var(--sub)}
 .favl button span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.favl button span:last-child{flex:none;color:var(--mut);font-weight:500;font-size:var(--fs-sm)}
 @media(max-width:480px){.ql #qfav span{display:none}}
+/* Förslag medan man skriver ("kyck" -> rätter med kyckling): samma lista som favoriterna, men under fältet till vänster.
+   Pilarna väljer, Enter fyller i, Esc stänger (combobox med listbox). */
+.qsug{left:0;right:auto;width:min(420px,100%)}.qsug [role=option]{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 10px;border-radius:8px;font-weight:600;cursor:pointer}
+.qsug [role=option]:hover,.qsug [aria-selected=true]{background:var(--sub)}.qsug [aria-selected=true]{outline:2px solid var(--acc);outline-offset:-2px}
+.qsug [role=option] span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qsug [role=option] span:last-child{flex:none;color:var(--mut);font-weight:500;font-size:var(--fs-sm)}
+/* "Same as …?": när det man skrev liknar en rätt man loggat förut med ett annat namn. Inget loggas förrän man valt. */
+.qlsame{flex-basis:100%;margin-top:4px;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--sub)}.qlsame p{margin:0 0 8px;font-size:var(--fs-sm)}
+.qlsameb{display:flex;flex-wrap:wrap;gap:6px}.ql .qlsameb button{padding:6px 12px}
 .ql{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 8px}.ql label{flex-basis:100%;font-size:var(--fs-sm);color:var(--mut);font-weight:500}.ql input{flex:1;min-width:0}.ql button{padding:8px 16px}
 .now{display:grid;grid-template-columns:auto 1fr;justify-content:start;align-items:baseline;column-gap:4px}#cur{font-size:4rem;font-weight:700;line-height:1;letter-spacing:-.03em}#arrow{font-size:2.5rem;font-weight:600;line-height:1;color:var(--mut)}
 /* Gammalt värde (över 15 min): siffran dämpas, pilen tas bort och lägesordet byts mot åldern, så att det inte ser aktuellt ut */
@@ -448,8 +456,9 @@ html.locked main>:not(#authf),html.locked .tabbar,html.locked aside,html.locked 
   </div>
   <div class="cta"><button class="p" id="openMeal" aria-keyshortcuts="L">Log meal<kbd aria-hidden="true">L</kbd></button><button id="openNote" aria-keyshortcuts="N">Note<kbd aria-hidden="true">N</kbd></button><button class="quiet" id="openLow" aria-keyshortcuts="T">Low treatment<kbd aria-hidden="true">T</kbd></button></div>
   <p class="lowtip" id="lowtip" hidden>Treat it first. You can log it afterwards.</p>
-  <form class="ql" id="ql"><label for="qlt" id="qll">Write what you ate or did</label><input id="qlt" aria-describedby="qlerr qlst" maxlength="300" autocomplete="off" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><button id="qlb">Add<kbd aria-hidden="true">/</kbd></button>
+  <form class="ql" id="ql"><label for="qlt" id="qll">Write what you ate or did</label><input id="qlt" aria-describedby="qlerr qlst" maxlength="300" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="qsug" placeholder="e.g. pizza 7.5 units · 1.5 units no food · walk 45 min" aria-keyshortcuts="/"><button type="button" id="qfav" aria-expanded="false" aria-controls="qfavl" aria-label="Favorites: your most logged meals" title="Your most logged meals" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg><span>Favorites</span></button><div class="favl" id="qfavl" role="group" aria-label="Your most logged meals" hidden></div><div class="favl qsug" id="qsug" role="listbox" aria-label="Meals you have logged" hidden></div><button id="qlb">Add<kbd aria-hidden="true">/</kbd></button>
     <p class="qlerr" id="qlerr" role="alert" hidden></p><p class="qlst mut" id="qlst" role="status"></p>
+    <div class="qlsame" id="qlsame" role="group" aria-labelledby="qlsameq" hidden><p id="qlsameq"></p><div class="qlsameb" id="qlsameb"></div></div>
 </form>
 </section>
 
@@ -2416,45 +2425,69 @@ const aiStatus = () => { $('aist').textContent = 'Checking the local AI…'; $('
 
 // Logga med egna ord. Servern (lokal AI, annars en enkel tolkare) gör om texten till en måltid eller anteckning och sparar den.
 $('ql').onsubmit = async e => {
-  e.preventDefault();
+  e.preventDefault(); sugOpen(false); clearTimeout(sugT); sameHide();
   const text = $('qlt').value.trim(), kb = kbFocus(); if (!text) { $('qlt').focus(); return; }
   // Medan texten tolkas (upp till 45 s med en AI som inte är laddad): fältet låst, och en rad som säger vad som händer,
   // så att ingen skriver om det och loggar två gånger
   const b = $('qlb'); b.disabled = true; $('qlt').readOnly = true; $('ql').setAttribute('aria-busy', 'true');
   const slow = setTimeout(() => { $('qlst').textContent = 'Reading what you wrote…'; }, 400);
-  try {
-    const r = await api('/api/quicklog', { method: 'POST', body: JSON.stringify({ text }) });
-    if (r.error) { $('qlerr').innerHTML = `${esc(r.error)} <button type="button" id="qlnote">Save it as a note</button>`; $('qlerr').hidden = false; $('qlt').setAttribute('aria-invalid', 'true'); $('qlt').focus(); return; }
-    $('qlt').value = '';
-    // Tiden som texten sa ("igår kl 12", "i förrgår") följer med till dialogen, med datumfältet synligt. Förut fylldes bara
-    // klockslaget i, och måltiden sparades på dagens datum.
-    if (r.need) { // dosen saknas: öppna måltidsdialogen med maten och tiden ifyllda och fråga efter dosen
-      openMeal(); const m = libMeal(r.name);
-      if (m) pick(m.id); else { selMeal = null; $('msearch').value = r.name; pickFree(); }
-      $('mi2').value = ''; mclock.edit(r.t);
-      $('mhint').textContent = 'How many units did you take? Fill in the dose and press Log meal.'; mealWarn(); $('mi2').focus();
-      return;
-    }
-    if (r.check) { // dosen långt från den vanliga: inget loggat än; öppna dialogen ifylld så att man kan rätta eller bekräfta
-      openMeal(); const m = libMeal(r.name);
-      if (m) pick(m.id); else { selMeal = null; $('msearch').value = r.name; pickFree(); }
-      mclock.edit(r.t);
-      if (/^Is \d/.test(r.check)) { // ett tal utan "units": dosen fylls inte i; man skriver den eller trycker på knappen
-        $('mi2').value = ''; disarm(); $('mhint').className = 'warn';
-        $('mhint').innerHTML = `You wrote “${esc(String(r.ins))}” without “units”. How many units did you take? <button type="button" id="useg" data-g="${esc(String(r.ins))}">Use ${esc(units(r.ins))}</button>`;
-        mealWarn(); $('mi2').focus(); return;
-      }
-      $('mi2').value = r.ins; $('mhint').textContent = '';
-      $('mlog').dataset.armed = String(r.ins); $('mlog').textContent = 'Log anyway'; mealWarn(); $('mi2').focus(); $('mi2').select();
-      return;
-    }
-    const x = r.entry, what = x.name !== undefined ? `<b>${esc(x.name)}</b>, ${units(x.ins)}` : `<b>${esc(kindLabel(x.kind))}</b>${x.text ? ': ' + esc(x.text) : ''}`;
-    toast(`Logged ${what}, ${whenSpan(x.t, x.dur)}.<button data-undo="${esc(x.id)}">Undo</button>`, 8000);
-    focusUndo(kb, $('qlt')); // som efter dialogerna: Undo nås direkt, Esc går tillbaka till rutan
-    refresh();
-  } catch (e) { console.error('quicklog:', e); $('qlerr').textContent = 'No contact with the dashboard server. Your text is still here; try again in a moment.'; $('qlerr').hidden = false; }
+  try { qlResult(await api('/api/quicklog', { method: 'POST', body: JSON.stringify({ text }) }), kb); }
+  catch (e) { console.error('quicklog:', e); $('qlerr').textContent = 'No contact with the dashboard server. Your text is still here; try again in a moment.'; $('qlerr').hidden = false; }
   finally { clearTimeout(slow); $('qlst').textContent = ''; b.disabled = false; $('qlt').readOnly = false; $('ql').removeAttribute('aria-busy'); }
 };
+// Svaret från servern, efter texten eller efter ett svar på "Same as …?"
+function qlResult(r, kb) {
+  if (r.error) { $('qlerr').innerHTML = `${esc(r.error)} <button type="button" id="qlnote">Save it as a note</button>`; $('qlerr').hidden = false; $('qlt').setAttribute('aria-invalid', 'true'); $('qlt').focus(); return; }
+  if (r.same) return sameShow(r.same); // texten står kvar i fältet tills man valt
+  $('qlt').value = '';
+  // Tiden som texten sa ("igår kl 12", "i förrgår") följer med till dialogen, med datumfältet synligt. Förut fylldes bara
+  // klockslaget i, och måltiden sparades på dagens datum.
+  if (r.need) { // dosen saknas: öppna måltidsdialogen med maten och tiden ifyllda och fråga efter dosen
+    openMeal(); const m = libMeal(r.name);
+    if (m) pick(m.id); else { selMeal = null; $('msearch').value = r.name; pickFree(); }
+    $('mi2').value = ''; mclock.edit(r.t);
+    $('mhint').textContent = 'How many units did you take? Fill in the dose and press Log meal.'; mealWarn(); $('mi2').focus();
+    return;
+  }
+  if (r.check) { // dosen långt från den vanliga: inget loggat än; öppna dialogen ifylld så att man kan rätta eller bekräfta
+    openMeal(); const m = libMeal(r.name);
+    if (m) pick(m.id); else { selMeal = null; $('msearch').value = r.name; pickFree(); }
+    mclock.edit(r.t);
+    if (/^Is \d/.test(r.check)) { // ett tal utan "units": dosen fylls inte i; man skriver den eller trycker på knappen
+      $('mi2').value = ''; disarm(); $('mhint').className = 'warn';
+      $('mhint').innerHTML = `You wrote “${esc(String(r.ins))}” without “units”. How many units did you take? <button type="button" id="useg" data-g="${esc(String(r.ins))}">Use ${esc(units(r.ins))}</button>`;
+      mealWarn(); $('mi2').focus(); return;
+    }
+    $('mi2').value = r.ins; $('mhint').textContent = '';
+    $('mlog').dataset.armed = String(r.ins); $('mlog').textContent = 'Log anyway'; mealWarn(); $('mi2').focus(); $('mi2').select();
+    return;
+  }
+  const x = r.entry, what = x.name !== undefined ? `<b>${esc(x.name)}</b>, ${units(x.ins)}` : `<b>${esc(kindLabel(x.kind))}</b>${x.text ? ': ' + esc(x.text) : ''}`;
+  toast(`Logged ${what}, ${whenSpan(x.t, x.dur)}.<button data-undo="${esc(x.id)}">Undo</button>`, 8000);
+  focusUndo(kb, $('qlt')); // som efter dialogerna: Undo nås direkt, Esc går tillbaka till rutan
+  refresh();
+}
+// "Same as …?": det man skrev liknar en rätt man loggat förut med ett annat namn (samma fråga som i Telegram). Inget är
+// loggat än. "Same" loggar det som den rätten och servern kommer ihåg hur man skrev, så att den inte frågar nästa gång.
+// Esc eller att man skriver om texten stänger frågan.
+let sameQ = null;
+const sameHide = () => { if (!$('qlsame').hidden) { $('qlsame').hidden = true; sameQ = null; } };
+function sameShow(s) {
+  sameQ = s; const one = s.cands.length === 1, dose = s.ins != null ? ` <span class="mut">${esc(units(s.ins))}, logged when you choose.</span>` : '';
+  $('qlsameq').innerHTML = one ? `Same as <b>${esc(s.cands[0])}</b>? You wrote <i>${esc(s.fresh)}</i>.${dose}` : `<i>${esc(s.fresh)}</i> looks like meals you’ve logged before. Which one is it?${dose}`;
+  $('qlsameb').innerHTML = (one ? '<button type="button" data-p="0">Same</button>' : s.cands.map((c, i) => `<button type="button" data-p="${i}">${esc(c)}</button>`).join(''))
+    + `<button type="button" data-p="n">${one ? 'New meal' : 'New: ' + esc(s.fresh)}</button>`;
+  $('qlsame').hidden = false; $('qlsameb').querySelector('button').focus();
+}
+$('qlsameb').onclick = async e => {
+  const b = e.target.closest('button[data-p]'); if (!b || !sameQ) return;
+  const q = sameQ, kb = kbFocus(), bs = $('qlsameb').querySelectorAll('button'); bs.forEach(x => x.disabled = true);
+  try {
+    const r = await api('/api/quicklog', { method: 'POST', body: JSON.stringify({ same: q.id, pick: b.dataset.p === 'n' ? 'n' : +b.dataset.p }) });
+    $('qlsame').hidden = true; sameQ = null; qlResult(r, kb);
+  } catch (err) { console.error('quicklog:', err); bs.forEach(x => x.disabled = false); $('qlerr').textContent = 'No contact with the dashboard server. Try again in a moment.'; $('qlerr').hidden = false; }
+};
+$('qlsame').addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); sameHide(); $('qlt').focus(); } });
 // Undo i meddelanderutan: data-undo ångrar en nyss loggad rad, data-restore lägger tillbaka något som tagits bort
 $('toast').onclick = e => {
   const ds = (e.target.closest && e.target.closest('button') || e.target).dataset || {};
@@ -2568,17 +2601,54 @@ const favOpen = on => { $('qfavl').hidden = !on; $('qfav').setAttribute('aria-ex
 function syncFav() { $('qfav').hidden = !favMeals().length; if ($('qfav').hidden) favOpen(false); }
 $('qfav').onclick = () => {
   if (!$('qfavl').hidden) return favOpen(false);
+  sugOpen(false);
   $('qfavl').innerHTML = favMeals().map((f, i) => `<button type="button" data-i="${i}"><span>${esc(f.name)}</span><span>${f.ins > 0 ? units(f.ins) : ''}</span></button>`).join('');
   favOpen(true); $('qfavl').querySelector('button').focus();
 };
 $('qfavl').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   const f = favMeals()[+b.dataset.i]; if (!f) return;
-  const t = $('qlt'), d = f.ins > 0 ? String(f.ins) : '';
-  t.value = d ? `${f.name} ${d} units` : f.name + ' '; favOpen(false); t.focus();
-  if (d) t.setSelectionRange(f.name.length + 1, f.name.length + 1 + d.length); // dosen markerad: skriv en annan direkt
-  t.dispatchEvent(new Event('input'));
+  favOpen(false); fillMeal(f);
 };
+// Fyller i fältet med namnet och den egna dosen, med dosen markerad (favoriterna och förslagen)
+function fillMeal(f) {
+  const t = $('qlt'), d = f.ins > 0 ? String(f.ins) : '';
+  t.value = d ? `${f.name} ${d} units` : f.name + ' '; t.focus();
+  if (d) t.setSelectionRange(f.name.length + 1, f.name.length + 1 + d.length); // dosen markerad: skriv en annan direkt
+  sugSkip = true; t.dispatchEvent(new Event('input'));
+}
+// Förslag medan man skriver: när texten är ord utan siffror ("kyck", "chopchop") visas upp till sex rätter man loggat
+// som passar, med samma sökning som /kyckling i Telegram (kyckling = chicken, början av ord, inuti ord, små stavfel).
+// Ett val fyller i fältet som en favorit. Pilarna väljer, Enter fyller i (utan val skickas texten som vanligt), Esc stänger.
+let sugs = [], sugI = -1, sugT = 0, sugSkip = false;
+const sugOpen = on => { $('qsug').hidden = !on; $('qlt').setAttribute('aria-expanded', on); if (!on) { sugI = -1; $('qlt').removeAttribute('aria-activedescendant'); } };
+const sugQuery = v => { const s = v.trim().replace(/^\//, ''); return s.length >= 2 && !/\d/.test(s) && /\p{L}/u.test(s) ? s : ''; };
+function sugRender() {
+  $('qsug').innerHTML = sugs.map((s, i) => `<div role="option" id="qsug${i}" aria-selected="${i === sugI}" data-i="${i}"><span>${esc(s.name)}</span><span>${s.ins > 0 ? units(s.ins) : ''}</span></div>`).join('');
+  if (sugI >= 0) $('qlt').setAttribute('aria-activedescendant', 'qsug' + sugI); else $('qlt').removeAttribute('aria-activedescendant');
+}
+$('qlt').addEventListener('input', () => {
+  sameHide(); clearTimeout(sugT);
+  const q = sugSkip ? '' : sugQuery($('qlt').value); sugSkip = false;
+  if (!q) { sugs = []; sugOpen(false); return; }
+  sugT = setTimeout(async () => {
+    try {
+      const r = await api('/api/dishes?q=' + encodeURIComponent(q));
+      if (sugQuery($('qlt').value) !== q || document.activeElement !== $('qlt') || $('qlt').readOnly) return; // man har skrivit vidare
+      sugs = r.dishes || []; sugI = -1; sugRender(); sugOpen(sugs.length > 0); if (sugs.length) favOpen(false);
+    } catch (e) { console.error('dishes:', e); }
+  }, 150);
+});
+$('qlt').addEventListener('keydown', e => {
+  if ($('qsug').hidden) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = sugs.length; sugI = sugI < 0 ? (e.key === 'ArrowDown' ? 0 : n - 1) : (sugI + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; sugRender(); }
+  else if (e.key === 'Enter' && sugI >= 0) { e.preventDefault(); const f = sugs[sugI]; sugOpen(false); fillMeal(f); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); sugOpen(false); }
+  else if (e.key === 'Tab') sugOpen(false);
+});
+$('qsug').addEventListener('mousedown', e => e.preventDefault()); // fokus stannar i fältet
+$('qsug').onclick = e => { const o = e.target.closest('[role=option]'); if (!o) return; const f = sugs[+o.dataset.i]; sugOpen(false); if (f) fillMeal(f); };
+$('qlt').addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== $('qlt')) sugOpen(false); }, 0));
 $('qfavl').addEventListener('keydown', e => {
   const bs = [...$('qfavl').querySelectorAll('button')], i = bs.indexOf(document.activeElement);
   if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); favOpen(false); $('qfav').focus(); }
