@@ -915,8 +915,10 @@ const tgSay = (text, extra = {}) => {
   return tgApi('sendMessage', { chat_id: tg.chat, text, parse_mode: 'HTML', ...(kb || {}), ...extra }).catch(e => console.error('Telegram send:', e.message));
 };
 // Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
-const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
-const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/all lists everything you\'ve logged, tap one to log it again. Search with / and a word: <i>/kyckling</i>. <b>Count as one</b> joins meals you wrote in different ways, and <b>Rename</b> changes a name.\n/week and /month send a summary of your numbers.';
+// och en rad för att rätta ett skrivfel med ett tryck: Change dose (bara måltider) och Change time
+const buttons = (id, save, meal = true) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])],
+  [...(meal ? [{ text: '✏️ Change dose', callback_data: 'v:' + id }] : []), { text: '🕒 Change time', callback_data: 'w:' + id }]] } });
+const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged. The buttons under each log change the dose or the time.\n/fav puts the meals you log most as buttons under the text field.\n/all lists everything you\'ve logged, tap one to log it again. Search with / and a word: <i>/kyckling</i>. <b>Count as one</b> joins meals you wrote in different ways, and <b>Rename</b> changes a name.\n/week and /month send a summary of your numbers.';
 const COMMANDS = [{ command: 'fav', description: 'Buttons for the meals you log most' }, { command: 'all', description: 'Everything you have logged. Search: /kyckling' }, { command: 'undo', description: 'Remove the last thing you logged' }, { command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
 
 // ---------- Rapporter i Telegram: veckan och månaden i text ----------
@@ -1009,7 +1011,7 @@ async function tgLogged(r, id, late, warn) {
   await tgSay((isMeal ? '✅ ' : '📝 ') + describe(e)
     + (warn ? `\n⚠ ${he(String(warn).replace(/ Is this a second time\?$/, ''))} Tap Undo if it was a mistake.` : '')
     + (late ? '\n<i>Read when the dashboard started, logged at the time you sent it.</i>' : '')
-    + (r.via === 'simple' ? '\n<i>(the local AI was off, so the simple reader was used)</i>' : ''), buttons(e.id, isMeal && !saved));
+    + (r.via === 'simple' ? '\n<i>(the local AI was off, so the simple reader was used)</i>' : ''), buttons(e.id, isMeal && !saved, isMeal));
 }
 // ---------- Favoriter och "How many units?" ----------
 // /fav lägger de sex måltider man loggat flest gånger de senaste 30 dagarna (sedan sparade måltider) som knappar under
@@ -1333,6 +1335,77 @@ async function tgListTap(q, act, arg, answer) {
   }
   return answer('');
 }
+// ---------- Change dose / Change time: rätta ett skrivfel med ett tryck under bekräftelsen ----------
+// Förut fick man trycka Undo och skriva allt igen. v = fråga efter ny dos, w = fråga efter ny tid, m = en tidsknapp
+// ("30 min ago"), b = ändra tillbaka (det gamla värdet ligger i knappen: "b:id:d:7" eller "b:id:t:<ms>").
+function editEntry(id, patch) {
+  const db = readDb(), k = db.log.some(m => m.id === id) ? 'log' : db.notes.some(n => n.id === id) ? 'notes' : null; if (!k) return null;
+  const old = db[k].find(m => m.id === id), e = { ...old, ...patch };
+  db[k] = db[k].map(m => m.id === id ? e : m).sort((a, b) => b.t - a.t); db.rev++; writeDb(db);
+  return { e, old };
+}
+const findEntry = id => { const db = readDb(); return db.log.find(m => m.id === id) || db.notes.find(n => n.id === id) || null; };
+// En tid som svar: "18:30", "kl 18", "18", "igår 19:30", "20 min sen", "1 h ago", "nu". null om det inte är en tid.
+function parseWhen(text, ref) {
+  let s = String(text).toLowerCase().trim().replace(/[.!]+$/, ''), day = 0;
+  if (/^(nu|now|just nu|right now)$/.test(s)) return ref;
+  const y = s.match(/^(igår|i går|igar|yesterday)\s*(.*)$/); if (y) { day = 1; s = y[2].replace(/^(kl\.?|klockan|at)\s*/, '').trim(); }
+  let m = s.match(/^(?:kl\.?\s*|klockan\s*|at\s*)?([01]?\d|2[0-3])(?:[:.]([0-5]\d))?$/);
+  if (m) {
+    const h = +m[1], mi = +(m[2] || 0); if (!day) return atClock(h, mi, ref);
+    const d = new Date(ref); d.setDate(d.getDate() - 1); d.setHours(h, mi, 0, 0); return d.getTime();
+  }
+  if (day) return null;
+  m = s.match(/^(?:för\s+)?(\d+(?:[.,]\d+)?)\s*(m|min|mins|minut|minuter|minute|minutes|h|tim|timme|timmar|hour|hours)\s*(sen|sedan|ago)?$/);
+  if (m) { const n = parseFloat(m[1].replace(',', '.')) * (/^(h|tim|timme|timmar|hour|hours)$/.test(m[2]) ? 60 : 1); if (n >= 0 && n <= 1440) return ref - n * 6e4; }
+  return null;
+}
+const QUICK = [[0, 'Now'], [15, '15 min ago'], [30, '30 min ago'], [60, '1 h ago']];
+const backBtn = (id, kind, v) => ({ reply_markup: { inline_keyboard: [[{ text: '↩️ Change back', callback_data: `b:${id}:${kind}:${v}` }]] } });
+// Bara de senaste 8 dygnen och aldrig framåt i tiden
+const okWhen = t => Number.isFinite(t) && t <= Date.now() + 6e4 && t >= Date.now() - 8 * 864e5;
+async function tgChanged(id, patch, kind) {
+  const r = editEntry(id, patch); if (!r) return tgSay('That is no longer in the log. Nothing changed.');
+  const was = kind === 'd' ? `${r.old.ins} ${r.old.ins === 1 ? 'unit' : 'units'}` : whenTxt(r.old.t);
+  const warn = kind === 'd' && r.e.name !== undefined && doseCheck(r.e.name, r.e.ins, readDb(), null); // bara dosen, inte "redan loggad"
+  return tgSay(`✏️ Changed: ${describe(r.e)}\n<i>Was ${he(was)}.</i>${warn ? `\n⚠ ${he(warn)}` : ''}`, backBtn(id, kind, kind === 'd' ? r.old.ins : r.old.t));
+}
+async function tgEditTap(act, arg, answer) {
+  const [id, a, b] = arg.split(':'), e = findEntry(id);
+  if (!e) return answer('That is no longer in the log.');
+  if (act === 'v') {
+    if (e.name === undefined) return answer('');
+    tgPending = { edit: 'dose', id, at: Date.now() }; await answer('');
+    return tgSay(`✏️ How many units did you take for <b>${he(e.name)}</b>? Now <b>${e.ins}</b>. Send the right number.\n<i>/cancel stops.</i>`, { reply_markup: { force_reply: true, input_field_placeholder: String(e.ins) } });
+  }
+  if (act === 'w') {
+    tgPending = { edit: 'time', id, at: Date.now() }; await answer('');
+    return tgSay(`🕒 When was <b>${he(e.name !== undefined ? e.name : kindLabel(e.kind))}</b>? Now ${he(whenTxt(e.t))}. Tap one, or send a time like <i>18:30</i>, <i>igår 19:00</i> or <i>20 min sen</i>.\n<i>/cancel stops.</i>`,
+      { reply_markup: { inline_keyboard: [QUICK.map(([min, label]) => ({ text: label, callback_data: `m:${id}:${min}` }))] } });
+  }
+  if (act === 'm') { // tidsknapparna räknar från när man trycker
+    if (tgPending && tgPending.edit && tgPending.id === id) tgPending = null;
+    await answer(''); return tgChanged(id, { t: Math.round(Date.now() - (+a || 0) * 6e4) }, 't');
+  }
+  if (act === 'b') {
+    const v = parseFloat(b); if (!Number.isFinite(v)) return answer('');
+    if (a === 'd' && v >= 0 && v <= 100 && e.name !== undefined) { editEntry(id, { ins: v }); await answer('Changed back'); return tgSay(`↩️ Changed back: ${describe({ ...e, ins: v })}`); }
+    if (a === 't' && okWhen(v)) { editEntry(id, { t: v }); await answer('Changed back'); return tgSay(`↩️ Changed back: ${describe({ ...e, t: v })}`); }
+  }
+  return answer('');
+}
+// Det skrivna svaret på Change dose eller Change time
+async function tgEditReply(p, text) {
+  if (!findEntry(p.id)) { tgPending = null; return tgSay('That is no longer in the log. Nothing changed.'); }
+  if (p.edit === 'dose') {
+    const n = unitsReply(text);
+    if (n === null || n > 100) return tgSay('Send the number of units, like <i>6</i> or <i>6,5</i>. /cancel stops.');
+    tgPending = null; return tgChanged(p.id, { ins: Math.round(n * 10) / 10 }, 'd');
+  }
+  const t = parseWhen(text, Date.now());
+  if (t === null || !okWhen(t)) return tgSay('Send a time like <i>18:30</i>, <i>igår 19:00</i> or <i>20 min sen</i>. /cancel stops.');
+  tgPending = null; return tgChanged(p.id, { t: Math.min(Math.round(t), Date.now()) }, 't');
+}
 async function tgHandle(u) {
   const q = u.callback_query;
   if (q) { // knapparna Undo (u:), Save to Meals (s:), dosen (d:), "Same as …?" (a:), listan (l p j t n k c) och Undo för Count as one (x:)
@@ -1365,6 +1438,7 @@ async function tgHandle(u) {
       if (s) await tgApi('editMessageReplyMarkup', { chat_id: tg.chat, message_id: q.message.message_id, ...buttons(id, false) }).catch(() => {});
       return;
     }
+    if ('vwmb'.includes(act || '-')) return tgEditTap(act, id, answer);
     const ok = act === 'u' && removeEntry(id);
     await answer(ok ? 'Removed' : 'Already removed');
     if (ok) await tgApi('editMessageText', { chat_id: tg.chat, message_id: q.message.message_id, parse_mode: 'HTML', text: `<s>${he(q.message.text || '')}</s>\n↩️ Removed` }).catch(() => {});
@@ -1383,10 +1457,11 @@ async function tgHandle(u) {
     return;
   }
   if (!text) return tgSay('I can only read text. Use the microphone on your keyboard to dictate.');
-  // Namnbyte: nästa meddelande är det nya namnet (i 30 min). Ett kommando avbryter det, /cancel säger det.
-  if (tgPending && tgPending.rename) {
-    if (text.startsWith('/')) { const was = tgPending.rename; tgPending = null; if (/^\/cancel\b/.test(text)) return tgSay(`OK, ${he(was)} keeps its name.`); }
-    else if (Date.now() - tgPending.at < 30 * 6e4) return tgRename(tgPending.rename, text);
+  // Namnbyte och Change dose/time: nästa meddelande är svaret (i 30 min). Ett kommando avbryter det, /cancel säger det.
+  if (tgPending && (tgPending.rename || tgPending.edit)) {
+    const p = tgPending;
+    if (text.startsWith('/')) { tgPending = null; if (/^\/cancel\b/.test(text)) return tgSay(p.rename ? `OK, ${he(p.rename)} keeps its name.` : 'OK, nothing changed.'); }
+    else if (Date.now() - p.at < 30 * 6e4) return p.rename ? tgRename(p.rename, text) : tgEditReply(p, text);
     else tgPending = null;
   }
   if (/^\/cancel\b/.test(text)) { const had = tgPending && Date.now() - tgPending.at < 30 * 6e4; tgPending = null; return tgSay(had ? 'OK, stopped. Nothing was logged.' : 'There is nothing to stop.'); }
