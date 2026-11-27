@@ -1084,6 +1084,8 @@ const SYN = new Map(Object.entries({
   icecream: 'glass icecream',
 }).flatMap(([c, ws]) => ws.split(' ').map(w => [w, c])));
 // Bestämd form och plural på svenska ("kycklingen", "riset", "pannkakorna") slås upp utan ändelsen
+// Åt andra hållet: alla ord för samma sak ("pork" -> flask, flaskkott, pork), för sökningen
+const SYNW = new Map(); for (const [w, c] of SYN) SYNW.set(c, [...(SYNW.get(c) || []), w]);
 const canon = w => SYN.get(w) || (w.length > 4 && ['na', 'arna', 'orna', 'erna', 'en', 'et', 'n', 't'].map(s => w.endsWith(s) && SYN.get(w.slice(0, -s.length))).find(Boolean)) || w;
 const STOP = new Set([...EDGE, 'samt', 'plus', 'from', 'fran', 'hos'].map(norm));
 const tok = w => ({ w, c: canon(w) });
@@ -1135,7 +1137,9 @@ function findDishes(q, list) {
   if (!parts.length) return list;
   return list.filter(d => {
     const dt = dishToks(d.name), flat = norm(d.name).replace(/ /g, '');
-    return parts.some(qt => qt.every(x => dt.some(y => y.w.startsWith(x.w) || y.c === x.c || (x.c.length >= 3 && y.c.startsWith(x.c)) || typo(x.w, y.w)) || (x.w.length >= 4 && flat.includes(x.w))));
+    // Ordet självt och dess översättningar ("pork" hittar också "Fläskfärs", "kyckling" också "Chickenwings")
+    return parts.some(qt => qt.every(x => { const ws = [x.w, ...(SYNW.get(x.c) || [])].filter((w, i) => !i || w.length >= 4);
+      return dt.some(y => ws.some(w => y.w.startsWith(w)) || y.c === x.c || (x.c.length >= 3 && y.c.startsWith(x.c)) || typo(x.w, y.w)) || ws.some(w => w.length >= 4 && flat.includes(w)); }));
   });
 }
 // "Same as …?": null när ingen fråga behövs (r.name kan då bytas till den kända stavningen), annars kandidaterna
