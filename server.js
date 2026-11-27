@@ -916,8 +916,8 @@ const tgSay = (text, extra = {}) => {
 };
 // Knappar under svaret: Undo, och "Save to Meals" när rätten inte redan finns bland måltiderna
 const buttons = (id, save) => ({ reply_markup: { inline_keyboard: [[{ text: 'Undo', callback_data: 'u:' + id }, ...(save ? [{ text: 'Save to Meals', callback_data: 's:' + id }] : [])]] } });
-const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/all lists everything you\'ve logged, tap one to log it again. <i>/all chicken</i> searches, and <b>Count as one</b> joins meals you wrote in different ways.\n/week and /month send a summary of your numbers.';
-const COMMANDS = [{ command: 'fav', description: 'Buttons for the meals you log most' }, { command: 'all', description: 'Everything you have logged, or search: /all chicken' }, { command: 'undo', description: 'Remove the last thing you logged' }, { command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
+const HELP = 'Tell me what you ate and how much insulin you took, for example:\n<i>pizza 7,5 enheter</i>\n<i>gröt 4e för 20 min sen</i>\n<i>kebab 6 units at 19:30</i>\n\nInsulin without food: <i>1,5 enheter ingen mat</i>.\nNotes work too: <i>promenad 45 min</i>, <i>två öl</i>.\n/undo removes the last thing you logged.\n/fav puts the meals you log most as buttons under the text field.\n/all lists everything you\'ve logged, tap one to log it again. Search with / and a word: <i>/kyckling</i>. <b>Count as one</b> joins meals you wrote in different ways.\n/week and /month send a summary of your numbers.';
+const COMMANDS = [{ command: 'fav', description: 'Buttons for the meals you log most' }, { command: 'all', description: 'Everything you have logged. Search: /kyckling' }, { command: 'undo', description: 'Remove the last thing you logged' }, { command: 'week', description: 'Summary of the last 7 days' }, { command: 'month', description: 'Month in review' }, { command: 'help', description: 'How to log' }];
 
 // ---------- Rapporter i Telegram: veckan och månaden i text ----------
 // Bara siffror som redan visas på dashboarden. Staplarna är tecken (█░) i en <pre>, så att de står rakt i Telegram.
@@ -1198,7 +1198,7 @@ function listView(L) {
   const items = all.slice(from, from + PAGE), many = n => `${n} ${n === 1 ? 'meal' : 'meals'}`;
   const text = [L.q ? `🔎 <b>${many(all.length)} matching “${he(L.q)}”</b>` : `🍽 <b>Everything you've logged</b> · ${many(all.length)}`, '',
     ...items.map((d, i) => `${from + i + 1}. <b>${he(d.name)}</b> · ${timesTxt(d)}`), '',
-    `<i>Tap one to log it.${pages > 1 ? ` Page ${page + 1} of ${pages}.` : ''}${canMerge(L) ? ' Same meal under different names? Tap Count as one.' : L.q && all.length > 10 ? ' Add a word to the search to count meals as one.' : !L.q && all.length > PAGE ? ' Search with a word: /all chicken' : ''}</i>`].join('\n');
+    `<i>Tap one to log it.${pages > 1 ? ` Page ${page + 1} of ${pages}.` : ''}${canMerge(L) ? ' Same meal under different names? Tap Count as one.' : L.q && all.length > 10 ? ' Add a word to the search to count meals as one.' : !L.q && all.length > PAGE ? ' Search with / and a word: /kyckling' : ''}</i>`].join('\n');
   const kb = items.map((d, i) => [{ text: `${from + i + 1}. ${d.name}`.slice(0, 64), callback_data: `p:${L.id}:${from + i}` }]);
   const nav = [...(page > 0 ? [{ text: '‹ Back', callback_data: `l:${L.id}:${page - 1}` }] : []), ...(page < pages - 1 ? [{ text: 'More ›', callback_data: `l:${L.id}:${page + 1}` }] : [])];
   if (nav.length) kb.push(nav);
@@ -1214,7 +1214,7 @@ const keepView = L => ({ text: '🔗 <b>Which name should they all have?</b>\nTh
 async function tgMeals(q) {
   const all = dishes(readDb()), items = q ? findDishes(q, all) : all;
   if (!all.length) return tgSay('Nothing logged yet. Write what you ate, for example <i>pizza 7,5 enheter</i>.');
-  if (!items.length) return tgSay(`No logged meals match “${he(q)}”. Try another word, or /all for everything.`);
+  if (!items.length) return tgSay(`No logged meals match “${he(q)}”. Try another word, or /all for everything. /help shows the commands.`);
   const v = listView(newList(q, items)); return tgSay(v.text, { reply_markup: v.reply_markup });
 }
 // "Count as one": alla loggningar med de andra namnen (och andra stavningar av namnet man behåller) får namnet man valt.
@@ -1347,6 +1347,9 @@ async function tgHandle(u) {
     if (!e) return tgSay('Nothing to undo.');
     removeEntry(id); return tgSay('↩️ Removed ' + describe(e));
   }
+  // Allt annat som börjar med / är en sökning: "/kyckling", "/chopchop ris", och bara "/" visar allt. Kortare än
+  // "/all kyckling". ("/kyckling@minbot" från en grupp eller menyn: botens namn tas bort.)
+  if (text.startsWith('/')) return tgMeals(text.slice(1).replace(/^(\S*?)@\w+/, '$1').trim().slice(0, 100));
   // Svar på "How many units?", på en dos som behövde bekräftas eller på "Same as …?" (gäller i 30 min)
   if (tgPending && Date.now() - tgPending.at < 30 * 6e4) {
     if (tgPending.same) {
@@ -1632,7 +1635,7 @@ server.listen(PORT, HOST, () => {
   // En bot som kopplades in innan favoritknapparna fanns får dem en gång, utan att man behöver skriva /fav
   if (tg.token && tg.chat && !tg.favSent && tg.fav !== false && favKeyboard()) { tg.favSent = true; saveTg(); tgSay('New: your most logged meals are now buttons under the text field. Tap one to log it. /nofav hides them.'); }
   // Samma sak för /all och "Same as …?": ett meddelande en gång
-  if (tg.token && tg.chat && !tg.mealsSent) { tg.mealsSent = true; saveTg(); tgSay("New: /all lists everything you've logged, and <i>/all chicken</i> searches. Tap a meal to log it again. Meals you wrote in different ways can be counted as one, and when something you write looks like a meal you've logged before, I ask <i>Same as …?</i>"); }
+  if (tg.token && tg.chat && !tg.mealsSent) { tg.mealsSent = true; saveTg(); tgSay("New: /all lists everything you've logged, and / with a word searches: <i>/kyckling</i>. Tap a meal to log it again. Meals you wrote in different ways can be counted as one, and when something you write looks like a meal you've logged before, I ask <i>Same as …?</i>"); }
 });
 
 // "Start with Windows": en liten .cmd i Autostart-mappen som startar servern minimerad i aktivitetsfältet vid inloggning.
